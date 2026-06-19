@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<!-- ========================= SECTION PAGETOP ========================= -->
+<section class="section-pagetop bg">
+    <div class="container">
+        {% if 'search' in request.path %}
+            <h2 class="title-page text-center">Resultado da Busca</h2>
+        {% else %}
+            <h2 class="title-page">A minha, a sua, a nossa Loja!</h2>
+        {% endif %}
+    </div> <!-- container //  -->
+</section>
+<!-- ========================= SECTION INTRO END// ========================= -->
+<!-- ========================= SECTION CONTENT ========================= -->
+<section class="section-content padding-y">
+    <div class="container">
+
+        <div class="row">
+            <aside class="col-md-3">
+                <div class="card">
+                    <article class="filter-group">
+                        <header class="card-header">
+                            <a href="#" data-toggle="collapse" data-target="#collapse_1" aria-expanded="true" class="">
+                                <i class="icon-control fa fa-chevron-down"></i>
+                                <h6 class="title">Categories</h6>
+                            </a>
+                        </header>
+                        <div class="filter-content collapse show" id="collapse_1" style="">
+                            <div class="card-body">
+                                <a href="{% url 'store' %}"><b>Todos os Produtos</b></a>
+                                <br/>
+                                <ul class="list-menu">
+                                    {% for categoria in links %}
+                                    <li><a href="{{ categoria.get_url }}">{{ categoria.categoria_nome }} </a></li>
+                                    {% endfor %}
+                                </ul>
+                            </div> <!-- card-body.// -->
+                        </div>   
+                </div> <!-- card.// -->
+            </aside> <!-- col.// -->
+
+            <main class="col-md-9">
+
+                <header class="border-bottom mb-4 pb-3">
+                    <div class="form-inline">
+                        <span class="mr-md-auto"> <b>{{ produto_count }}</b> Itens Encontrados </span>
+
+                    </div>
+                </header><!-- sect-heading -->
+
+                <div class="row">
+                    {% if produtos %}
+                        {% for produto in produtos %}
+                            <div class="col-md-4">
+                                <figure class="card card-product-grid">
+                                    <div class="img-wrap">
+                                        <a href="{{ produto.get_url }}"> <img src="{{ produto.foto.url }}" alt="Ver Detalhes do Produto"> </a>
+                                    </div> <!-- img-wrap.// -->
+                                    <figcaption class="info-wrap">
+                                        <div class="fix-height">
+                                            <a href="{{ produto.get_url }}" class="title">{{ produto.produto_nome }}</a>
+                                            <div class="price-wrap mt-2">
+                                                <span class="price">R$ {{ produto.preco|floatformat:2 }}</span>
+                                            </div> <!-- price-wrap.// -->
+                                        </div>
+                                        <a href="{{ produto.get_url }}" class="btn btn-block btn-outline-danger"> Ver Detalhes </a>
+                                        </figcaption>
+                                </figure>
+                            </div> <!-- col.// -->
+                        {% endfor %}
+                    {% else %}
+                        <div>
+                            <h2 class="text-danger text-center">Não houve resultado de busca!</h2>
+                            <p class="text-lg-left">Por favor verificar corretamente a grafia ou tentar novamente mais tarde. </p>
+                        </div>  
+                    {% endif %}
+                </div> <!-- row end.// -->
+
+
+                <nav class="mt-4" aria-label="Page navigation sample">
+                    {% if produtos.has_other_pages %}
+                    <ul class="pagination">
+                        {% if produtos.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?page={{produtos.previus_page_number}}">Anterior</a></li>
+                        {% else %}
+                        <li class="page-item disabled"><a class="page-link"
+                                href="#">Anterior</a></li>
+                        {% endif %}
+                        {% for i in produtos.paginator.page_range %}
+                            {% if produtos.number == i %}
+                                <li class="page-item active"><a class="page-link" href="#">{{i}}</a></li>
+                            {% else %}
+                                <li class="page-item"><a class="page-link" href="?page={{i}}">{{i}}</a></li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if produtos.has_next %}
+                            <li class="page-item"><a class="page-link"
+                                    href="?page={{produtos.next_page_number}}">Próximo</a></li>
+                        {% else %}
+                            <li class="page-item disabled"><a class="page-link" href="#">Próximo</a></li>
+                        {% endif %}
+                    </ul>
+                    {% endif %}
+                </nav>
+
+            </main> <!-- col.// -->
+
+        </div>
+
+    </div> <!-- container .//  -->
+</section>
+<!-- ========================= SECTION CONTENT END// ========================= -->
+{% endblock %}

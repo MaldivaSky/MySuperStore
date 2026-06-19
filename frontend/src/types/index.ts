@@ -1,0 +1,143 @@
+// ── Usuário ───────────────────────────────────────────────────────────────────
+export interface User {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  phone: string;
+  role: "customer" | "seller" | "admin";
+  avatar: string | null;
+  date_joined: string;
+}
+
+// ── Catálogo ─────────────────────────────────────────────────────────────────
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  image: string | null;
+  parent: string | null;
+  children?: Category[];
+}
+
+export interface AttributeValue {
+  id: number;
+  attribute: string;
+  value: string;
+}
+
+export interface ProductVariant {
+  id: string;
+  sku: string;
+  attributes: AttributeValue[];
+  price: string | null;
+  effective_price: string;
+  stock: number;
+  is_active: boolean;
+}
+
+export interface ProductImage {
+  id: string;
+  image: string;
+  is_primary: boolean;
+  order: number;
+}
+
+export interface Product {
+  id: string;
+  seller_name: string;
+  seller_slug: string;
+  category: string;
+  name: string;
+  slug: string;
+  description: string;
+  base_price: string;
+  images: ProductImage[];
+  variants: ProductVariant[];
+  avg_rating: number;
+  review_count: number;
+  is_available: boolean;
+  created_at: string;
+}
+
+// ── Carrinho ─────────────────────────────────────────────────────────────────
+export interface CartItem {
+  id: string;
+  variant: ProductVariant & { product_name: string; product_image: string };
+  quantity: number;
+  subtotal: string;
+}
+
+export interface Cart {
+  id: string;
+  items: CartItem[];
+  total: string;
+  item_count: number;
+}
+
+// ── Pedidos ───────────────────────────────────────────────────────────────────
+export type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "processing"
+  | "shipped"
+  | "delivered"
+  | "cancelled"
+  | "refunded";
+
+export interface OrderItem {
+  id: string;
+  product_name: string;
+  variant_sku: string;
+  variant_attributes: Record<string, string>;
+  quantity: number;
+  unit_price: string;
+  total: string;
+}
+
+export interface SubOrder {
+  id: string;
+  seller_name: string;
+  items: OrderItem[];
+  subtotal: string;
+  commission: string;
+  seller_amount: string;
+  status: OrderStatus;
+  tracking_code: string;
+}
+
+export interface Order {
+  id: string;
+  order_number: string;
+  sub_orders: SubOrder[];
+  total: string;
+  status: OrderStatus;
+  created_at: string;
+}
+
+// ── Pagamentos ────────────────────────────────────────────────────────────────
+export type PaymentMethod = "pix" | "credit_card" | "boleto";
+export type PaymentStatus = "pending" | "approved" | "rejected" | "cancelled" | "in_process";
+
+export interface Payment {
+  id: string;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  amount: string;
+  pix_qr_code: string;
+  pix_qr_code_base64: string;
+  boleto_url: string;
+  boleto_barcode: string;
+  expires_at: string | null;
+  paid_at: string | null;
+}
+
+// ── Paginação ─────────────────────────────────────────────────────────────────
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}

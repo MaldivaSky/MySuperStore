@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<section class="section-content padding-y bg">
+    <div class="container">
+        <!-- ============================ COMPONENT 1 ================================= -->
+        <div class="row">
+            <aside class="col-lg-7">
+                <h4 class="text-info p-1">Revisão de Compra e Pagamento</h4>
+                <div class="card">
+                    <h5 class="card-header">Endereço de Entrega</h5>
+                    <div class="card-body">
+                        <p class="card-text text-bottom">Nome do Comprador: <b>{{order.full_name}}</b></p>
+                        <p class="card-text"><b>Email: </b>{{order.email}}</p>
+                        <p class="card-text"><b>Telefone: </b>{{order.telefone}}</p>
+                        <p class="card-text"><b>Endreço: </b>{{order.logradouro}} {{order.numero}} {{order.complemento}}
+                        </p>
+                        <p class="card-text">CEP:{{order.cep}} - Bairro:{{order.bairro}} - Cidade:{{order.cidade}} -
+                            UF:{{order.uf}}</p>
+                        <br>
+                        <p class="card-text text-uppercase">Observação: <b>{{order.order_note}}</b></p>
+                    </div> <!-- card.// -->
+                </div>
+
+
+                <br>
+                <div class="card">
+                    <h5 class="card-header">Revisão dos Produtos</h5>
+                    <div class="card-body">
+                        <table class="table table-borderless table-shopping-cart">
+                            <thead class="text-muted">
+                                <tr class="small text-uppercase">
+                                    <th scope="col">Produtos</th>
+                                    <th scope="col" width="120">Quantidade</th>
+                                    <th scope="col" width="120">Preço</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cart_item in cart_items %}
+                                <tr>
+                                    <td>
+                                        <figure class="itemside align-items-center">
+                                            <div class="aside"><img src="{{ cart_item.produto.foto.url }}"
+                                                    class="img-sm">
+                                            </div>
+                                            <figcaption class="info">
+                                                <a href="{{ cart_item.produto.get_url }}"
+                                                    class="title text-dark">{{cart_item.produto.produto_nome}}</a>
+                                                <p class="text-muted small">
+                                                    {% if cart_item.variations.all %}
+                                                    {% for item in cart_item.variations.all %}
+                                                    {{item.variation_categoria | capfirst}} :
+                                                    {{item.variation_valor | capfirst}} <br>
+                                                    {% endfor %}
+                                                    {% endif %}
+                                                </p>
+                                            </figcaption>
+                                        </figure>
+                                    </td>
+                                    <td>
+                                        <!-- col.// -->
+                                        <label for="">{{ cart_item.quantidade }}</label>
+                                    </td>
+                                    <td>
+                                        <div class="price-wrap">
+                                            <var class="price">R$
+                                                {{ cart_item.sub_total|floatformat:2 }}</var>
+                                        </div> <!-- price-wrap .// -->
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div> <!-- card.// -->
+                </div>
+            </aside> <!-- col.// -->
+
+            <aside class="col-lg-5">
+
+                <div class="card">
+                    <div class="card-body">
+                        <dl class="dlist-align">
+                            <dt>Total Produtos:</dt>
+                            <dd class="text-right">R$ {{ total|floatformat:2 }}</dd>
+                        </dl>
+                        <dl class="dlist-align">
+                            <dt>Frete:</dt>
+                            <dd class="text-right"> R$ {{taxa|floatformat:2 }}</dd>
+                        </dl>
+                        <dl class="dlist-align">
+                            <dt>Total Pagamento:</dt>
+                            <dd class="text-right text-dark b"><strong>R$ {{ grand_total|floatformat:2 }}</strong></dd>
+                        </dl>
+                        <hr>
+                        <div class="row">
+                            <button class="btn btn-primary col-12" data-toggle="modal" data-target="#modalqrcode">
+                                <div class="text-auto">
+                                    <img src="https://vetores.org/d/mercado-pago.svg" width="50px"> Pagar com Mercado
+                                    Pago
+                                </div>
+                            </button>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 text-center">
+                                <p class="text-sm text-muted">
+                                    Pague com segurança
+                                </p>
+                            </div>
+                        </div>
+                        <!-- Modal -->
+                        <div class="modal fade" id="modalqrcode">
+                            <div class="modal-dialog modal-md">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h4 class="modal-title">Pagar com PIX (QR Code)</h4>
+                                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                    </div>
+                                    <div class="modal-body mx-auto">
+                                        <img src="{% url 'gerar_qrcode' %}?email={{ order.email }}&amount={{ grand_total|floatformat:2 }}"
+                                            alt="QR Code">
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-danger"
+                                            data-dismiss="modal">Fechar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div> <!-- card-body.// -->
+        </div> <!-- card.// -->
+
+        </aside> <!-- col.// -->
+
+
+    </div> <!-- row.// -->
+    <!-- ============================ COMPONENT 1 END .// ================================= -->
+
+
+
+    </div> <!-- container .//  -->
+</section>
+
+
+{% endblock %}
