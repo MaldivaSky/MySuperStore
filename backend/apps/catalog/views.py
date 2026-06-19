@@ -25,8 +25,20 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=["get"], url_path="tree")
     def tree(self, request):
         """GET /catalog/categories/tree/ — árvore hierárquica de categorias."""
-        roots = self.get_queryset().filter(parent=None)
-        serializer = CategoryTreeSerializer(roots, many=True, context={"request": request})
+        categories = list(self.get_queryset())
+        
+        from collections import defaultdict
+        children_map = defaultdict(list)
+        for cat in categories:
+            if cat.parent_id is not None:
+                children_map[cat.parent_id].append(cat)
+                
+        roots = [cat for cat in categories if cat.parent_id is None]
+        serializer = CategoryTreeSerializer(
+            roots,
+            many=True,
+            context={"request": request, "children_map": children_map},
+        )
         return Response(serializer.data)
 
 

@@ -83,7 +83,7 @@ class SellerDashboardSerializer(serializers.ModelSerializer):
         model = Seller
         fields = [
             "id", "store_name", "slug", "status", "commission_rate",
-            "mp_authorized", "pix_key",
+            "stripe_authorized", "pix_key",
             "total_products", "available_products",
             "total_orders", "pending_payout",
         ]

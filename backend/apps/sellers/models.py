@@ -23,12 +23,10 @@ class Seller(models.Model):
     # Comissão da plataforma: 0.0300 = 3%
     commission_rate = models.DecimalField(max_digits=5, decimal_places=4, default="0.0300")
     status = models.CharField(max_length=20, choices=SellerStatus.choices, default=SellerStatus.PENDING)
-    # Mercado Pago split — preenchido após autorização OAuth do vendedor
-    mp_access_token = models.CharField(max_length=512, blank=True)
-    mp_refresh_token = models.CharField(max_length=512, blank=True)
-    mp_user_id = models.CharField(max_length=50, blank=True)
-    mp_token_expires_at = models.DateTimeField(null=True, blank=True)
-    # Dados bancários para repasse manual (fallback se MP não autorizado)
+    # Stripe Connect — preenchido após onboarding do vendedor
+    stripe_account_id = models.CharField(max_length=100, blank=True)
+    stripe_onboarding_complete = models.BooleanField(default=False)
+    # Dados bancários para repasse manual (fallback se Stripe não autorizado)
     pix_key = models.CharField(max_length=150, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -46,5 +44,5 @@ class Seller(models.Model):
         return self.status == SellerStatus.APPROVED
 
     @property
-    def mp_authorized(self):
-        return bool(self.mp_access_token and self.mp_user_id)
+    def stripe_authorized(self):
+        return bool(self.stripe_account_id and self.stripe_onboarding_complete)

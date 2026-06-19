@@ -96,11 +96,47 @@ USE_TZ = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# ── Static & Media ──────────────────────────────────────────────────────────
+# ── Static & Media & Storages (Django 5.1+) ──────────────────────────────────
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+
+USE_S3 = env.bool("USE_S3", default=False)
+
+if USE_S3:
+    AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID", default="")
+    AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY", default="")
+    AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME", default="")
+    AWS_S3_ENDPOINT_URL = env("AWS_S3_ENDPOINT_URL", default=None)
+    AWS_S3_CUSTOM_DOMAIN = env("AWS_S3_CUSTOM_DOMAIN", default=None)
+    AWS_DEFAULT_ACL = "public-read"
+    AWS_QUERYSTRING_AUTH = False
+    
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+    
+    if AWS_S3_CUSTOM_DOMAIN:
+        MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
+    elif AWS_S3_ENDPOINT_URL:
+        MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/"
+    else:
+        MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/"
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = BASE_DIR / "media"
 
 # ── DRF ─────────────────────────────────────────────────────────────────────
 REST_FRAMEWORK = {
@@ -151,17 +187,17 @@ CELERY_TIMEZONE = TIME_ZONE
 
 # ── Email ────────────────────────────────────────────────────────────────────
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = env("EMAIL_HOST", default="smtp.gmail.com")
-EMAIL_PORT = env.int("EMAIL_PORT", default=587)
-EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
-EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default=EMAIL_HOST_USER)
+EMAIL_HOST = env("MAIL_SERVER", default="smtp.gmail.com")
+EMAIL_PORT = env.int("MAIL_PORT", default=587)
+EMAIL_HOST_USER = env("MAIL_USERNAME", default="")
+EMAIL_HOST_PASSWORD = env("MAIL_PASSWORD", default="")
+EMAIL_USE_TLS = env.bool("MAIL_USE_TLS", default=True)
+DEFAULT_FROM_EMAIL = env("MAIL_DEFAULT_SENDER", default=EMAIL_HOST_USER)
 
-# ── Mercado Pago ─────────────────────────────────────────────────────────────
-MP_ACCESS_TOKEN = env("MP_ACCESS_TOKEN", default="")
-MP_PUBLIC_KEY = env("MP_PUBLIC_KEY", default="")
-MP_WEBHOOK_SECRET = env("MP_WEBHOOK_SECRET", default="")
+# ── Stripe Connect ────────────────────────────────────────────────────────────
+STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
+STRIPE_PUBLIC_KEY = env("STRIPE_PUBLIC_KEY", default="")
+STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
 
 # ── Meilisearch ──────────────────────────────────────────────────────────────
 MEILI_HOST = env("MEILI_HOST", default="http://localhost:7700")

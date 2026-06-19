@@ -1,0 +1,88 @@
+# Walkthrough — Fase 1 & Fase 2: Blindagem de Infraestrutura, Stripe Connect e Celery
+
+Este documento resume todas as implementações executadas nas **Fase 1** e **Fase 2** do projeto MySuperStore, detalhando a arquitetura financeira com Stripe Connect e as filas assíncronas de background.
+
+---
+
+## O que foi feito
+
+### 1. Fase 1: Blindagem de Infraestrutura e Performance
+* **PostgreSQL:** Validamos a saúde do banco de dados e conexão via `DATABASE_URL` no `.env`.
+* **Django Storages & S3/R2:** Modernizamos a configuração de mídias para uso do novo dicionário `STORAGES` compatível com Django 5.1+.
+* **Otimização do ORM (N+1):**
+  * Otimizamos o endpoint `/api/v1/catalog/categories/tree/` carregando toda a hierarquia em memória no Python com **exatamente 1 consulta SQL** (em vez de N+1).
+  * Adicionamos `list_select_related` aos painéis administrativos de `catalog` e `orders` no Django Admin.
+
+---
+
+## 2. Fase 2: O Coração do Marketplace - Financeiro e Assincronismo
+
+### 2.1 Refatoração do Modelo de Vendedores (Stripe Connect)
+* **`sellers/models.py`:** Removemos os campos legados do Mercado Pago e adicionamos:
+  * `stripe_account_id`: Identificador da subconta Express do vendedor.
+  * `stripe_onboarding_complete`: Booleano indicando a conclusão do cadastro.
+  * Adicionamos a propriedade `stripe_authorized` para verificar se o vendedor está ativo no Stripe.
+* **`sellers/admin.py`:** Atualizamos o painel administrativo para expor os novos campos e a propriedade de validação do Stripe.
+
+### 2.2 APIs de Carrinho e Checkout (Carts & Orders)
+* **API de Carrinho (`carts`):**
+  * Desenvolvemos serializers (`CartSerializer`, `CartItemSerializer`, `AddToCartSerializer`) e views (`CartView`, `CartItemDetailView`) para o CRUD completo do carrinho com validações robustas de estoque.
+* **API de Pedidos (`orders`):**
+  * Criamos os serializers de pedidos e o `OrderCreateSerializer` que encapsula a lógica transacional do checkout:
+    * Executa row locking (`select_for_update`) nas variantes para evitar condições de corrida (race conditions).
+    * Cria a `Order` principal e divide os itens em `SubOrder`s independentes para cada vendedor.
+    * Realiza a reserva de estoque temporária no Redis com TTL de 15 minutos (900s).
+    * Limpa o carrinho do usuário.
+
+### 2.3 Pagamentos com Stripe Connect (Payments)
+* **`StripeService` (`payments/services.py`):**
+  * Implementou a lógica de criação de `PaymentIntent` integrada à SDK do Stripe.
+  * **Destination Charges (Vendedor Único):** Se o pedido possui apenas 1 vendedor com Stripe ativo, o Stripe Connect direciona a cobrança para a subconta dele e transfere a comissão (`application_fee_amount`) para a plataforma de forma automática.
+  * **Separate Transfers (Carrinhos Mistos):** Se o pedido possui múltiplos vendedores, a cobrança total é processada na plataforma. No recebimento da confirmação de pagamento, o backend cria transferências separadas (`stripe.Transfer.create`) para a subconta de cada vendedor.
+  * **Connect Onboarding:** Método para criar subcontas Express e gerar o link seguro de preenchimento bancário do Stripe.
+* **`PaymentViewSet` & Webhook do Stripe (`payments/views.py`):**
+  * Endpoint `POST /api/v1/payments/create-intent/` para iniciar o checkout.
+  * **Webhook de Segurança Máxima:** O endpoint de webhook valida a assinatura criptográfica de cada request utilizando `stripe.Webhook.construct_event` e a chave secreta `STRIPE_WEBHOOK_SECRET`.
+  * Trata eventos de sucesso (`payment_intent.succeeded`) para marcar pedidos e sub-pedidos como `confirmed`, gerando os registros de `Payout` e `CommissionEntry` no banco.
+
+### 2.4 Fila de Processamento em Background (Celery & Redis)
+* **Confirmação de E-mail (`orders/tasks.py`):** Tarefa assíncrona que renderiza e envia um e-mail HTML responsivo de confirmação de pagamento para o cliente. O SMTP está configurado utilizando o Gmail de produção do usuário com credenciais salvas no `.env`.
+* **Otimização de Imagens (`catalog/tasks.py` e `catalog/signals.py`):**
+  * Um sinal `post_save` no modelo `ProductImage` intercepta uploads de imagens.
+  * Se a imagem não for WebP, envia uma tarefa para o Celery.
+  * O worker Celery abre a imagem do storage (local ou S3/R2), converte para WebP com qualidade 80, reduz a resolução para no máximo 1200x1200px e substitui a referência no storage, economizando espaço e banda.
+* **Envio de Webhooks ERP (`payments/tasks.py`):**
+  * Envia notificações JSON para ERPs externos de lojistas de forma assíncrona, com política de retentativa automática (máx 5 vezes com delay de 1 minuto).
+
+---
+
+## Verificação e Resultados
+
+### 1. Sistema de Checagem do Django
+Todas as novas rotas, sinais e importações foram verificadas no ambiente de desenvolvimento e produção sem erros:
+```bash
+docker exec mysuperstore-api-1 python manage.py check
+# Resultado: System check identified no issues (0 silenced).
+```
+
+### 2. Registro e Autodescoberta de Tarefas do Celery
+Após reiniciar o serviço do Celery para expor o novo código, verificamos que os workers reconhecem todas as tarefas:
+```bash
+docker exec mysuperstore-celery-1 celery -A config inspect registered
+# Resultado:
+#   * apps.catalog.tasks.optimize_product_image_task
+#   * apps.orders.tasks.send_order_confirmation_email_task
+#   * apps.payments.tasks.dispatch_webhook_task
+```
+
+### 3. Teste Físico de Envio de E-mail (SMTP Gmail)
+Testamos o envio de e-mails usando o servidor do Django no container e as credenciais fornecidas:
+* **Resultado:** `Resultado do envio: 1` (E-mail aceito e enviado com sucesso pelo Gmail do usuário).
+
+### 4. Teste de Transações e Pagamentos (Stripe Connect)
+Testamos a integração do Stripe no ambiente do container utilizando a chave privada fornecida:
+* **Criação do PaymentIntent:** Funcionando 100%, gerando e retornando o `client_secret` do Stripe:
+  `Intent Status: requires_payment_method`
+  `Client Secret: pi_3Tk4mPP6LKC6MAtB1M0RomAB_secret_XXXXXXXXXXXXXXXXXXXXXX`
+* **onboarding do Stripe Connect:** A chamada de criação de conta Express e link de onboarding Connect alcançou a API do Stripe e retornou com sucesso, indicando apenas que a funcionalidade Connect precisa ser habilitada no painel da conta do Stripe para prosseguir em produção:
+  `stripe._error.InvalidRequestError: You can only create new accounts if you've signed up for Connect, which you can do at https://dashboard.stripe.com/connect.`

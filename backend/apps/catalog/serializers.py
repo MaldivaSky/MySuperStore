@@ -51,8 +51,12 @@ class CategoryTreeSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "slug", "description", "image", "order", "children"]
 
     def get_children(self, obj):
-        qs = obj.children.filter(is_active=True).order_by("order", "name")
-        return CategoryTreeSerializer(qs, many=True, context=self.context).data
+        children_map = self.context.get("children_map")
+        if children_map is not None:
+            children = children_map.get(obj.id, [])
+        else:
+            children = obj.children.filter(is_active=True).order_by("order", "name")
+        return CategoryTreeSerializer(children, many=True, context=self.context).data
 
 
 # ── Reviews ──────────────────────────────────────────────────────────────────

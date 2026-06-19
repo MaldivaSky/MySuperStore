@@ -12,6 +12,7 @@ class SubOrderInline(admin.TabularInline):
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = ("order_number", "user", "total", "status", "created_at")
+    list_select_related = ("user",)
     list_filter = ("status",)
     search_fields = ("order_number", "user__email")
     readonly_fields = ("created_at", "updated_at", "order_number")
@@ -27,5 +28,6 @@ class OrderItemInline(admin.TabularInline):
 @admin.register(SubOrder)
 class SubOrderAdmin(admin.ModelAdmin):
     list_display = ("order", "seller", "seller_amount", "commission", "status")
+    list_select_related = ("order", "seller")
     list_filter = ("status", "seller")
     inlines = [OrderItemInline]
