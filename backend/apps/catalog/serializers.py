@@ -1,7 +1,15 @@
-from rest_framework import serializers
+﻿from rest_framework import serializers
+from django.utils import timezone
 
-from .models import AttributeValue, Category, Product, ProductImage, ProductVariant, ReviewRating
+from .models import (
+    AttributeValue, Banner, Category, Product, ProductImage,
+    ProductSpecification, ProductVariant, ReviewRating,
+)
 
+PROFANITY = {"merda", "bosta", "caralho", "porra", "fuder", "arrombado", "safado", "idiota"}
+
+
+# -- Atributos -----------------------------------------------------------------
 
 class AttributeValueSerializer(serializers.ModelSerializer):
     attribute_name = serializers.CharField(source="attribute.name", read_only=True)
@@ -11,11 +19,29 @@ class AttributeValueSerializer(serializers.ModelSerializer):
         fields = ["id", "attribute_name", "value"]
 
 
+# -- Imagens -------------------------------------------------------------------
+
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
         fields = ["id", "image", "is_primary", "order"]
 
+
+class ProductImageUploadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductImage
+        fields = ["id", "image", "is_primary", "order"]
+
+
+# -- Especificacoes ------------------------------------------------------------
+
+class ProductSpecificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductSpecification
+        fields = ["id", "attribute_name", "attribute_value"]
+
+
+# -- Variantes (leitura) -------------------------------------------------------
 
 class ProductVariantSerializer(serializers.ModelSerializer):
     attributes = AttributeValueSerializer(many=True, read_only=True)
@@ -26,14 +52,41 @@ class ProductVariantSerializer(serializers.ModelSerializer):
         fields = ["id", "sku", "attributes", "price", "effective_price", "stock", "is_active"]
 
     def get_effective_price(self, obj):
-        # base_price já está no contexto via product — evita N+1
         product = self.context.get("product")
+        if product and product.is_on_sale:
+            return product.promotional_price
         if obj.price is not None:
             return obj.price
         return product.base_price if product else None
 
 
-# ── Categorias ────────────────────────────────────────────────────────────────
+# -- Variantes (escrita) -------------------------------------------------------
+
+class ProductVariantWriteSerializer(serializers.ModelSerializer):
+    attributes = serializers.PrimaryKeyRelatedField(
+        queryset=AttributeValue.objects.all(), many=True, required=False
+    )
+
+    class Meta:
+        model = ProductVariant
+        fields = ["sku", "attributes", "price", "stock", "is_active"]
+
+    def validate_sku(self, value):
+        qs = ProductVariant.objects.filter(sku=value)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("Este SKU ja esta em uso.")
+        return value
+
+
+class ProductVariantUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductVariant
+        fields = ["price", "stock", "is_active"]
+
+
+# -- Categorias ----------------------------------------------------------------
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -42,8 +95,6 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class CategoryTreeSerializer(serializers.ModelSerializer):
-    """Serializer recursivo para árvore de categorias."""
-
     children = serializers.SerializerMethodField()
 
     class Meta:
@@ -52,14 +103,15 @@ class CategoryTreeSerializer(serializers.ModelSerializer):
 
     def get_children(self, obj):
         children_map = self.context.get("children_map")
-        if children_map is not None:
-            children = children_map.get(obj.id, [])
-        else:
-            children = obj.children.filter(is_active=True).order_by("order", "name")
+        children = (
+            children_map.get(obj.id, [])
+            if children_map is not None
+            else list(obj.children.filter(is_active=True).order_by("order", "name"))
+        )
         return CategoryTreeSerializer(children, many=True, context=self.context).data
 
 
-# ── Reviews ──────────────────────────────────────────────────────────────────
+# -- Reviews -------------------------------------------------------------------
 
 class ReviewSerializer(serializers.ModelSerializer):
     user_name = serializers.SerializerMethodField()
@@ -82,8 +134,40 @@ class SubmitReviewSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("A nota deve estar entre 1 e 5.")
         return value
 
+    def validate_body(self, value):
+        if value and any(w in value.lower() for w in PROFANITY):
+            self._has_profanity = True
+        return value
 
-# ── Produtos ─────────────────────────────────────────────────────────────────
+    def create(self, validated_data):
+        review_status = "rejected" if getattr(self, "_has_profanity", False) else "approved"
+        return ReviewRating.objects.create(**validated_data, status=review_status)
+
+
+# -- Promocao relampago --------------------------------------------------------
+
+class SetPromoSerializer(serializers.Serializer):
+    promotional_price = serializers.DecimalField(
+        max_digits=10, decimal_places=2, allow_null=True, required=False
+    )
+    promo_ends_at = serializers.DateTimeField(allow_null=True, required=False)
+
+    def validate(self, data):
+        promo_price = data.get("promotional_price")
+        promo_ends = data.get("promo_ends_at")
+        if promo_price is not None:
+            if promo_ends is None:
+                raise serializers.ValidationError(
+                    {"promo_ends_at": "Informe a data/hora de termino da promocao."}
+                )
+            if promo_ends <= timezone.now():
+                raise serializers.ValidationError(
+                    {"promo_ends_at": "A data de termino deve ser no futuro."}
+                )
+        return data
+
+
+# -- Produtos (leitura) --------------------------------------------------------
 
 class ProductListSerializer(serializers.ModelSerializer):
     seller_name = serializers.CharField(source="seller.store_name", read_only=True)
@@ -93,12 +177,16 @@ class ProductListSerializer(serializers.ModelSerializer):
     avg_rating = serializers.FloatField(read_only=True)
     review_count = serializers.IntegerField(read_only=True)
     min_price = serializers.SerializerMethodField()
+    is_flash_sale = serializers.SerializerMethodField()
+    discount_percentage = serializers.SerializerMethodField()
+    time_remaining_seconds = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
             "id", "name", "slug",
-            "base_price", "min_price",
+            "base_price", "promotional_price", "min_price",
+            "is_flash_sale", "discount_percentage", "time_remaining_seconds",
             "seller_name", "seller_slug",
             "category_name",
             "primary_image",
@@ -120,6 +208,8 @@ class ProductListSerializer(serializers.ModelSerializer):
         return None
 
     def get_min_price(self, obj):
+        if obj.is_on_sale:
+            return obj.promotional_price
         variants = getattr(obj, "active_variants", None)
         if variants is None:
             variants = list(obj.variants.filter(is_active=True))
@@ -128,24 +218,105 @@ class ProductListSerializer(serializers.ModelSerializer):
         prices = [v.price if v.price is not None else obj.base_price for v in variants]
         return min(prices)
 
+    def get_is_flash_sale(self, obj):
+        return obj.is_on_sale
+
+    def get_discount_percentage(self, obj):
+        if obj.is_on_sale and obj.promotional_price and obj.base_price > 0:
+            pct = ((obj.base_price - obj.promotional_price) / obj.base_price) * 100
+            return round(float(pct))
+        return 0
+
+    def get_time_remaining_seconds(self, obj):
+        if obj.is_on_sale and obj.promo_ends_at:
+            delta = obj.promo_ends_at - timezone.now()
+            secs = delta.total_seconds()
+            return int(secs) if secs > 0 else 0
+        return 0
+
 
 class ProductDetailSerializer(ProductListSerializer):
     images = ProductImageSerializer(many=True, read_only=True, source="prefetched_images")
+    specifications = ProductSpecificationSerializer(many=True, read_only=True)
     variants = serializers.SerializerMethodField()
     reviews = serializers.SerializerMethodField()
 
     class Meta(ProductListSerializer.Meta):
         fields = ProductListSerializer.Meta.fields + [
-            "description", "images", "variants", "reviews",
-            "meta_title", "meta_description", "updated_at",
+            "description", "images", "specifications", "variants", "reviews",
+            "meta_title", "meta_description", "approval_status", "updated_at",
         ]
 
     def get_variants(self, obj):
         variants = getattr(obj, "active_variants", None)
         if variants is None:
-            variants = list(obj.variants.filter(is_active=True).prefetch_related("attributes__attribute"))
-        return ProductVariantSerializer(variants, many=True, context={**self.context, "product": obj}).data
+            variants = list(
+                obj.variants.filter(is_active=True).prefetch_related("attributes__attribute")
+            )
+        return ProductVariantSerializer(
+            variants, many=True, context={**self.context, "product": obj}
+        ).data
 
     def get_reviews(self, obj):
-        reviews = obj.reviews.filter(is_approved=True).select_related("user").order_by("-created_at")[:20]
-        return ReviewSerializer(reviews, many=True, context=self.context).data
+        qs = (
+            obj.reviews.filter(status="approved")
+            .select_related("user")
+            .order_by("-created_at")[:20]
+        )
+        return ReviewSerializer(qs, many=True, context=self.context).data
+
+
+# -- Produtos (escrita - vendedor) ---------------------------------------------
+
+class ProductCreateSerializer(serializers.ModelSerializer):
+    slug = serializers.SlugField(required=False, allow_blank=True)
+
+    class Meta:
+        model = Product
+        fields = [
+            "name", "slug", "category", "brand", "description",
+            "base_price", "is_available",
+            "meta_title", "meta_description",
+        ]
+
+    def validate_base_price(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("O preco deve ser maior que zero.")
+        return value
+
+    def validate(self, data):
+        from django.utils.text import slugify
+        slug = data.get("slug", "").strip()
+        if not slug:
+            base = slugify(data["name"])
+            slug, n = base, 1
+            while Product.objects.filter(slug=slug).exists():
+                slug = f"{base}-{n}"
+                n += 1
+        elif Product.objects.filter(slug=slug).exists():
+            raise serializers.ValidationError({"slug": "Este slug ja esta em uso."})
+        data["slug"] = slug
+        return data
+
+
+class ProductUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = [
+            "name", "category", "brand", "description",
+            "base_price", "is_available",
+            "meta_title", "meta_description",
+        ]
+
+    def validate_base_price(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("O preco deve ser maior que zero.")
+        return value
+
+
+# -- Banners -------------------------------------------------------------------
+
+class BannerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Banner
+        fields = ["id", "title", "subtitle", "cta_text", "image", "link_url", "order"]

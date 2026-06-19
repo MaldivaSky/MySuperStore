@@ -20,8 +20,12 @@ class Seller(models.Model):
     description = models.TextField(blank=True)
     logo = models.ImageField(upload_to="sellers/logos/", blank=True, null=True)
     banner = models.ImageField(upload_to="sellers/banners/", blank=True, null=True)
-    # Comissão da plataforma: 0.0300 = 3%
-    commission_rate = models.DecimalField(max_digits=5, decimal_places=4, default="0.0300")
+    # Comissão da plataforma: Padrão 15% (0.1500)
+    commission_rate = models.DecimalField(max_digits=5, decimal_places=4, default="0.1500")
+    
+    # Moderação e Banimento
+    strike_count = models.PositiveIntegerField(default=0, help_text="Quantidade de infrações graves (produtos ilícitos).")
+    
     status = models.CharField(max_length=20, choices=SellerStatus.choices, default=SellerStatus.PENDING)
     # Stripe Connect — preenchido após onboarding do vendedor
     stripe_account_id = models.CharField(max_length=100, blank=True)

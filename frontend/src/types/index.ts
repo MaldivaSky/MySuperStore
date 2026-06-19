@@ -45,20 +45,36 @@ export interface ProductImage {
   order: number;
 }
 
+export interface Brand {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export interface Product {
   id: string;
   seller_name: string;
   seller_slug: string;
-  category: string;
+  category: string | null;
+  category_name?: string;
+  brand?: Brand | null;
   name: string;
   slug: string;
   description: string;
   base_price: string;
+  promotional_price: string | null;
+  min_price: string;
+  is_flash_sale: boolean;
+  discount_percentage: number;
+  time_remaining_seconds: number;
+  primary_image: string | null;
   images: ProductImage[];
   variants: ProductVariant[];
-  avg_rating: number;
+  avg_rating: number | null;
   review_count: number;
   is_available: boolean;
+  approval_status?: string;
+  specifications?: Array<{ attribute_name: string; attribute_value: string }>;
   created_at: string;
 }
 

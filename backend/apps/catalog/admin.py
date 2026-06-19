@@ -52,12 +52,13 @@ class AttributeValueAdmin(admin.ModelAdmin):
 
 @admin.register(ReviewRating)
 class ReviewRatingAdmin(admin.ModelAdmin):
-    list_display = ("product", "user", "rating", "is_approved", "created_at")
+    list_display = ("__str__", "product", "user", "status", "created_at")
     list_select_related = ("product", "user")
-    list_filter = ("is_approved", "rating")
-    search_fields = ("product__name", "user__email")
+    list_filter = ("status", "rating", "created_at")
+    search_fields = ("product__name", "user__email", "subject", "body")
+    readonly_fields = ("created_at", "updated_at")
     actions = ["approve_reviews"]
 
     @admin.action(description="Aprovar avaliações selecionadas")
     def approve_reviews(self, request, queryset):
-        queryset.update(is_approved=True)
+        queryset.update(status="approved")

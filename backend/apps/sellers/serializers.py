@@ -74,6 +74,8 @@ class SellerApplySerializer(serializers.ModelSerializer):
 class SellerDashboardSerializer(serializers.ModelSerializer):
     """Dados do painel do próprio vendedor (autenticado)."""
 
+    # stripe_authorized é @property no model — precisa ser declarado explicitamente
+    stripe_authorized = serializers.BooleanField(read_only=True)
     total_products = serializers.SerializerMethodField()
     available_products = serializers.SerializerMethodField()
     total_orders = serializers.SerializerMethodField()
@@ -83,7 +85,8 @@ class SellerDashboardSerializer(serializers.ModelSerializer):
         model = Seller
         fields = [
             "id", "store_name", "slug", "status", "commission_rate",
-            "stripe_authorized", "pix_key",
+            "stripe_authorized", "stripe_onboarding_complete", "pix_key",
+            "strike_count",
             "total_products", "available_products",
             "total_orders", "pending_payout",
         ]

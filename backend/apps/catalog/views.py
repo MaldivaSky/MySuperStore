@@ -1,46 +1,50 @@
+﻿from collections import defaultdict
+
 from django.db.models import Avg, Count, Prefetch, Q
+from django.utils import timezone
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from .filters import ProductFilter
-from .models import Category, Product, ProductImage, ProductVariant, ReviewRating
+from .models import Banner, Category, Product, ProductImage, ProductVariant, ReviewRating
 from .serializers import (
+    BannerSerializer,
     CategorySerializer,
     CategoryTreeSerializer,
     ProductDetailSerializer,
     ProductListSerializer,
     ReviewSerializer,
+    SetPromoSerializer,
     SubmitReviewSerializer,
 )
 
+
+# -- Categorias ----------------------------------------------------------------
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Category.objects.filter(is_active=True).order_by("order", "name")
     serializer_class = CategorySerializer
     permission_classes = [permissions.AllowAny]
     lookup_field = "slug"
-    pagination_class = None  # retorna todas as categorias sem paginação
+    pagination_class = None
 
     @action(detail=False, methods=["get"], url_path="tree")
     def tree(self, request):
-        """GET /catalog/categories/tree/ — árvore hierárquica de categorias."""
+        """GET /catalog/categories/tree/ -- arvore hierarquica sem N+1."""
         categories = list(self.get_queryset())
-        
-        from collections import defaultdict
         children_map = defaultdict(list)
         for cat in categories:
             if cat.parent_id is not None:
                 children_map[cat.parent_id].append(cat)
-                
         roots = [cat for cat in categories if cat.parent_id is None]
         serializer = CategoryTreeSerializer(
-            roots,
-            many=True,
-            context={"request": request, "children_map": children_map},
+            roots, many=True, context={"request": request, "children_map": children_map}
         )
         return Response(serializer.data)
 
+
+# -- Produtos (vitrine publica) ------------------------------------------------
 
 class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.AllowAny]
@@ -69,8 +73,8 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
                 ),
             )
             .annotate(
-                avg_rating=Avg("reviews__rating", filter=Q(reviews__is_approved=True)),
-                review_count=Count("reviews", filter=Q(reviews__is_approved=True)),
+                avg_rating=Avg("reviews__rating", filter=Q(reviews__status="approved")),
+                review_count=Count("reviews", filter=Q(reviews__status="approved")),
             )
         )
 
@@ -79,39 +83,103 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             return ProductDetailSerializer
         return ProductListSerializer
 
-    @action(
-        detail=True,
-        methods=["get", "post"],
-        url_path="reviews",
-    )
+    # -- Reviews ---------------------------------------------------------------
+
+    @action(detail=True, methods=["get", "post"], url_path="reviews")
     def reviews(self, request, slug=None):
         """
-        GET  /catalog/products/{slug}/reviews/ — lista avaliações aprovadas (público)
-        POST /catalog/products/{slug}/reviews/ — envia avaliação (autenticado)
+        GET  -- lista avaliacoes aprovadas (publico)
+        POST -- envia avaliacao (autenticado)
         """
         product = self.get_object()
 
         if request.method == "POST":
             if not request.user.is_authenticated:
                 return Response(
-                    {"detail": "Autenticação necessária para avaliar."},
+                    {"detail": "Autenticacao necessaria para avaliar."},
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
             if ReviewRating.objects.filter(product=product, user=request.user).exists():
                 return Response(
-                    {"detail": "Você já avaliou este produto."},
+                    {"detail": "Voce ja avaliou este produto."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            serializer = SubmitReviewSerializer(data=request.data)
+            serializer = SubmitReviewSerializer(
+                data=request.data, context={"request": request}
+            )
             serializer.is_valid(raise_exception=True)
             serializer.save(product=product, user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        # GET
-        reviews = (
-            ReviewRating.objects.filter(product=product, is_approved=True)
+        qs = (
+            ReviewRating.objects.filter(product=product, status="approved")
             .select_related("user")
             .order_by("-created_at")
         )
-        serializer = ReviewSerializer(reviews, many=True, context={"request": request})
+        serializer = ReviewSerializer(qs, many=True, context={"request": request})
         return Response(serializer.data)
+
+    # -- Promocao relampago (lojista) -----------------------------------------
+
+    @action(detail=True, methods=["patch"], url_path="set-promo")
+    def set_promo(self, request, slug=None):
+        """
+        PATCH /catalog/products/{slug}/set-promo/
+        Lojista ativa ou desativa oferta relampago no proprio produto.
+        Envie promotional_price=null para cancelar a promocao.
+        """
+        if not request.user.is_authenticated or not hasattr(request.user, "seller_profile"):
+            return Response(
+                {"detail": "Apenas lojistas podem criar promocoes."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Busca sem filtro de disponibilidade -- lojista pode promover rascunhos
+        try:
+            product = Product.objects.get(
+                slug=slug, seller=request.user.seller_profile
+            )
+        except Product.DoesNotExist:
+            return Response(
+                {"detail": "Produto nao encontrado ou nao pertence a sua loja."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = SetPromoSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        promo_price = data.get("promotional_price")
+        if promo_price is not None:
+            if promo_price >= product.base_price:
+                return Response(
+                    {"detail": "O preco promocional deve ser menor que o preco base."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            product.promotional_price = promo_price
+            product.promo_starts_at = timezone.now()
+            product.promo_ends_at = data["promo_ends_at"]
+        else:
+            # Cancela a promocao
+            product.promotional_price = None
+            product.promo_starts_at = None
+            product.promo_ends_at = None
+
+        product.save(update_fields=["promotional_price", "promo_starts_at", "promo_ends_at"])
+        return Response(
+            {
+                "detail": "Promocao atualizada.",
+                "is_flash_sale": product.is_on_sale,
+                "promotional_price": product.promotional_price,
+                "promo_ends_at": product.promo_ends_at,
+            }
+        )
+
+
+# -- Banners -------------------------------------------------------------------
+
+class BannerViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Banner.objects.filter(active=True).order_by("order")
+    serializer_class = BannerSerializer
+    permission_classes = [permissions.AllowAny]
+    pagination_class = None

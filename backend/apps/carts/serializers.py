@@ -15,12 +15,17 @@ class CartItemSerializer(serializers.ModelSerializer):
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
+    subtotal = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     item_count = serializers.IntegerField(read_only=True)
+    coupon_code = serializers.CharField(source="coupon.code", read_only=True, default=None)
 
     class Meta:
         model = Cart
-        fields = ["id", "items", "total", "item_count"]
+        fields = ["id", "items", "subtotal", "total", "item_count", "coupon_code"]
+
+class ApplyCouponSerializer(serializers.Serializer):
+    code = serializers.CharField(max_length=50)
 
 
 class AddToCartSerializer(serializers.Serializer):

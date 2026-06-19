@@ -4,10 +4,16 @@ from django.db import transaction
 from rest_framework import serializers
 from apps.carts.models import Cart
 from apps.catalog.models import ProductVariant
-from .models import Order, OrderItem, SubOrder
+from .models import Order, OrderItem, SubOrder, ReturnRequest
 
+class ReturnRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReturnRequest
+        fields = ["id", "reason", "status", "customer_notes", "seller_notes", "created_at", "updated_at"]
 
 class OrderItemSerializer(serializers.ModelSerializer):
+    return_request = ReturnRequestSerializer(read_only=True)
+
     class Meta:
         model = OrderItem
         fields = [
@@ -18,6 +24,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "quantity",
             "unit_price",
             "total",
+            "return_request",
             "created_at",
         ]
 

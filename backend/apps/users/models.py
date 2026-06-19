@@ -63,3 +63,22 @@ class Address(models.Model):
 
     def __str__(self):
         return f"{self.label} — {self.logradouro}, {self.numero}, {self.cidade}/{self.uf}"
+
+
+class AffiliateLink(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="affiliate_links")
+    product = models.ForeignKey("catalog.Product", on_delete=models.CASCADE, related_name="affiliate_links")
+    tracking_code = models.CharField(max_length=50, unique=True)
+    clicks = models.PositiveIntegerField(default=0)
+    conversions = models.PositiveIntegerField(default=0)
+    commission_earned = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "link de afiliado"
+        verbose_name_plural = "links de afiliados"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Afiliado {self.user.email} - Produto {self.product.name}"

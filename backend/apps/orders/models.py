@@ -12,6 +12,22 @@ class OrderStatus(models.TextChoices):
     CANCELLED = "cancelled", "Cancelado"
     REFUNDED = "refunded", "Reembolsado"
 
+class Coupon(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    code = models.CharField(max_length=50, unique=True)
+    seller = models.ForeignKey("sellers.Seller", on_delete=models.CASCADE, null=True, blank=True, related_name="coupons")
+    discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    valid_from = models.DateTimeField()
+    valid_to = models.DateTimeField()
+    active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "cupom"
+        verbose_name_plural = "cupons"
+
+    def __str__(self):
+        return self.code
 
 class Order(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -88,3 +104,33 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity}x {self.product_name}"
+
+class ReturnStatus(models.TextChoices):
+    REQUESTED = "requested", "Solicitado"
+    APPROVED = "approved", "Aprovado (Aguardando Envio)"
+    SHIPPED_BACK = "shipped_back", "Em Devolução (Correios)"
+    REFUNDED = "refunded", "Estornado"
+    REJECTED = "rejected", "Rejeitado"
+
+class ReturnReason(models.TextChoices):
+    REMORSE = "remorse", "Arrependimento (7 dias)"
+    DEFECT = "defect", "Produto com defeito"
+    WRONG = "wrong", "Produto errado"
+    LATE = "late", "Atraso extremo na entrega"
+
+class ReturnRequest(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    order_item = models.OneToOneField(OrderItem, on_delete=models.CASCADE, related_name="return_request")
+    reason = models.CharField(max_length=20, choices=ReturnReason.choices)
+    status = models.CharField(max_length=20, choices=ReturnStatus.choices, default=ReturnStatus.REQUESTED)
+    customer_notes = models.TextField(blank=True)
+    seller_notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "solicitação de devolução"
+        verbose_name_plural = "solicitações de devolução"
+
+    def __str__(self):
+        return f"Devolução: {self.order_item.product_name} - {self.status}"

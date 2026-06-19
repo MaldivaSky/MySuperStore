@@ -14,7 +14,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["email", "first_name", "last_name", "phone", "password", "password_confirm"]
+        fields = ["email", "first_name", "last_name", "phone", "role", "password", "password_confirm"]
 
     def validate(self, data):
         if data["password"] != data.pop("password_confirm"):

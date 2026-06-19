@@ -3,6 +3,16 @@ from django.conf import settings
 from django.db import models
 
 
+class ProductStatus(models.TextChoices):
+    PENDING = "pending", "Em Análise"
+    APPROVED = "approved", "Publicado"
+    BANNED = "banned", "Banido - Ilícito"
+
+class ReviewStatus(models.TextChoices):
+    PENDING = "pending", "Pendente"
+    APPROVED = "approved", "Aprovado"
+    REJECTED = "rejected", "Rejeitado"
+
 class Category(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
@@ -14,6 +24,9 @@ class Category(models.Model):
     )
     order = models.PositiveSmallIntegerField(default=0)
     is_active = models.BooleanField(default=True)
+    
+    # Comissão dinâmica de Categoria (Sobrepõe Lojista e Global)
+    category_commission_rate = models.DecimalField(max_digits=5, decimal_places=4, null=True, blank=True)
 
     class Meta:
         verbose_name = "categoria"
@@ -51,12 +64,33 @@ class Product(models.Model):
     description = models.TextField(blank=True)
     # Preço base — variantes podem ter preço próprio
     base_price = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    # Sistema de Promoções
+    promotional_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    promo_starts_at = models.DateTimeField(null=True, blank=True)
+    promo_ends_at = models.DateTimeField(null=True, blank=True)
+
     is_available = models.BooleanField(default=False)
     # SEO
     meta_title = models.CharField(max_length=70, blank=True)
     meta_description = models.CharField(max_length=160, blank=True)
+    
+    approval_status = models.CharField(max_length=20, choices=ProductStatus.choices, default=ProductStatus.PENDING)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def is_on_sale(self):
+        from django.utils import timezone
+        if self.promotional_price and self.promo_starts_at and self.promo_ends_at:
+            now = timezone.now()
+            return self.promo_starts_at <= now <= self.promo_ends_at
+        return False
+
+    @property
+    def current_price(self):
+        return self.promotional_price if self.is_on_sale else self.base_price
 
     class Meta:
         verbose_name = "produto"
@@ -65,6 +99,20 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
+
+class ProductSpecification(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="specifications")
+    attribute_name = models.CharField(max_length=100)
+    attribute_value = models.CharField(max_length=255)
+
+    class Meta:
+        verbose_name = "especificação técnica"
+        verbose_name_plural = "especificações técnicas"
+        unique_together = [("product", "attribute_name")]
+
+    def __str__(self):
+        return f"{self.product.name} - {self.attribute_name}: {self.attribute_value}"
 
 
 class ProductImage(models.Model):
@@ -116,6 +164,8 @@ class ProductVariant(models.Model):
 
     @property
     def effective_price(self):
+        if self.product.is_on_sale:
+            return self.product.promotional_price
         return self.price if self.price is not None else self.product.base_price
 
 
@@ -141,7 +191,7 @@ class ReviewRating(models.Model):
     rating = models.DecimalField(max_digits=3, decimal_places=1)
     subject = models.CharField(max_length=150, blank=True)
     body = models.TextField(max_length=1000, blank=True)
-    is_approved = models.BooleanField(default=True)
+    status = models.CharField(max_length=20, choices=ReviewStatus.choices, default=ReviewStatus.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -153,3 +203,21 @@ class ReviewRating(models.Model):
 
     def __str__(self):
         return f"{self.rating}★ — {self.product.name} por {self.user.email}"
+
+class Banner(models.Model):
+    title = models.CharField(max_length=150)
+    subtitle = models.CharField(max_length=150, blank=True)
+    cta_text = models.CharField(max_length=50, blank=True)
+    image = models.ImageField(upload_to="banners/")
+    link_url = models.CharField(max_length=200, blank=True)
+    active = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "banner"
+        verbose_name_plural = "banners"
+        ordering = ["order", "-created_at"]
+
+    def __str__(self):
+        return self.title

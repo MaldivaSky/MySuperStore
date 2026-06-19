@@ -139,3 +139,33 @@ class CartItemDetailView(BaseCartView, generics.GenericAPIView):
         item.delete()
         serializer = CartSerializer(cart, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+from apps.orders.models import Coupon
+from django.utils import timezone
+from .serializers import ApplyCouponSerializer
+
+class ApplyCouponView(BaseCartView, generics.GenericAPIView):
+    permission_classes = [permissions.AllowAny]
+    serializer_class = ApplyCouponSerializer
+
+    def post(self, request):
+        """POST /api/v1/cart/apply_coupon/"""
+        cart = self.get_cart(request)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        code = serializer.validated_data["code"]
+
+        try:
+            coupon = Coupon.objects.get(code=code, active=True)
+        except Coupon.DoesNotExist:
+            return Response({"detail": "Cupom inválido ou expirado."}, status=status.HTTP_400_BAD_REQUEST)
+
+        now = timezone.now()
+        if not (coupon.valid_from <= now <= coupon.valid_to):
+            return Response({"detail": "Este cupom não está vigente."}, status=status.HTTP_400_BAD_REQUEST)
+
+        cart.coupon = coupon
+        cart.save()
+
+        return Response(CartSerializer(cart, context={"request": request}).data)
+

@@ -11,6 +11,7 @@ class Cart(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name="cart"
     )
     session_key = models.CharField(max_length=40, blank=True)
+    coupon = models.ForeignKey("orders.Coupon", on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -22,8 +23,31 @@ class Cart(models.Model):
         return f"Carrinho de {self.user or self.session_key}"
 
     @property
+    def subtotal(self):
+        return sum(item.subtotal for item in self.items.all())
+
+    @property
     def total(self):
-        return self.items.aggregate(total=Sum("subtotal"))["total"] or 0
+        base_total = self.subtotal
+        if not self.coupon or not self.coupon.active:
+            return base_total
+            
+        discount = 0
+        if self.coupon.seller:
+            # Coupon only applies to items from this seller
+            seller_items_total = sum(item.subtotal for item in self.items.all() if item.variant.product.seller == self.coupon.seller)
+            if self.coupon.discount_percentage:
+                discount = seller_items_total * (self.coupon.discount_percentage / 100)
+            elif self.coupon.discount_amount:
+                discount = min(self.coupon.discount_amount, seller_items_total)
+        else:
+            # Global coupon
+            if self.coupon.discount_percentage:
+                discount = base_total * (self.coupon.discount_percentage / 100)
+            elif self.coupon.discount_amount:
+                discount = min(self.coupon.discount_amount, base_total)
+                
+        return max(base_total - discount, 0)
 
     @property
     def item_count(self):

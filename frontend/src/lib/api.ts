@@ -47,12 +47,16 @@ export const authApi = {
     api.post<TokenPair>("/auth/login/", { email, password }),
   refresh: (refresh: string) => api.post<{ access: string }>("/auth/refresh/", { refresh }),
   me: () => api.get("/users/me/"),
+  updateProfile: (data: any) => api.put("/users/me/", data),
 };
 
 export const catalogApi = {
   products: (params?: Record<string, unknown>) => api.get("/catalog/products/", { params }),
   product: (slug: string) => api.get(`/catalog/products/${slug}/`),
   categories: () => api.get("/catalog/categories/"),
+  tree: () => api.get("/catalog/categories/tree/"),
+  setPromo: (slug: string, data: { promotional_price: number | null, promo_ends_at: string | null }) => 
+    api.patch(`/catalog/products/${slug}/set-promo/`, data),
 };
 
 export const cartApi = {
@@ -64,12 +68,74 @@ export const cartApi = {
   removeItem: (itemId: string) => api.delete(`/cart/items/${itemId}/`),
 };
 
+export const sellerApi = {
+  me: () => api.get("/sellers/me/"),
+  apply: (data: { store_name: string; description: string; pix_key: string }) =>
+    api.post("/sellers/apply/", data),
+  onboard: (returnUrl: string, refreshUrl: string) =>
+    api.post<{ onboarding_url: string }>("/sellers/me/stripe-onboard/", {
+      return_url: returnUrl,
+      refresh_url: refreshUrl,
+    }),
+  stripeCallback: () => api.get("/sellers/me/stripe-callback/"),
+};
+
+export const ordersApi = {
+  getAll: () => api.get("/orders/"),
+  get: (orderNumber: string) => api.get(`/orders/${orderNumber}/`),
+  create: (data: any) => api.post("/orders/", data),
+};
+
+export const returnsApi = {
+  requestReturn: (orderItemId: string, reason: string, customerNotes: string) => 
+    api.post("/orders/returns/", {
+      order_item_id: orderItemId,
+      reason,
+      customer_notes: customerNotes
+    }),
+  updateStatus: (returnId: string, status: string, sellerNotes?: string) => 
+    api.patch(`/orders/returns/${returnId}/update_status/`, {
+      status,
+      seller_notes: sellerNotes
+    }),
+};
+
+export const wishlistApi = {
+  get: async () => {
+    const list = JSON.parse(localStorage.getItem("wishlist") || "[]");
+    return { data: list };
+  },
+  add: async (product: any) => {
+    const list = JSON.parse(localStorage.getItem("wishlist") || "[]");
+    if (!list.find((item: any) => item.product.id === product.id)) {
+      list.push({ id: product.id, product });
+      localStorage.setItem("wishlist", JSON.stringify(list));
+    }
+    return { data: { success: true } };
+  },
+  remove: async (productId: string) => {
+    let list = JSON.parse(localStorage.getItem("wishlist") || "[]");
+    list = list.filter((item: any) => item.product.id !== productId);
+    localStorage.setItem("wishlist", JSON.stringify(list));
+    return { data: { success: true } };
+  },
+};
+
+export const reviewApi = {
+  getReviews: (productSlug: string) => api.get(`/catalog/products/${productSlug}/reviews/`),
+  submit: (productSlug: string, data: { rating: number; subject: string; body: string }) => 
+    api.post(`/catalog/products/${productSlug}/reviews/`, data),
+};
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface RegisterPayload {
   email: string;
   first_name: string;
   last_name: string;
+  phone?: string;
+  role?: string;
   password: string;
+  password_confirm: string;
 }
 
 interface TokenPair {
