@@ -10,6 +10,7 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 media
+
 *.bat
 
 # If your build process includes running collectstatic, then you probably don't need or want to include staticfiles/
@@ -178,7 +179,10 @@ cython_debug/
 # C extensions
 
 # Distribution / packaging
-
+setup.bat
+setup-github.ps1
+commit-e-push.bat
+abrir-vscode-e-subir.bat
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
