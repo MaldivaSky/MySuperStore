@@ -65,7 +65,7 @@ export function Header() {
     { name: "Loja", href: "/", icon: Store, show: true },
     { name: "Vender Aqui", href: "/vender", icon: Store, show: true },
     { name: "White-Label", href: "/white-label", icon: Zap, show: true },
-    { name: "Painel Lojista", href: "/seller", icon: LayoutDashboard, show: user?.role === "seller" },
+    { name: "Painel Lojista", href: "/seller", icon: LayoutDashboard, show: user?.has_store === true },
     { name: "SuperAdmin", href: "/admin", icon: LayoutDashboard, show: user?.role === "admin" },
   ].filter(link => link.show);
 

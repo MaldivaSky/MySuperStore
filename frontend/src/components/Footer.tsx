@@ -16,7 +16,7 @@ export function Footer() {
               <SaturnMark className="h-10 w-auto drop-shadow-[0_2px_10px_rgba(230,181,60,0.25)]" />
               <div className="flex flex-col leading-none">
                 <span className="font-display font-extrabold text-xl tracking-[-0.02em] text-[#F3EFE6]">MySuperStore</span>
-                <span className="font-mono text-[8px] uppercase tracking-[0.18em] text-saturn-400 mt-1.5">poder &amp; premium</span>
+                <span className="font-mono text-[8px] uppercase tracking-[0.18em] text-saturn-400 mt-1.5">Onde Tudo Orbita Você</span>
               </div>
             </div>
             <p className="text-neutral-400 text-sm leading-relaxed">

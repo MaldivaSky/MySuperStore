@@ -15,6 +15,11 @@ api.interceptors.request.use((config) => {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
   }
+  // Upload de arquivos (avatar): remove o Content-Type JSON para o browser
+  // definir multipart/form-data com o boundary correto.
+  if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  }
   return config;
 });
 
@@ -48,11 +53,24 @@ export const authApi = {
   register: (data: RegisterPayload) => api.post("/auth/register/", data),
   login: (email: string, password: string) =>
     api.post<TokenPair>("/auth/login/", { email, password }),
-  googleLogin: (token: string, role?: string) => 
+  googleLogin: (token: string, role?: string) =>
     api.post("/auth/google/", { token, role }),
   refresh: (refresh: string) => api.post<{ access: string }>("/auth/token/refresh/", { refresh }),
   me: () => api.get("/users/me/"),
-  updateProfile: (data: any) => api.put("/users/me/", data),
+  // MeView aceita apenas PATCH (PUT retornava 405). Suporta JSON e multipart (avatar).
+  updateProfile: (data: any) => api.patch("/users/me/", data),
+  changePassword: (payload: { old_password: string; new_password: string; new_password_confirm: string }) =>
+    api.post("/auth/change-password/", payload),
+};
+
+// Perfil estendido: endereços, survey demográfico
+export const usersApi = {
+  survey: () => api.get("/users/me/survey/"),
+  saveSurvey: (data: Record<string, unknown>) => api.post("/users/me/survey/", data),
+  addresses: () => api.get("/users/me/addresses/"),
+  createAddress: (data: Record<string, unknown>) => api.post("/users/me/addresses/", data),
+  updateAddress: (id: string, data: Record<string, unknown>) => api.patch(`/users/me/addresses/${id}/`, data),
+  deleteAddress: (id: string) => api.delete(`/users/me/addresses/${id}/`),
 };
 
 export const catalogApi = {

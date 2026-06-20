@@ -100,7 +100,7 @@ export function BrandLogo({
         </span>
         {tagline && (
           <span className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-[#B98A2A] mt-1.5">
-            marketplace · poder &amp; premium
+            Onde Tudo Orbita Você
           </span>
         )}
       </span>

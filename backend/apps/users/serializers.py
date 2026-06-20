@@ -72,20 +72,37 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(read_only=True)
     avatar_url = serializers.SerializerMethodField()
+    # Flags de perfil — usados pelo frontend para liberar o Painel do Lojista
+    has_store = serializers.SerializerMethodField()
+    has_products = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
-            "id", "email", "first_name", "last_name", "phone",
-            "role", "full_name", "avatar_url", "is_active", "date_joined",
+            "id", "email", "person_type", "cpf_cnpj", "first_name", "last_name",
+            "phone", "role", "full_name", "avatar_url", "has_store", "has_products",
+            "is_active", "date_joined",
         ]
-        read_only_fields = ["id", "email", "role", "is_active", "date_joined"]
+        read_only_fields = [
+            "id", "email", "person_type", "cpf_cnpj", "role",
+            "has_store", "has_products", "is_active", "date_joined",
+        ]
 
     def get_avatar_url(self, obj):
         request = self.context.get("request")
         if obj.avatar and request:
             return request.build_absolute_uri(obj.avatar.url)
         return None
+
+    def get_has_store(self, obj):
+        """True se o usuário é vendedor com loja aprovada."""
+        seller = getattr(obj, "seller_profile", None)
+        return bool(seller and seller.status == "approved")
+
+    def get_has_products(self, obj):
+        """True se a loja do vendedor já possui ao menos um produto."""
+        seller = getattr(obj, "seller_profile", None)
+        return bool(seller and seller.products.exists())
 
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):

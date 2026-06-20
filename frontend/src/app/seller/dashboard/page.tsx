@@ -47,10 +47,12 @@ function DashboardContent() {
       const { data } = await sellerApi.me();
       setStore(data);
     } catch (err: any) {
-      console.error(err);
-      if (err.response?.status === 403 || err.response?.status === 404) {
+      const st = err.response?.status;
+      if (st === 403 || st === 404) {
+        // Esperado: usuário ainda não tem loja — não é erro, não polui o console
         setErrorType("no_store");
       } else {
+        console.error(err);
         setErrorType("other");
       }
     } finally {

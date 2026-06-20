@@ -2,13 +2,19 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export interface User {
-  id: number;
+  id: string;
   email: string;
   first_name: string;
   last_name: string;
+  full_name?: string;
   role: "customer" | "seller" | "admin";
-  is_seller: boolean;
-  phone?: string;
+  phone?: string | null;
+  cpf_cnpj?: string | null;
+  person_type?: "PF" | "PJ";
+  avatar_url?: string | null;
+  has_store?: boolean;
+  has_products?: boolean;
+  is_seller?: boolean;
   stripe_account_id?: string;
   stripe_onboarding_complete?: boolean;
 }
