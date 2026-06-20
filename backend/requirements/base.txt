@@ -9,6 +9,7 @@ psycopg2-binary==2.9.10
 # Authentication
 djangorestframework-simplejwt==5.3.1
 django-cors-headers==4.6.0
+google-auth==2.30.0
 
 # API extras
 django-filter==24.3

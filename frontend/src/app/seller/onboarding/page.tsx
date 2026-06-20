@@ -15,13 +15,21 @@ import Confetti from "react-confetti";
 export default function SellerOnboardingPage() {
   const router = useRouter();
   
-  // 0 = Regras, 1 = Fase 1 (Base), 2 = Fase 2 (Booster)
+  const { updateUser } = useAuthStore();
+  
+  // 0 = Criação da Loja, 1 = Regras, 2 = Fase 1 (Base), 3 = Fase 2 (Booster)
   const [phase, setPhase] = useState(0);
   
   const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
   const [isLoadingCats, setIsLoadingCats] = useState(true);
 
-  // Fase 1 Data
+  // Fase 0 Data (Store Creation)
+  const [storeName, setStoreName] = useState("");
+  const [storeDescription, setStoreDescription] = useState("");
+  const [storeCpfCnpj, setStoreCpfCnpj] = useState("");
+  const [isSubmittingStore, setIsSubmittingStore] = useState(false);
+
+  // Fase 1 Data (Product Skeleton)
   const [productName, setProductName] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [basePrice, setBasePrice] = useState("");
@@ -46,6 +54,26 @@ export default function SellerOnboardingPage() {
       .finally(() => setIsLoadingCats(false));
   }, []);
 
+  const handleStoreSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingStore(true);
+    try {
+      await sellerDashboardApi.apply({
+        store_name: storeName,
+        description: storeDescription,
+        cpf_cnpj: storeCpfCnpj.replace(/\D/g, '')
+      });
+      // Refresh user role via authApi.me ou atualiza Zustand manualmente
+      updateUser({ is_seller: true, role: "seller" });
+      setPhase(1); // Vai para as Regras do Jogo
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.detail || "Erro ao criar loja. O nome pode já estar em uso.");
+    } finally {
+      setIsSubmittingStore(false);
+    }
+  };
+
   const handlePhase1Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmittingPhase1(true);
@@ -56,7 +84,7 @@ export default function SellerOnboardingPage() {
         base_price: parseFloat(basePrice)
       });
       setCreatedProductId(res.data.id);
-      setPhase(2);
+      setPhase(3); // Vai para o Booster
     } catch (err) {
       console.error(err);
       alert("Erro ao criar o esqueleto do produto. Verifique os dados.");
@@ -116,9 +144,11 @@ export default function SellerOnboardingPage() {
             <span className={`w-3 h-3 rounded-full ${phase >= 1 ? "bg-[#E6B53C] shadow-[0_0_10px_#E6B53C]" : "bg-white/20"}`}></span>
             <div className={`w-8 h-px ${phase >= 2 ? "bg-[#E6B53C]" : "bg-white/20"}`}></div>
             <span className={`w-3 h-3 rounded-full ${phase >= 2 ? "bg-[#E6B53C] shadow-[0_0_10px_#E6B53C]" : "bg-white/20"}`}></span>
+            <div className={`w-8 h-px ${phase >= 3 ? "bg-[#E6B53C]" : "bg-white/20"}`}></div>
+            <span className={`w-3 h-3 rounded-full ${phase >= 3 ? "bg-[#E6B53C] shadow-[0_0_10px_#E6B53C]" : "bg-white/20"}`}></span>
           </div>
           <span className="text-xs font-bold uppercase tracking-wider text-neutral-500 bg-white/5 px-4 py-2 rounded-full border border-white/10">
-            {phase === 0 ? "Preparação" : phase === 1 ? "Criação Básica" : "Booster Algorítmico"}
+            {phase === 0 ? "Fundação da Loja" : phase === 1 ? "Preparação" : phase === 2 ? "Criação Básica" : "Booster Algorítmico"}
           </span>
         </div>
       </header>
@@ -126,10 +156,73 @@ export default function SellerOnboardingPage() {
       <main className="flex-grow flex items-center justify-center p-6 relative z-10">
         <AnimatePresence mode="wait">
           
-          {/* FASE 0: REGRAS DO JOGO */}
+          {/* FASE 0: FUNDAÇÃO DA LOJA */}
           {phase === 0 && (
             <motion.div 
               key="phase0"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              className="max-w-xl w-full bg-[#0A0A15] border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden"
+            >
+              <div className="mb-10 text-center relative z-10">
+                <Store className="w-12 h-12 text-[#E6B53C] mx-auto mb-4" />
+                <h2 className="text-3xl font-black text-white mb-3">Fundação da sua Loja</h2>
+                <p className="text-neutral-400">Como o mundo vai chamar o seu novo império de vendas?</p>
+              </div>
+
+              <form onSubmit={handleStoreSubmit} className="space-y-6 relative z-10">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Nome da Loja</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={storeName}
+                    onChange={e => setStoreName(e.target.value)}
+                    className="w-full mt-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] outline-none transition-colors"
+                    placeholder="Ex: Tech Imports"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">O que você vende? (Bio)</label>
+                  <textarea 
+                    required 
+                    rows={3}
+                    value={storeDescription}
+                    onChange={e => setStoreDescription(e.target.value)}
+                    className="w-full mt-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] outline-none transition-colors resize-none"
+                    placeholder="Especialistas em produtos importados premium..."
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">CPF ou CNPJ</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={storeCpfCnpj}
+                    onChange={e => setStoreCpfCnpj(e.target.value)}
+                    className="w-full mt-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] outline-none transition-colors"
+                    placeholder="000.000.000-00 ou 00.000.000/0001-00"
+                  />
+                </div>
+                <div className="pt-4">
+                  <button 
+                    type="submit"
+                    disabled={isSubmittingStore}
+                    className="w-full py-4 rounded-xl bg-gradient-to-r from-[#E6B53C] to-[#B38F25] text-black font-black hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                  >
+                    {isSubmittingStore ? <Loader2 className="w-6 h-6 animate-spin" /> : <ChevronRight className="w-6 h-6" />}
+                    {isSubmittingStore ? "Criando Vitrine..." : "Criar Vitrine e Avançar"}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          )}
+
+          {/* FASE 1: REGRAS DO JOGO */}
+          {phase === 1 && (
+            <motion.div 
+              key="phase1"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, x: -50 }}
@@ -167,7 +260,7 @@ export default function SellerOnboardingPage() {
                 </div>
 
                 <button 
-                  onClick={() => setPhase(1)}
+                  onClick={() => setPhase(2)}
                   className="group relative inline-flex items-center justify-center gap-3 px-8 py-5 bg-gradient-to-r from-[#E6B53C] to-[#B38F25] text-black font-black rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(230,181,60,0.4)] w-full md:w-auto"
                 >
                   <Store className="w-6 h-6" />
@@ -178,10 +271,10 @@ export default function SellerOnboardingPage() {
             </motion.div>
           )}
 
-          {/* FASE 1: O ESQUELETO */}
-          {phase === 1 && (
+          {/* FASE 2: O ESQUELETO */}
+          {phase === 2 && (
             <motion.div 
-              key="phase1"
+              key="phase2"
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -50 }}
@@ -254,10 +347,10 @@ export default function SellerOnboardingPage() {
             </motion.div>
           )}
 
-          {/* FASE 2: O BOOSTER ALGORÍTMICO */}
-          {phase === 2 && (
+          {/* FASE 3: O BOOSTER ALGORÍTMICO */}
+          {phase === 3 && (
             <motion.div 
-              key="phase2"
+              key="phase3"
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, scale: 0.9 }}

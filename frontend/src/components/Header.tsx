@@ -139,6 +139,18 @@ export function Header() {
 
             {isAuthenticated ? (
               <>
+                {user?.is_seller ? (
+                  <Link href="/seller/dashboard" className="hidden lg:flex items-center gap-2 px-4 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-sm font-semibold text-white transition-all">
+                    <Store className="w-4 h-4 text-primary" />
+                    Painel Lojista
+                  </Link>
+                ) : (
+                  <Link href="/seller/onboarding" className="hidden lg:flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-primary to-[#B38F25] hover:scale-105 rounded-full text-sm font-black text-black transition-all shadow-[0_0_15px_rgba(230,181,60,0.3)]">
+                    <Store className="w-4 h-4" />
+                    Vender
+                  </Link>
+                )}
+
                 <Link href="/dashboard/account" className="p-2 rounded-full hover:bg-white/10 text-neutral-300 hover:text-white transition-colors relative group">
                   <User className="h-5 w-5" />
                   <span className="absolute top-14 right-0 scale-0 group-hover:scale-100 transition-all bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap z-50">Minha Conta</span>

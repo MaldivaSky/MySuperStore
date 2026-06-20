@@ -39,6 +39,7 @@ export const metadata: Metadata = {
 };
 
 import { ToastProvider } from "@/components/ui/Toast";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 export default function RootLayout({
   children,
@@ -54,9 +55,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ToastProvider>
-            {children}
-          </ToastProvider>
+          <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "1019190620170-a86680qpdbrjgu1vk31st0lts4ju3cm5.apps.googleusercontent.com"}>
+            <ToastProvider>
+              {children}
+            </ToastProvider>
+          </GoogleOAuthProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -8,6 +8,7 @@ import { useAuthStore } from "@/store/authStore";
 import { authApi } from "@/lib/api";
 import { motion } from "framer-motion";
 import { LogIn, Mail, Lock, Loader2, AlertCircle } from "lucide-react";
+import { GoogleLogin } from "@react-oauth/google";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -37,6 +38,21 @@ export default function LoginPage() {
       setError(err.response?.data?.detail || "Email ou senha incorretos.");
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    try {
+      setLoading(true);
+      const { data } = await authApi.googleLogin(credentialResponse.credential);
+      localStorage.setItem("access_token", data.access);
+      localStorage.setItem("refresh_token", data.refresh);
+      loginStore({ access: data.access, refresh: data.refresh }, data.user);
+      router.push(data.user.is_seller ? "/seller/dashboard" : "/store");
+    } catch (err: any) {
+      setError(err.response?.data?.detail || "Erro no login do Google.");
     } finally {
       setLoading(false);
     }
@@ -78,6 +94,22 @@ export default function LoginPage() {
             <span>{error}</span>
           </motion.div>
         )}
+
+        <div className="flex justify-center mb-6">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => setError("O login com Google falhou.")}
+            theme="filled_black"
+            text="signin_with"
+            shape="rectangular"
+          />
+        </div>
+
+        <div className="relative flex items-center py-2 mb-4">
+          <div className="flex-grow border-t border-border/60"></div>
+          <span className="flex-shrink-0 mx-4 text-muted-foreground text-xs uppercase tracking-widest font-semibold">Ou continue com email</span>
+          <div className="flex-grow border-t border-border/60"></div>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">

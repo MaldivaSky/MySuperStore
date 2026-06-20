@@ -45,6 +45,8 @@ export const authApi = {
   register: (data: RegisterPayload) => api.post("/auth/register/", data),
   login: (email: string, password: string) =>
     api.post<TokenPair>("/auth/login/", { email, password }),
+  googleLogin: (token: string, role?: string) => 
+    api.post("/auth/google/", { token, role }),
   refresh: (refresh: string) => api.post<{ access: string }>("/auth/token/refresh/", { refresh }),
   me: () => api.get("/users/me/"),
   updateProfile: (data: any) => api.put("/users/me/", data),
@@ -148,6 +150,7 @@ export const chatApi = {
 };
 
 export const sellerDashboardApi = {
+  apply: (data: { store_name: string; description: string; cpf_cnpj?: string }) => api.post("/sellers/apply/", data),
   getLeads: () => api.get("/sellers/me/leads/"),
   getMentor: () => api.get("/sellers/me/mentor/"),
   triggerMentorAction: (action: string, productSlug: string) => 

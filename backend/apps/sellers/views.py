@@ -21,7 +21,6 @@ class SellerPublicViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.AllowAny]
     lookup_field = "slug"
 
-
 # -- Candidatura --------------------------------------------------------------
 
 class SellerApplyView(generics.CreateAPIView):
@@ -36,6 +35,13 @@ class SellerApplyView(generics.CreateAPIView):
             )
         return super().create(request, *args, **kwargs)
 
+    def perform_create(self, serializer):
+        from apps.sellers.models import SellerStatus
+        seller = serializer.save(status=SellerStatus.APPROVED)
+        user = self.request.user
+        if user.role != "seller":
+            user.role = "seller"
+            user.save(update_fields=["role"])
 
 # -- Painel do vendedor --------------------------------------------------------
 
@@ -49,7 +55,6 @@ class SellerMeView(generics.RetrieveUpdateAPIView):
         if self.request.method in ("PUT", "PATCH"):
             return SellerUpdateSerializer
         return SellerDashboardSerializer
-
 
 # -- Stripe Connect onboarding ------------------------------------------------
 

@@ -204,3 +204,6 @@ STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
 # ── Meilisearch ──────────────────────────────────────────────────────────────
 MEILI_HOST = env("MEILI_HOST", default="http://localhost:7700")
 MEILI_MASTER_KEY = env("MEILI_MASTER_KEY", default="devmasterkey")
+
+# ── Google OAuth ─────────────────────────────────────────────────────────────
+GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID", default="1019190620170-a86680qpdbrjgu1vk31st0lts4ju3cm5.apps.googleusercontent.com")

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { SaturnMark } from "@/components/Brand";
@@ -8,6 +8,7 @@ import { useAuthStore } from "@/store/authStore";
 import { authApi, crmApi } from "@/lib/api";
 import { motion } from "framer-motion";
 import { UserPlus, Mail, Lock, User, Phone, Loader2, AlertCircle, CreditCard, Store, Eye, EyeOff } from "lucide-react";
+import { GoogleLogin } from "@react-oauth/google";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -23,7 +24,6 @@ export default function RegisterPage() {
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
-  const [isSeller, setIsSeller] = useState(false);
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -63,6 +63,21 @@ export default function RegisterPage() {
     }
   };
 
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    try {
+      setLoading(true);
+      const { data } = await authApi.googleLogin(credentialResponse.credential, "customer");
+      localStorage.setItem("access_token", data.access);
+      localStorage.setItem("refresh_token", data.refresh);
+      loginStore({ access: data.access, refresh: data.refresh }, data.user);
+      router.push("/");
+    } catch (err: any) {
+      setError(err.response?.data?.detail || "Erro no login do Google.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCpfCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCpfCnpj(formatCpfCnpj(e.target.value, personType));
   };
@@ -81,7 +96,7 @@ export default function RegisterPage() {
         name: `${firstName} ${lastName}`.trim(),
         email: email,
         phone: phone.replace(/\D/g, ''),
-        funnel_type: isSeller ? "lojista" : "comprador",
+        funnel_type: "comprador",
         source: "Register Gateway Abanado"
       });
     } catch (err) {
@@ -103,7 +118,7 @@ export default function RegisterPage() {
         person_type: personType,
         cpf_cnpj: cpfCnpj.replace(/\D/g, ''),
         phone: phone.replace(/\D/g, ''),
-        role: isSeller ? "seller" : "customer",
+        role: "customer",
         password,
         password_confirm: passwordConfirm,
       };
@@ -161,7 +176,7 @@ export default function RegisterPage() {
             Criar sua conta
           </h2>
           <p className="text-sm text-muted-foreground">
-            Compre ou venda em um ecossistema seguro e de alta performance
+            Junte-se a um ecossistema seguro e de alta performance
           </p>
         </div>
 
@@ -175,6 +190,22 @@ export default function RegisterPage() {
             <span>{error}</span>
           </motion.div>
         )}
+
+        <div className="flex justify-center mb-6">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => setError("O login com Google falhou.")}
+            theme="filled_black"
+            text="continue_with"
+            shape="rectangular"
+          />
+        </div>
+
+        <div className="relative flex items-center py-2 mb-4">
+          <div className="flex-grow border-t border-border/60"></div>
+          <span className="flex-shrink-0 mx-4 text-muted-foreground text-xs uppercase tracking-widest font-semibold">Ou continue com email</span>
+          <div className="flex-grow border-t border-border/60"></div>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

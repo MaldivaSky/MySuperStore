@@ -18,6 +18,7 @@ import { ProductModal } from "@/components/ui/ProductModal";
 import { Footer } from "@/components/Footer";
 import { CountdownTimer } from "@/components/ui/CountdownTimer";
 import { OfficialLogo } from "@/components/Brand";
+import { WelcomeModal } from "@/components/ui/WelcomeModal";
 
 // Mock para o banner rotativo principal (Hero)
 const heroBanners = [
@@ -54,6 +55,7 @@ export default function StorePage() {
         <Loader2 className="w-10 h-10 text-primary animate-spin" />
       </div>
     }>
+      <WelcomeModal />
       <StorePageContent />
     </Suspense>
   );

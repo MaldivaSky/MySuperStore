@@ -70,3 +70,72 @@ class ChangePasswordView(APIView):
         request.user.set_password(serializer.validated_data["new_password"])
         request.user.save(update_fields=["password"])
         return Response({"detail": "Senha alterada com sucesso."}, status=status.HTTP_200_OK)
+
+
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from google.oauth2 import id_token
+from google.auth.transport import requests
+
+User = get_user_model()
+
+class GoogleLoginView(APIView):
+    """POST /api/v1/auth/google/ — valida token do google e loga/cria usuário."""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        token = request.data.get("token")
+        role = request.data.get("role", "customer") # se vier do registro seller, vem "seller"
+        
+        if not token:
+            return Response({"detail": "Token não fornecido."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Valida a assinatura do token com o Google
+            idinfo = id_token.verify_oauth2_token(token, requests.Request(), settings.GOOGLE_CLIENT_ID)
+            
+            email = idinfo["email"]
+            first_name = idinfo.get("given_name", "")
+            last_name = idinfo.get("family_name", "")
+            
+            from django.utils import timezone
+            
+            # Busca ou cria o usuário pelo email
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "person_type": "PF",
+                    "role": role,
+                    "is_active": True,
+                    "email_verified_at": timezone.now(),
+                }
+            )
+
+            # Se o usuário já existia mas não estava ativo, ativa agora (pois o Google já validou o email)
+            if not created and not user.is_active:
+                user.is_active = True
+                user.email_verified_at = timezone.now()
+                user.save(update_fields=["is_active", "email_verified_at"])
+
+            # Se o usuário não tinha nome, atualiza
+            if not created and not user.first_name:
+                user.first_name = first_name
+                user.last_name = last_name
+                user.save(update_fields=["first_name", "last_name"])
+
+            # Gera JWT do MySuperStore
+            refresh = RefreshToken.for_user(user)
+            return Response(
+                {
+                    "user": UserProfileSerializer(user, context={"request": request}).data,
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                    "is_new": created
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except ValueError:
+            return Response({"detail": "Token do Google inválido."}, status=status.HTTP_400_BAD_REQUEST)
