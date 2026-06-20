@@ -3,9 +3,12 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { X, Star, ShoppingCart, Loader2, Info, ArrowRight, Heart, MessageSquare, Share2, Clock } from "lucide-react";
-import { catalogApi, cartApi, wishlistApi, reviewApi } from "@/lib/api";
+import { X, Star, ShoppingCart, Loader2, Info, ArrowRight, Heart, MessageSquare, Share2, Clock, Zap, MessageCircle } from "lucide-react";
+import { catalogApi, cartApi, wishlistApi, reviewApi, chatApi } from "@/lib/api";
 import { Product, ProductVariant } from "@/types";
+import { useAuthStore } from "@/store/authStore";
+import { useToast } from "@/components/ui/Toast";
+import { CountdownTimer } from "./CountdownTimer";
 
 interface ProductModalProps {
   slug: string;
@@ -14,8 +17,11 @@ interface ProductModalProps {
 }
 
 export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
-  const [product, setProduct] = useState<Product | null>(null);
+  const [activeSlug, setActiveSlug] = useState(slug);
+  const [product, setProduct] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  const { isAuthenticated, user } = useAuthStore();
   
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
@@ -24,6 +30,14 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
   const [cartMessage, setCartMessage] = useState("");
 
   const [reviews, setReviews] = useState<any[]>([]);
+  const [similarProducts, setSimilarProducts] = useState<any[]>([]);
+  
+  // Chat States
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatRoom, setChatRoom] = useState<any>(null);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatMessageInput, setChatMessageInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
   
   // Q&A States
   const [questions, setQuestions] = useState<{ id: number; user: string; text: string; reply: string | null; replyBy: string | null; date: string }[]>([
@@ -35,16 +49,43 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
   const [isZooming, setIsZooming] = useState(false);
   const [zoomStyle, setZoomStyle] = useState({});
 
+  // Reset active slug when modal reopens
   useEffect(() => {
-    if (!isOpen || !slug) return;
+    if (isOpen) {
+      setActiveSlug(slug);
+    } else {
+      setIsChatOpen(false);
+    }
+  }, [slug, isOpen]);
+
+  // Poll chat messages while open
+  useEffect(() => {
+    if (!isChatOpen || !chatRoom) return;
+    const interval = setInterval(() => {
+      chatApi.listRooms()
+        .then((res) => {
+          const rooms = res.data.results || res.data;
+          const room = rooms.find((r: any) => r.id === chatRoom.id);
+          if (room) setChatMessages(room.messages);
+        })
+        .catch(() => {});
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [isChatOpen, chatRoom]);
+
+  useEffect(() => {
+    if (!isOpen || !activeSlug) return;
     
     setLoading(true);
     setCartMessage("");
     setQuantity(1);
     setIsZooming(false);
     
+    // Track product view in backend
+    catalogApi.track(activeSlug, "view").catch(() => {});
+    
     // Carrega o produto
-    catalogApi.product(slug)
+    catalogApi.product(activeSlug)
       .then((res) => {
         const prod = res.data;
         setProduct(prod);
@@ -56,12 +97,22 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
           const activeVariant = prod.variants.find((v: any) => v.is_active && v.stock > 0) || prod.variants[0];
           setSelectedVariant(activeVariant);
         }
+
+        // Fetch similar products in same category
+        if (prod.category_slug) {
+          catalogApi.products({ category: prod.category_slug, limit: 5 })
+            .then((simRes) => {
+              const filtered = (simRes.data.results || simRes.data).filter((item: any) => item.id !== prod.id);
+              setSimilarProducts(filtered.slice(0, 4));
+            })
+            .catch(() => {});
+        }
       })
       .catch((err) => console.error("Erro ao carregar produto:", err))
       .finally(() => setLoading(false));
 
     // Carrega as reviews
-    reviewApi.getReviews(slug)
+    reviewApi.getReviews(activeSlug)
       .then((res) => setReviews(res.data.results || res.data))
       .catch((err) => console.error("Erro ao carregar avaliações", err));
 
@@ -69,7 +120,7 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [slug, isOpen]);
+  }, [activeSlug, isOpen]);
 
   const handleAddToCart = async () => {
     if (!selectedVariant) return;
@@ -168,7 +219,7 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
                 {/* Thumbnails */}
                 {product.images && product.images.length > 1 && (
                   <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                    {product.images.map((img) => (
+                    {product.images.map((img: any) => (
                       <button
                         key={img.id}
                         onClick={() => setSelectedImage(img.image)}
@@ -207,11 +258,52 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
                     <div className="absolute top-0 right-0 flex items-center gap-2">
                       <button
                         onClick={async () => {
-                          const url = `${window.location.origin}/store?product=${product.id}`;
+                          if (!isAuthenticated) {
+                            toast("Faça login para conversar com o vendedor.", "error");
+                            return;
+                          }
+                          setChatLoading(true);
+                          setIsChatOpen(true);
+                          try {
+                            const res = await chatApi.createRoom({
+                              product_id: product.id,
+                              seller_id: product.seller_id
+                            });
+                            setChatRoom(res.data);
+                            setChatMessages(res.data.messages || []);
+                          } catch (err) {
+                            toast("Erro ao iniciar chat com o vendedor.", "error");
+                          } finally {
+                            setChatLoading(false);
+                          }
+                        }}
+                        className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                        title="Falar com o Vendedor"
+                      >
+                        <MessageSquare className="h-5 w-5" />
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!product) return;
+                          try {
+                            await wishlistApi.add(product);
+                            toast("Produto adicionado aos favoritos com sucesso!", "success");
+                          } catch (err) {
+                            toast("Erro ao adicionar aos favoritos.", "error");
+                          }
+                        }}
+                        className="p-2 rounded-full text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
+                        title="Adicionar aos Favoritos"
+                      >
+                        <Heart className="h-5 w-5" />
+                      </button>
+                      <button
+                        onClick={async () => {
+                          const url = `${window.location.origin}/store?product=${product.slug}`;
                           try {
                             if (navigator.clipboard && window.isSecureContext) {
                               await navigator.clipboard.writeText(url);
-                              alert("Link do produto copiado para a área de transferência!");
+                              toast("Link do produto copiado com sucesso!", "success");
                             } else {
                               prompt("Copie o link abaixo para compartilhar:", url);
                             }
@@ -228,9 +320,9 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
                         onClick={async () => {
                           try {
                             await wishlistApi.add(product);
-                            alert("Produto adicionado aos favoritos!");
+                            toast("Produto adicionado aos favoritos!", "success");
                           } catch (err) {
-                            alert("Faça login para favoritar produtos.");
+                            toast("Faça login para favoritar produtos.", "error");
                           }
                         }}
                         className="p-2 rounded-full text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors"
@@ -246,11 +338,40 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
                   </div>
 
                   {/* Price */}
-                  <div className="py-4 border-y border-border/40">
-                    <span className="text-sm text-muted-foreground">Preço total</span>
-                    <div className="text-3xl font-display font-black text-foreground">
-                      R$ {Number(selectedVariant?.effective_price || product.base_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                    </div>
+                  <div className="py-4 border-y border-border/40 space-y-3">
+                    {product.is_flash_sale ? (
+                      <div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-bold bg-yellow-500 text-black px-2.5 py-1 rounded-md flex items-center gap-1">
+                            <Zap className="w-3.5 h-3.5 fill-current" /> {product.discount_percentage}% OFF
+                          </span>
+                          <span className="text-sm text-muted-foreground line-through">
+                            De: R$ {Number(product.base_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        <div className="text-sm text-yellow-500 font-bold mt-1">
+                          Oferta Relâmpago
+                        </div>
+                        <div className="text-4xl font-display font-black text-yellow-500 mt-0.5">
+                          R$ {Number(selectedVariant?.effective_price || product.promotional_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        </div>
+                        {product.time_remaining_seconds > 0 && (
+                          <div className="mt-3">
+                            <CountdownTimer 
+                              initialSeconds={product.time_remaining_seconds} 
+                              className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 px-4 py-2.5 rounded-xl w-fit" 
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div>
+                        <span className="text-sm text-muted-foreground">Preço total</span>
+                        <div className="text-3xl font-display font-black text-foreground">
+                          R$ {Number(selectedVariant?.effective_price || product.base_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Variants Selector */}
@@ -261,8 +382,8 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
                         {selectedVariant?.stock === 0 && <span className="text-xs text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">Esgotado</span>}
                       </label>
                       <div className="flex flex-wrap gap-2">
-                        {product.variants.map((variant) => {
-                          const attrs = variant.attributes.map(a => a.value).join(", ");
+                        {product.variants.map((variant: any) => {
+                          const attrs = variant.attributes.map((a: any) => a.value).join(", ");
                           const label = attrs || "Padrão";
                           const isSelected = selectedVariant?.id === variant.id;
                           const isOutOfStock = variant.stock === 0;
@@ -432,17 +553,26 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
                     </h3>
                   </div>
                   <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
-                    {[1, 2, 3].map((item) => (
-                      <div key={item} className="shrink-0 w-[200px] snap-start bg-card border border-border/50 rounded-xl p-3 hover:border-primary/50 cursor-pointer transition-colors group">
+                    {similarProducts.length === 0 ? (
+                      <p className="text-xs text-muted-foreground italic p-4 bg-white/[0.01] rounded-xl border border-white/[0.04] w-full text-center">Nenhum produto similar encontrado.</p>
+                    ) : similarProducts.map((item) => (
+                      <div 
+                        key={item.id} 
+                        onClick={() => {
+                          catalogApi.track(item.slug, "click").catch(() => {});
+                          setActiveSlug(item.slug);
+                        }}
+                        className="shrink-0 w-[200px] snap-start bg-card border border-border/50 rounded-xl p-3 hover:border-primary/50 cursor-pointer transition-all hover:scale-[1.02] group"
+                      >
                         <div className="aspect-square bg-secondary/30 rounded-lg mb-3 flex items-center justify-center relative overflow-hidden">
-                          {product.primary_image ? (
-                            <Image src={product.primary_image} alt="Similar" fill className="object-cover opacity-60 group-hover:scale-110 group-hover:opacity-100 transition-all" />
+                          {item.primary_image ? (
+                            <Image src={item.primary_image} alt={item.name} fill className="object-cover opacity-80 group-hover:scale-110 group-hover:opacity-100 transition-all" />
                           ) : (
-                            <span className="text-xs text-muted-foreground">Similar {item}</span>
+                            <span className="text-xs text-muted-foreground">Sem Imagem</span>
                           )}
                         </div>
-                        <p className="text-sm font-semibold text-foreground truncate">Capa Premium Compatível</p>
-                        <p className="text-xs text-primary font-bold mt-1">R$ {(Number(product.base_price) * 0.1).toFixed(2)}</p>
+                        <p className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">{item.name}</p>
+                        <p className="text-xs text-primary font-bold mt-1">R$ {Number(item.base_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
                       </div>
                     ))}
                   </div>
@@ -493,6 +623,103 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
           )}
         </motion.div>
       </div>
+      {/* Floating Chat Drawer */}
+      <AnimatePresence>
+        {isChatOpen && (
+          <motion.div
+            initial={{ opacity: 0, x: 100, y: 50 }}
+            animate={{ opacity: 1, x: 0, y: 0 }}
+            exit={{ opacity: 0, x: 100, y: 50 }}
+            className="fixed bottom-24 right-6 z-[200] w-96 h-[480px] bg-[#0c0c1e] border border-white/[0.08] rounded-3xl shadow-2xl flex flex-col overflow-hidden text-white"
+          >
+            {/* Header */}
+            <div className="p-4 border-b border-white/[0.08] bg-gradient-to-r from-primary/10 to-transparent flex items-center justify-between">
+              <div>
+                <h4 className="font-bold text-sm">Falar com o Vendedor</h4>
+                <p className="text-xs text-neutral-400 truncate max-w-[200px]">
+                  Loja: {product?.seller_name}
+                </p>
+              </div>
+              <button
+                onClick={() => setIsChatOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Message Area */}
+            <div className="flex-1 p-4 overflow-y-auto space-y-3 flex flex-col">
+              {chatLoading ? (
+                <div className="flex-1 flex flex-col items-center justify-center gap-2">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  <span className="text-xs text-neutral-400">Iniciando conversa...</span>
+                </div>
+              ) : chatMessages.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center text-center p-4">
+                  <p className="text-xs text-neutral-500 italic">Nenhuma mensagem ainda. Envie uma mensagem para iniciar!</p>
+                </div>
+              ) : (
+                chatMessages.map((msg: any) => {
+                  const isMe = msg.sender_email === user?.email;
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex flex-col max-w-[80%] ${isMe ? "self-end items-end" : "self-start items-start"}`}
+                    >
+                      <div
+                        className={`p-3 rounded-2xl text-xs leading-relaxed ${
+                          isMe
+                            ? "bg-primary text-primary-foreground rounded-tr-none"
+                            : "bg-white/[0.04] text-white rounded-tl-none border border-white/[0.04]"
+                        }`}
+                      >
+                        {msg.message}
+                      </div>
+                      <span className="text-[9px] text-neutral-500 mt-1">
+                        {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Input area */}
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!chatMessageInput.trim() || !chatRoom) return;
+                const txt = chatMessageInput.trim();
+                setChatMessageInput("");
+                try {
+                  const res = await chatApi.sendMessage(chatRoom.id, txt);
+                  setChatMessages((prev) => [...prev, res.data]);
+                } catch {
+                  toast("Erro ao enviar mensagem.", "error");
+                }
+              }}
+              className="p-3 border-t border-white/[0.08] bg-[#070714] flex gap-2"
+            >
+              <input
+                type="text"
+                placeholder="Digite sua mensagem..."
+                value={chatMessageInput}
+                onChange={(e) => setChatMessageInput(e.target.value)}
+                disabled={chatLoading}
+                className="flex-grow bg-white/[0.03] border border-white/[0.08] focus:border-primary/50 text-white rounded-xl px-3 py-2 text-xs outline-none"
+              />
+              <button
+                type="submit"
+                disabled={chatLoading || !chatMessageInput.trim()}
+                className="bg-primary hover:bg-primary/95 text-primary-foreground font-bold px-3 py-2 rounded-xl text-xs transition-all disabled:opacity-50"
+              >
+                Enviar
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </AnimatePresence>
   );
 }

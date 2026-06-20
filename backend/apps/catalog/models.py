@@ -77,6 +77,9 @@ class Product(models.Model):
     
     approval_status = models.CharField(max_length=20, choices=ProductStatus.choices, default=ProductStatus.PENDING)
     
+    views_count = models.PositiveIntegerField(default=0)
+    clicks_count = models.PositiveIntegerField(default=0)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

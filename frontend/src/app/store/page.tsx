@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { api, wishlistApi } from "@/lib/api";
+import { api, wishlistApi, userApi } from "@/lib/api";
+import { useAuthStore } from "@/store/authStore";
+import { useToast } from "@/components/ui/Toast";
 import { 
   ShoppingBag, Star, TrendingUp, Search, 
   ChevronRight, Heart, Filter, X, Loader2, Zap, Clock
@@ -12,6 +15,7 @@ import {
 import { Header } from "@/components/Header";
 import { ProductModal } from "@/components/ui/ProductModal";
 import { Footer } from "@/components/Footer";
+import { CountdownTimer } from "@/components/ui/CountdownTimer";
 
 // Mock para o banner rotativo principal (Hero)
 const heroBanners = [
@@ -42,9 +46,25 @@ const heroBanners = [
 ];
 
 export default function StorePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#050510]">
+        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+      </div>
+    }>
+      <StorePageContent />
+    </Suspense>
+  );
+}
+
+function StorePageContent() {
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const searchParams = useSearchParams();
+  const search = searchParams.get("search") || "";
+  const { toast } = useToast();
+  const { isAuthenticated } = useAuthStore();
   
   // Filters state
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -66,6 +86,38 @@ export default function StorePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false); // Mobile filter toggle
 
+  // Onboarding Survey State
+  const [showSurveyModal, setShowSurveyModal] = useState(false);
+  const [surveyData, setSurveyData] = useState({
+    is_parent: false,
+    sports_fan: false,
+    is_elderly: false,
+    music_taste: ""
+  });
+
+  // Load product if parameter exists in url (sharing link)
+  const productParam = searchParams.get("product");
+  useEffect(() => {
+    if (productParam) {
+      setSelectedProduct({ slug: productParam });
+      setIsModalOpen(true);
+    }
+  }, [productParam]);
+
+  // Check onboarding survey
+  useEffect(() => {
+    if (isAuthenticated) {
+      userApi.getSurvey()
+        .then((res) => {
+          const d = res.data;
+          if (!d.is_parent && !d.sports_fan && !d.is_elderly && !d.music_taste) {
+            setShowSurveyModal(true);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isAuthenticated]);
+
   useEffect(() => {
     fetchCategories();
   }, []);
@@ -74,7 +126,7 @@ export default function StorePage() {
     setPage(1);
     setHasMore(true);
     fetchProducts(1);
-  }, [selectedCategory, minPrice, maxPrice, brand, rating, ordering, discountMin]);
+  }, [selectedCategory, minPrice, maxPrice, brand, rating, ordering, discountMin, search]);
 
   useEffect(() => {
     if (page > 1) {
@@ -133,6 +185,7 @@ export default function StorePage() {
       if (rating) params.append("rating", rating.toString());
       if (ordering) params.append("ordering", ordering);
       if (discountMin) params.append("discount_min", discountMin.toString());
+      if (search) params.append("search", search);
       params.append("page", pageNum.toString());
 
       const res = await api.get(`/catalog/products/?${params.toString()}`);
@@ -164,6 +217,10 @@ export default function StorePage() {
     setSelectedCategory(null);
     setMinPrice("");
     setMaxPrice("");
+    setBrand(null);
+    setRating(null);
+    setOrdering("");
+    setDiscountMin(null);
   };
 
   return (
@@ -440,10 +497,10 @@ export default function StorePage() {
                       onClick={async (e) => {
                         e.stopPropagation(); // Previne abrir o modal do produto
                         try {
-                          await wishlistApi.add(product.id);
-                          alert("Produto adicionado aos favoritos!");
+                          await wishlistApi.add(product);
+                          toast("Produto adicionado aos favoritos!", "success");
                         } catch (err) {
-                          alert("Faça login para favoritar produtos.");
+                          toast("Faça login para favoritar produtos.", "error");
                         }
                       }}
                       className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-red-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
@@ -466,9 +523,12 @@ export default function StorePage() {
                       )}
                       
                       {/* Countdown Overlay */}
-                      {product.is_flash_sale && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-yellow-500/90 backdrop-blur-md text-black py-1.5 flex justify-center items-center gap-2 text-xs font-bold">
-                          <Clock className="w-3.5 h-3.5" /> Termina em breve
+                      {product.is_flash_sale && product.time_remaining_seconds > 0 && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-yellow-500/95 backdrop-blur-md text-black py-1.5 flex justify-center items-center gap-2">
+                          <CountdownTimer 
+                            initialSeconds={product.time_remaining_seconds} 
+                            className="text-black" 
+                          />
                         </div>
                       )}
                     </div>
@@ -485,11 +545,24 @@ export default function StorePage() {
                       <h3 className="font-semibold text-lg leading-tight mb-2 group-hover:text-primary transition-colors line-clamp-2">
                         {product.name}
                       </h3>
-                      <div className="flex items-center justify-between mt-4">
-                        <p className="font-display font-bold text-xl">
-                          R$ {Number(product.base_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                        </p>
-                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary transition-colors">
+                      <div className="flex items-end justify-between mt-4">
+                        <div className="space-y-0.5">
+                          {product.is_flash_sale ? (
+                            <>
+                              <p className="text-xs text-muted-foreground line-through font-medium">
+                                R$ {Number(product.base_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                              </p>
+                              <p className="font-display font-bold text-xl text-yellow-500">
+                                R$ {Number(product.promotional_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                              </p>
+                            </>
+                          ) : (
+                            <p className="font-display font-bold text-xl text-foreground">
+                              R$ {Number(product.base_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                            </p>
+                          )}
+                        </div>
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary transition-colors mb-0.5">
                           <ShoppingBag className="h-4 w-4 text-primary group-hover:text-primary-foreground" />
                         </div>
                       </div>
@@ -520,6 +593,110 @@ export default function StorePage() {
           slug={selectedProduct.slug}
         />
       )}
+      
+      {/* Onboarding survey modal */}
+      <AnimatePresence>
+        {showSurveyModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="w-full max-w-lg bg-[#0c0c1e] border border-white/[0.08] p-8 rounded-3xl shadow-2xl relative overflow-hidden text-white"
+            >
+              {/* Decorative glows */}
+              <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/20 rounded-full blur-3xl pointer-events-none"></div>
+              <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+              <button
+                onClick={() => setShowSurveyModal(false)}
+                className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-white rounded-full bg-white/5 hover:bg-white/10 transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <h3 className="text-2xl font-display font-extrabold mb-2 text-white">
+                Personalize sua Experiência 🌌
+              </h3>
+              <p className="text-sm text-neutral-400 mb-6 leading-relaxed">
+                Responda a estas perguntas rápidas para que nosso sistema de recomendação exiba ofertas perfeitas para o seu perfil.
+              </p>
+
+              <div className="space-y-6">
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
+                  <div>
+                    <label className="text-sm font-bold block">Você tem filhos / é pai ou mãe?</label>
+                    <span className="text-xs text-neutral-400">Ver produtos infantis e brinquedos</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={surveyData.is_parent}
+                    onChange={(e) => setSurveyData({ ...surveyData, is_parent: e.target.checked })}
+                    className="w-5 h-5 accent-primary cursor-pointer bg-transparent border-white/20 rounded"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
+                  <div>
+                    <label className="text-sm font-bold block">É fã de esportes ou atividades físicas?</label>
+                    <span className="text-xs text-neutral-400">Ver tênis, vestuário e equipamentos</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={surveyData.sports_fan}
+                    onChange={(e) => setSurveyData({ ...surveyData, sports_fan: e.target.checked })}
+                    className="w-5 h-5 accent-primary cursor-pointer bg-transparent border-white/20 rounded"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
+                  <div>
+                    <label className="text-sm font-bold block">Interesse em utilidades e eletrodomésticos?</label>
+                    <span className="text-xs text-neutral-400">Recomendar marcas de casa inteligente</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={surveyData.is_elderly}
+                    onChange={(e) => setSurveyData({ ...surveyData, is_elderly: e.target.checked })}
+                    className="w-5 h-5 accent-primary cursor-pointer bg-transparent border-white/20 rounded"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold block">Qual estilo de música você mais curte?</label>
+                  <select
+                    value={surveyData.music_taste}
+                    onChange={(e) => setSurveyData({ ...surveyData, music_taste: e.target.value })}
+                    className="w-full bg-[#141428] border border-white/[0.08] text-white rounded-xl px-4 py-3 text-sm focus:border-primary outline-none cursor-pointer"
+                  >
+                    <option value="">Nenhum / Prefiro não responder</option>
+                    <option value="Rock">Rock / Pop</option>
+                    <option value="Eletronica">Eletrônica / Dance</option>
+                    <option value="Sertanejo">Sertanejo / Pop Brasil</option>
+                    <option value="Classica">Clássica / Jazz</option>
+                  </select>
+                </div>
+
+                <button
+                  onClick={async () => {
+                    try {
+                      await userApi.saveSurvey(surveyData);
+                      toast("Preferências salvas com sucesso! Personalizando vitrine...", "success");
+                      setShowSurveyModal(false);
+                      fetchProducts(1);
+                    } catch (err) {
+                      toast("Erro ao salvar preferências.", "error");
+                    }
+                  }}
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-4 rounded-xl transition-all shadow-[0_0_20px_rgba(var(--primary),0.3)]"
+                >
+                  Salvar Preferências e Personalizar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
       
       <Footer />
     </div>

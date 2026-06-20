@@ -30,12 +30,11 @@ export default function SuperAdminDashboard() {
   const { user, isAuthenticated } = useAuthStore();
   const router = useRouter();
 
-  // Uncomment in production when auth logic is completely stable for admins
-  // useEffect(() => {
-  //   if (isAuthenticated && user?.role !== "admin") {
-  //     router.push("/");
-  //   }
-  // }, [isAuthenticated, user, router]);
+  useEffect(() => {
+    if (isAuthenticated && user?.role !== "admin") {
+      router.push("/");
+    }
+  }, [isAuthenticated, user, router]);
 
   const [activeTab, setActiveTab] = useState("overview");
 

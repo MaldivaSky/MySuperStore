@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { ThemeToggle } from "./ThemeToggle";
 import { BrandLogo, SaturnMark } from "./Brand";
@@ -15,15 +15,25 @@ import {
   LogOut,
   User,
   Heart,
-  Zap
+  Zap,
+  Search
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 
 export function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout, isAuthenticated } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (search.trim()) {
+      router.push(`/store?search=${encodeURIComponent(search.trim())}`);
+    }
+  };
 
   const navLinks = [
     { name: "Loja", href: "/store", icon: Store, show: true },
@@ -70,6 +80,18 @@ export function Header() {
           })}
           {/* Action Buttons */}
         </nav>
+
+        {/* Search input desktop */}
+        <form onSubmit={handleSearchSubmit} className="hidden md:flex items-center relative max-w-xs w-full mx-4">
+          <input
+            type="text"
+            placeholder="Pesquisar produtos..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] focus:border-primary/50 text-white rounded-full pl-10 pr-4 py-1.5 text-xs outline-none transition-all placeholder:text-neutral-500"
+          />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 pointer-events-none" />
+        </form>
 
         <div className="flex items-center gap-4">
           <ThemeToggle />

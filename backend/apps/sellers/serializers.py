@@ -115,3 +115,44 @@ class SellerUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Seller
         fields = ["description", "logo", "banner", "pix_key"]
+
+
+from .models import ChatRoom, ChatMessage
+
+class ChatMessageSerializer(serializers.ModelSerializer):
+    sender_name = serializers.CharField(source="sender.first_name", read_only=True)
+    sender_email = serializers.CharField(source="sender.email", read_only=True)
+
+    class Meta:
+        model = ChatMessage
+        fields = ["id", "room", "sender", "sender_name", "sender_email", "message", "is_read", "created_at"]
+        read_only_fields = ["id", "sender", "created_at"]
+
+
+class ChatRoomSerializer(serializers.ModelSerializer):
+    customer_email = serializers.CharField(source="customer.email", read_only=True)
+    customer_name = serializers.CharField(source="customer.first_name", read_only=True)
+    store_name = serializers.CharField(source="seller.store_name", read_only=True)
+    product_name = serializers.CharField(source="product.name", read_only=True)
+    product_slug = serializers.CharField(source="product.slug", read_only=True)
+    messages = ChatMessageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ChatRoom
+        fields = [
+            "id", "customer", "customer_name", "customer_email",
+            "seller", "store_name", "product", "product_name", "product_slug",
+            "messages", "created_at", "updated_at"
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class ChatLeadSerializer(serializers.Serializer):
+    customer_id = serializers.UUIDField()
+    customer_name = serializers.CharField()
+    customer_email = serializers.CharField()
+    product_id = serializers.UUIDField()
+    product_name = serializers.CharField()
+    product_slug = serializers.CharField()
+    source = serializers.CharField()
+

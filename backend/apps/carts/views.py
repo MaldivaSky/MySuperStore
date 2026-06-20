@@ -169,3 +169,19 @@ class ApplyCouponView(BaseCartView, generics.GenericAPIView):
 
         return Response(CartSerializer(cart, context={"request": request}).data)
 
+
+from rest_framework.views import APIView
+from .tasks import send_abandoned_cart_emails_task
+
+class TriggerAbandonedEmailsView(APIView):
+    """
+    POST /api/v1/cart/trigger-abandoned-emails/
+    Dispara manualmente o envio de e-mails para carrinhos abandonados.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        result = send_abandoned_cart_emails_task()
+        return Response({"status": "success", "result": result})
+
+

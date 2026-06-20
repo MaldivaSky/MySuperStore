@@ -93,3 +93,13 @@ class ChangePasswordSerializer(serializers.Serializer):
         if not user.check_password(value):
             raise serializers.ValidationError("Senha atual incorreta.")
         return value
+
+
+from .models import UserSurvey
+
+class UserSurveySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserSurvey
+        fields = ["is_parent", "is_elderly", "sports_fan", "music_taste", "other_interests", "updated_at"]
+        read_only_fields = ["updated_at"]
+

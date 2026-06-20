@@ -50,3 +50,49 @@ class Seller(models.Model):
     @property
     def stripe_authorized(self):
         return bool(self.stripe_account_id and self.stripe_onboarding_complete)
+
+
+class ChatRoom(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="customer_chat_rooms"
+    )
+    seller = models.ForeignKey(
+        Seller, on_delete=models.CASCADE, related_name="seller_chat_rooms"
+    )
+    product = models.ForeignKey(
+        "catalog.Product", on_delete=models.SET_NULL, null=True, blank=True, related_name="chat_rooms"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "sala de chat"
+        verbose_name_plural = "salas de chat"
+        unique_together = [("customer", "seller", "product")]
+        ordering = ["-updated_at"]
+
+    def __str__(self):
+        return f"Chat: {self.customer.email} <-> {self.seller.store_name}"
+
+
+class ChatMessage(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    room = models.ForeignKey(
+        ChatRoom, on_delete=models.CASCADE, related_name="messages"
+    )
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE
+    )
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "mensagem de chat"
+        verbose_name_plural = "mensagens de chat"
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"De: {self.sender.email} em {self.created_at}"
+

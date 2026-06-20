@@ -1,4 +1,4 @@
-﻿from collections import defaultdict
+from collections import defaultdict
 
 from django.db.models import Avg, Count, Prefetch, Q
 from django.utils import timezone
@@ -7,7 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from .filters import ProductFilter
-from .models import Banner, Category, Product, ProductImage, ProductVariant, ReviewRating
+from .models import Banner, Category, Product, ProductImage, ProductVariant, ReviewRating, Brand, Wishlist
 from .serializers import (
     BannerSerializer,
     CategorySerializer,
@@ -17,6 +17,7 @@ from .serializers import (
     ReviewSerializer,
     SetPromoSerializer,
     SubmitReviewSerializer,
+    BrandSerializer,
 )
 
 
@@ -44,6 +45,15 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(serializer.data)
 
 
+# -- Marcas --------------------------------------------------------------------
+
+class BrandViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Brand.objects.all().order_by("name")
+    serializer_class = BrandSerializer
+    permission_classes = [permissions.AllowAny]
+    pagination_class = None
+
+
 # -- Produtos (vitrine publica) ------------------------------------------------
 
 class ProductViewSet(viewsets.ReadOnlyModelViewSet):
@@ -55,7 +65,7 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     lookup_field = "slug"
 
     def get_queryset(self):
-        return (
+        qs = (
             Product.objects.filter(is_available=True)
             .select_related("seller", "category", "brand")
             .prefetch_related(
@@ -77,11 +87,47 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
                 review_count=Count("reviews", filter=Q(reviews__status="approved")),
             )
         )
+        user = self.request.user
+        if user and user.is_authenticated and hasattr(user, "survey"):
+            from django.db.models import Case, When, Value, IntegerField
+            survey = user.survey
+            conditions = []
+            if survey.is_parent:
+                conditions.append(When(category__slug__in=["brinquedos", "bebes", "toys", "kids"], then=Value(10)))
+            if survey.sports_fan:
+                conditions.append(When(category__slug__in=["esportes", "sports", "fitness", "tenis", "calcados", "nike"], then=Value(10)))
+            if survey.is_elderly:
+                conditions.append(When(category__slug__in=["saude", "health", "medicamentos", "eletrodomesticos"], then=Value(5)))
+            if survey.music_taste:
+                conditions.append(When(category__slug__in=["audio", "eletronicos", "musica", "instrumentos-musicais"], then=Value(8)))
+            if conditions:
+                qs = qs.annotate(
+                    relevance=Case(*conditions, default=Value(0), output_field=IntegerField())
+                ).order_by("-relevance", "-created_at")
+        return qs
 
     def get_serializer_class(self):
         if self.action == "retrieve":
             return ProductDetailSerializer
         return ProductListSerializer
+
+    # -- Tracking --------------------------------------------------------------
+
+    @action(detail=True, methods=["post"], url_path="track")
+    def track(self, request, slug=None):
+        """
+        POST /catalog/products/{slug}/track/
+        Body: { "type": "view" | "click" }
+        """
+        product = self.get_object()
+        interaction_type = request.data.get("type", "view")
+        if interaction_type == "click":
+            product.clicks_count += 1
+            product.save(update_fields=["clicks_count"])
+        else:
+            product.views_count += 1
+            product.save(update_fields=["views_count"])
+        return Response({"views": product.views_count, "clicks": product.clicks_count})
 
     # -- Reviews ---------------------------------------------------------------
 
@@ -182,4 +228,40 @@ class BannerViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Banner.objects.filter(active=True).order_by("order")
     serializer_class = BannerSerializer
     permission_classes = [permissions.AllowAny]
+
+
+# -- Favoritos (Wishlist) ------------------------------------------------------
+
+class WishlistViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @action(detail=False, methods=["get"], url_path="my")
+    def my(self, request):
+        wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
+        serializer = ProductListSerializer(wishlist.products.all(), many=True, context={"request": request})
+        return Response(serializer.data)
+
+    @action(detail=False, methods=["post"], url_path="add")
+    def add(self, request):
+        product_id = request.data.get("product_id")
+        try:
+            product = Product.objects.get(id=product_id)
+        except Product.DoesNotExist:
+            return Response({"detail": "Produto não encontrado."}, status=404)
+            
+        wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
+        wishlist.products.add(product)
+        return Response({"success": True})
+
+    @action(detail=False, methods=["post"], url_path="remove")
+    def remove(self, request):
+        product_id = request.data.get("product_id")
+        try:
+            product = Product.objects.get(id=product_id)
+        except Product.DoesNotExist:
+            return Response({"detail": "Produto não encontrado."}, status=404)
+            
+        wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
+        wishlist.products.remove(product)
+        return Response({"success": True})
     pagination_class = None

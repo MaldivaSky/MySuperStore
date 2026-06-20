@@ -1,5 +1,6 @@
-﻿from django.db.models import Avg, Count, Prefetch, Q
+from django.db.models import Avg, Count, Prefetch, Q
 from rest_framework import generics, permissions, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from core.permissions import IsApprovedSeller, IsSeller
@@ -11,7 +12,6 @@ from .serializers import (
     SellerPublicSerializer,
     SellerUpdateSerializer,
 )
-
 
 # -- Perfil publico ------------------------------------------------------------
 
@@ -238,6 +238,65 @@ class SellerProductViewSet(viewsets.ModelViewSet):
         variant = serializer.save(product=product)
         # Resposta com leitura completa
         from apps.catalog.serializers import ProductVariantSerializer
+        if OrderItem.objects.filter(variant__product=product).exists():
+            return Response(
+                {"detail": "Nao e possivel excluir um produto com pedidos. Desative-o em vez disso."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        product.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # -- Imagens --------------------------------------------------------------
+
+    def _get_product(self, pk):
+        from apps.catalog.models import Product
+        try:
+            return Product.objects.get(pk=pk, seller=self.request.user.seller_profile)
+        except Product.DoesNotExist:
+            from rest_framework.exceptions import NotFound
+            raise NotFound("Produto nao encontrado.")
+
+    def upload_image(self, request, product_pk=None):
+        from apps.catalog.serializers import ProductImageUploadSerializer
+        product = self._get_product(product_pk)
+        serializer = ProductImageUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # Primeira imagem vira primaria automaticamente; nova primaria desbanca a anterior
+        if serializer.validated_data.get("is_primary") or not product.images.exists():
+            product.images.update(is_primary=False)
+            serializer.validated_data["is_primary"] = True
+
+        serializer.save(product=product)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def delete_image(self, request, product_pk=None, image_pk=None):
+        from apps.catalog.models import ProductImage
+        product = self._get_product(product_pk)
+        try:
+            image = product.images.get(pk=image_pk)
+        except ProductImage.DoesNotExist:
+            return Response({"detail": "Imagem nao encontrada."}, status=status.HTTP_404_NOT_FOUND)
+        was_primary = image.is_primary
+        image.delete()
+        # Promove a proxima imagem a primaria se a excluida era a principal
+        if was_primary:
+            next_img = product.images.order_by("order").first()
+            if next_img:
+                next_img.is_primary = True
+                next_img.save(update_fields=["is_primary"])
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # -- Variantes ------------------------------------------------------------
+
+    def create_variant(self, request, product_pk=None):
+        from apps.catalog.serializers import ProductVariantWriteSerializer
+        product = self._get_product(product_pk)
+        serializer = ProductVariantWriteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        variant = serializer.save(product=product)
+        # Resposta com leitura completa
+        from apps.catalog.serializers import ProductVariantSerializer
         return Response(
             ProductVariantSerializer(variant, context={"product": product}).data,
             status=status.HTTP_201_CREATED,
@@ -267,3 +326,215 @@ class SellerProductViewSet(viewsets.ModelViewSet):
         return Response(
             ProductVariantSerializer(variant, context={"product": product}).data
         )
+
+
+from decimal import Decimal
+from datetime import timedelta
+from django.utils import timezone
+from rest_framework.views import APIView
+from apps.carts.models import CartItem
+from apps.catalog.models import Wishlist, Product
+from .models import ChatRoom, ChatMessage
+from .serializers import ChatRoomSerializer, ChatMessageSerializer, ChatLeadSerializer
+
+
+class SellerMentorView(APIView):
+    """
+    GET /api/v1/sellers/me/mentor/ — Painel de métricas e sugestões do Mentor de Vendas.
+    POST /api/v1/sellers/me/mentor/impulsionar/ — Executa ação de impulsionamento (10% OFF por 7 dias).
+    """
+    permission_classes = [IsApprovedSeller]
+
+    def get(self, request):
+        seller = request.user.seller_profile
+        products = Product.objects.filter(seller=seller)
+
+        total_views = sum(p.views_count for p in products)
+        total_clicks = sum(p.clicks_count for p in products)
+
+        suggestions = []
+        for p in products:
+            # Insight 1: Promoção (Muitas views, baixas conversões/cliques)
+            if p.views_count >= 5 and p.clicks_count / p.views_count < 0.2:
+                suggestions.append({
+                    "product_id": str(p.id),
+                    "product_name": p.name,
+                    "product_slug": p.slug,
+                    "type": "promotion",
+                    "title": "Impulsionar Vendas (Sugestão de Desconto)",
+                    "description": f"O produto '{p.name}' possui {p.views_count} visualizações e apenas {p.clicks_count} cliques. Sugerimos ativar uma promoção de 10% OFF para reter esses clientes!",
+                    "action_value": "10",
+                })
+            # Insight 2: Aumento de Preço (Alta taxa de cliques)
+            elif p.views_count >= 5 and p.clicks_count / p.views_count > 0.5:
+                suggestions.append({
+                    "product_id": str(p.id),
+                    "product_name": p.name,
+                    "product_slug": p.slug,
+                    "type": "price_increase",
+                    "title": "Maximizar Lucros (Reajuste de Preço)",
+                    "description": f"Excelente! O produto '{p.name}' está com alta demanda ({p.clicks_count} cliques em {p.views_count} acessos). Recomendamos aumentar o preço base em 5% para maximizar seus lucros.",
+                    "action_value": "5",
+                })
+
+        return Response({
+            "store_name": seller.store_name,
+            "total_views": total_views,
+            "total_clicks": total_clicks,
+            "suggestions": suggestions
+        })
+
+    def post(self, request):
+        # Ação expressa "Impulsionar Vendas"
+        action = request.data.get("action")
+        product_slug = request.data.get("product_slug")
+        if not product_slug:
+            return Response({"detail": "product_slug é obrigatório."}, status=400)
+
+        try:
+            product = Product.objects.get(slug=product_slug, seller=request.user.seller_profile)
+        except Product.DoesNotExist:
+            return Response({"detail": "Produto não encontrado."}, status=404)
+
+        if action == "promotion":
+            # Aplica 10% de desconto
+            product.promotional_price = product.base_price * Decimal("0.90")
+            product.promo_starts_at = timezone.now()
+            product.promo_ends_at = timezone.now() + timedelta(days=7)
+            product.save()
+            return Response({
+                "detail": f"Oferta relâmpago de 10% OFF ativada com sucesso para '{product.name}'!",
+                "promotional_price": product.promotional_price
+            })
+        elif action == "price_increase":
+            # Aumenta 5%
+            product.base_price = product.base_price * Decimal("1.05")
+            product.save()
+            return Response({
+                "detail": f"Preço base do produto '{product.name}' reajustado em +5% com sucesso!",
+                "base_price": product.base_price
+            })
+
+        return Response({"detail": "Ação inválida."}, status=400)
+
+
+class SellerLeadsView(APIView):
+    """
+    GET /api/v1/sellers/me/leads/ — Listagem de clientes com intenção de compra.
+    """
+    permission_classes = [IsApprovedSeller]
+
+    def get(self, request):
+        seller = request.user.seller_profile
+        
+        # Carrinhos com produtos do vendedor
+        cart_items = CartItem.objects.filter(
+            variant__product__seller=seller,
+            cart__user__isnull=False
+        ).select_related("cart__user", "variant__product")
+
+        # Favoritos com produtos do vendedor
+        wishlists = Wishlist.objects.filter(
+            products__seller=seller
+        ).prefetch_related("products", "user")
+
+        leads = []
+        seen = set()
+
+        for item in cart_items:
+            key = (item.cart.user.id, item.variant.product.id)
+            if key not in seen:
+                seen.add(key)
+                leads.append({
+                    "customer_id": str(item.cart.user.id),
+                    "customer_name": item.cart.user.first_name or item.cart.user.email.split("@")[0],
+                    "customer_email": item.cart.user.email,
+                    "product_id": str(item.variant.product.id),
+                    "product_name": item.variant.product.name,
+                    "product_slug": item.variant.product.slug,
+                    "source": "carrinho"
+                })
+
+        for wl in wishlists:
+            for p in wl.products.filter(seller=seller):
+                key = (wl.user.id, p.id)
+                if key not in seen:
+                    seen.add(key)
+                    leads.append({
+                        "customer_id": str(wl.user.id),
+                        "customer_name": wl.user.first_name or wl.user.email.split("@")[0],
+                        "customer_email": wl.user.email,
+                        "product_id": str(p.id),
+                        "product_name": p.name,
+                        "product_slug": p.slug,
+                        "source": "favoritos"
+                    })
+
+        return Response(leads)
+
+
+class ChatRoomViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet unificado para gerenciar salas e mensagens de chat.
+    Suporta listagem de salas para comprador e vendedor, criação e envio de mensagens.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ChatRoomSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = ChatRoom.objects.all()
+        if hasattr(user, "seller_profile"):
+            qs = qs.filter(Q(customer=user) | Q(seller=user.seller_profile))
+        else:
+            qs = qs.filter(customer=user)
+        return qs.prefetch_related("messages__sender")
+
+    @action(detail=False, methods=["post"], url_path="create")
+    def create_room(self, request):
+        """
+        POST /api/v1/sellers/me/chats/create/
+        Cria uma sala se ela não existir.
+        """
+        product_id = request.data.get("product_id")
+        product = None
+        if product_id:
+            product = Product.objects.filter(id=product_id).first()
+
+        customer_id = request.data.get("customer_id")
+        if customer_id and hasattr(request.user, "seller_profile"):
+            from django.contrib.auth import get_user_model
+            customer = get_user_model().objects.get(id=customer_id)
+            seller = request.user.seller_profile
+        else:
+            customer = request.user
+            seller_id = request.data.get("seller_id")
+            if not seller_id and product:
+                seller = product.seller
+            else:
+                seller = Seller.objects.get(id=seller_id)
+
+        room, created = ChatRoom.objects.get_or_create(
+            customer=customer,
+            seller=seller,
+            product=product
+        )
+        return Response(ChatRoomSerializer(room, context={"request": request}).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["post"], url_path="messages")
+    def send_message(self, request, pk=None):
+        """
+        POST /api/v1/sellers/me/chats/{id}/messages/
+        """
+        room = self.get_object()
+        msg_text = request.data.get("message")
+        if not msg_text:
+            return Response({"detail": "message é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
+
+        message = ChatMessage.objects.create(
+            room=room,
+            sender=request.user,
+            message=msg_text
+        )
+        room.save(update_fields=["updated_at"])
+        return Response(ChatMessageSerializer(message).data, status=status.HTTP_201_CREATED)

@@ -1,4 +1,4 @@
-﻿from django.urls import include, path
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
@@ -8,9 +8,13 @@ from .views import (
     SellerStripeCallbackView,
     SellerStripeOnboardingView,
     SellerPublicViewSet,
+    SellerMentorView,
+    SellerLeadsView,
+    ChatRoomViewSet,
 )
 
 router = DefaultRouter()
+router.register("me/chats", ChatRoomViewSet, basename="seller-chats")
 router.register("", SellerPublicViewSet, basename="seller")
 
 # ViewSet instanciado uma vez para as rotas manuais aninhadas
@@ -22,6 +26,10 @@ urlpatterns = [
 
     # Painel do vendedor
     path("me/", SellerMeView.as_view(), name="seller-me"),
+
+    # Mentor & Leads
+    path("me/mentor/", SellerMentorView.as_view(), name="seller-mentor"),
+    path("me/leads/", SellerLeadsView.as_view(), name="seller-leads"),
 
     # Stripe Connect
     path("me/stripe-onboard/", SellerStripeOnboardingView.as_view(), name="seller-stripe-onboard"),

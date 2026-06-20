@@ -92,10 +92,11 @@ def process_successful_payment(order: Order, raw_response: dict | None = None, c
 
 def dispatch_post_payment_tasks(order: Order) -> None:
     """Dispara e-mail de confirmação e webhook para ERP externo (fora da transação)."""
-    from apps.orders.tasks import send_order_confirmation_email_task
+    from apps.orders.tasks import send_order_confirmation_email_task, send_seller_sale_notification_email_task
     from .tasks import dispatch_webhook_task
 
     send_order_confirmation_email_task.delay(str(order.id))
+    send_seller_sale_notification_email_task.delay(str(order.id))
     dispatch_webhook_task.delay({
         "event": "order.confirmed",
         "order_number": order.order_number,

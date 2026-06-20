@@ -59,7 +59,7 @@ export function Footer() {
               <li><Link href="/seller" className="text-neutral-400 text-sm hover:text-primary transition-colors">Painel do Lojista</Link></li>
               <li><a href="#" className="text-neutral-400 text-sm hover:text-primary transition-colors">Taxas e Comissões</a></li>
               <li><a href="#" className="text-neutral-400 text-sm hover:text-primary transition-colors">Como funciona o Fulfillment</a></li>
-              <li><Link href="/admin" className="text-neutral-400 text-sm hover:text-primary transition-colors">SuperAdmin Portal</Link></li>
+
             </ul>
           </div>
         </div>

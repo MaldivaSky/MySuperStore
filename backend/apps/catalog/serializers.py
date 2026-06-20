@@ -1,9 +1,9 @@
-﻿from rest_framework import serializers
+from rest_framework import serializers
 from django.utils import timezone
 
 from .models import (
     AttributeValue, Banner, Category, Product, ProductImage,
-    ProductSpecification, ProductVariant, ReviewRating,
+    ProductSpecification, ProductVariant, ReviewRating, Brand,
 )
 
 PROFANITY = {"merda", "bosta", "caralho", "porra", "fuder", "arrombado", "safado", "idiota"}
@@ -111,6 +111,14 @@ class CategoryTreeSerializer(serializers.ModelSerializer):
         return CategoryTreeSerializer(children, many=True, context=self.context).data
 
 
+# -- Marcas --------------------------------------------------------------------
+
+class BrandSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Brand
+        fields = ["id", "name", "slug", "logo"]
+
+
 # -- Reviews -------------------------------------------------------------------
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -170,9 +178,12 @@ class SetPromoSerializer(serializers.Serializer):
 # -- Produtos (leitura) --------------------------------------------------------
 
 class ProductListSerializer(serializers.ModelSerializer):
+    seller_id = serializers.UUIDField(source="seller.id", read_only=True)
     seller_name = serializers.CharField(source="seller.store_name", read_only=True)
     seller_slug = serializers.CharField(source="seller.slug", read_only=True)
     category_name = serializers.CharField(source="category.name", read_only=True)
+    category_slug = serializers.CharField(source="category.slug", read_only=True)
+    brand_slug = serializers.CharField(source="brand.slug", read_only=True)
     primary_image = serializers.SerializerMethodField()
     avg_rating = serializers.FloatField(read_only=True)
     review_count = serializers.IntegerField(read_only=True)
@@ -180,6 +191,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     is_flash_sale = serializers.SerializerMethodField()
     discount_percentage = serializers.SerializerMethodField()
     time_remaining_seconds = serializers.SerializerMethodField()
+    variants = ProductVariantSerializer(many=True, read_only=True)
 
     class Meta:
         model = Product
@@ -187,11 +199,12 @@ class ProductListSerializer(serializers.ModelSerializer):
             "id", "name", "slug",
             "base_price", "promotional_price", "min_price",
             "is_flash_sale", "discount_percentage", "time_remaining_seconds",
-            "seller_name", "seller_slug",
-            "category_name",
+            "seller_id", "seller_name", "seller_slug",
+            "category_name", "category_slug", "brand_slug",
             "primary_image",
             "avg_rating", "review_count",
-            "is_available", "created_at",
+            "is_available", "views_count", "clicks_count", "created_at",
+            "variants",
         ]
 
     def get_primary_image(self, obj):

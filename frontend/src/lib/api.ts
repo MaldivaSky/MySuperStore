@@ -55,8 +55,10 @@ export const catalogApi = {
   product: (slug: string) => api.get(`/catalog/products/${slug}/`),
   categories: () => api.get("/catalog/categories/"),
   tree: () => api.get("/catalog/categories/tree/"),
+  brands: () => api.get("/catalog/brands/"),
   setPromo: (slug: string, data: { promotional_price: number | null, promo_ends_at: string | null }) => 
     api.patch(`/catalog/products/${slug}/set-promo/`, data),
+  track: (slug: string, type: "view" | "click") => api.post(`/catalog/products/${slug}/track/`, { type }),
 };
 
 export const cartApi = {
@@ -66,6 +68,7 @@ export const cartApi = {
   updateItem: (itemId: string, quantity: number) =>
     api.patch(`/cart/items/${itemId}/`, { quantity }),
   removeItem: (itemId: string) => api.delete(`/cart/items/${itemId}/`),
+  triggerAbandonedEmails: () => api.post("/cart/trigger-abandoned-emails/"),
 };
 
 export const sellerApi = {
@@ -114,30 +117,51 @@ export const returnsApi = {
 };
 
 export const wishlistApi = {
-  get: async () => {
-    const list = JSON.parse(localStorage.getItem("wishlist") || "[]");
-    return { data: list };
-  },
-  add: async (product: any) => {
-    const list = JSON.parse(localStorage.getItem("wishlist") || "[]");
-    if (!list.find((item: any) => item.product.id === product.id)) {
-      list.push({ id: product.id, product });
-      localStorage.setItem("wishlist", JSON.stringify(list));
-    }
-    return { data: { success: true } };
-  },
-  remove: async (productId: string) => {
-    let list = JSON.parse(localStorage.getItem("wishlist") || "[]");
-    list = list.filter((item: any) => item.product.id !== productId);
-    localStorage.setItem("wishlist", JSON.stringify(list));
-    return { data: { success: true } };
-  },
+  get: () => api.get("/catalog/wishlist/my/"),
+  add: (product: any) => api.post("/catalog/wishlist/add/", { product_id: product.id }),
+  remove: (productId: string) => api.post("/catalog/wishlist/remove/", { product_id: productId }),
 };
 
 export const reviewApi = {
   getReviews: (productSlug: string) => api.get(`/catalog/products/${productSlug}/reviews/`),
   submit: (productSlug: string, data: { rating: number; subject: string; body: string }) => 
     api.post(`/catalog/products/${productSlug}/reviews/`, data),
+};
+
+export const userApi = {
+  getSurvey: () => api.get("/users/me/survey/"),
+  saveSurvey: (data: any) => api.post("/users/me/survey/", data),
+};
+
+export const chatApi = {
+  listRooms: () => api.get("/sellers/me/chats/"),
+  createRoom: (data: { seller_id?: string; product_id?: string; customer_id?: string }) => 
+    api.post("/sellers/me/chats/create/", data),
+  sendMessage: (roomId: string, message: string) => 
+    api.post(`/sellers/me/chats/${roomId}/messages/`, { message }),
+};
+
+export const sellerDashboardApi = {
+  getLeads: () => api.get("/sellers/me/leads/"),
+  getMentor: () => api.get("/sellers/me/mentor/"),
+  triggerMentorAction: (action: string, productSlug: string) => 
+    api.post("/sellers/me/mentor/", { action, product_slug: productSlug }),
+  products: {
+    list: () => api.get("/sellers/me/products/"),
+    create: (data: any) => api.post("/sellers/me/products/", data),
+    update: (id: string, data: any) => api.patch(`/sellers/me/products/${id}/`, data),
+    delete: (id: string) => api.delete(`/sellers/me/products/${id}/`),
+    uploadImage: (productId: string, formData: FormData) => 
+      api.post(`/sellers/me/products/${productId}/images/`, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      }),
+    deleteImage: (productId: string, imageId: string) => 
+      api.delete(`/sellers/me/products/${productId}/images/${imageId}/`),
+    createVariant: (productId: string, data: any) => 
+      api.post(`/sellers/me/products/${productId}/variants/`, data),
+    deleteVariant: (productId: string, variantId: string) => 
+      api.delete(`/sellers/me/products/${productId}/variants/${variantId}/`),
+  }
 };
 
 // ── Types ─────────────────────────────────────────────────────────────────────

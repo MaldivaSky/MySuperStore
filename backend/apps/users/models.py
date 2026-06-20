@@ -82,3 +82,21 @@ class AffiliateLink(models.Model):
 
     def __str__(self):
         return f"Afiliado {self.user.email} - Produto {self.product.name}"
+
+
+class UserSurvey(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="survey")
+    is_parent = models.BooleanField(default=False)
+    is_elderly = models.BooleanField(default=False)
+    sports_fan = models.BooleanField(default=False)
+    music_taste = models.CharField(max_length=100, blank=True)
+    other_interests = models.JSONField(default=list, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "pesquisa de interesse"
+        verbose_name_plural = "pesquisas de interesses"
+
+    def __str__(self):
+        return f"Interesses de {self.user.email}"
+
