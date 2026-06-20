@@ -92,14 +92,10 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             from django.db.models import Case, When, Value, IntegerField
             survey = user.survey
             conditions = []
-            if survey.is_parent:
-                conditions.append(When(category__slug__in=["brinquedos", "bebes", "toys", "kids"], then=Value(10)))
-            if survey.sports_fan:
-                conditions.append(When(category__slug__in=["esportes", "sports", "fitness", "tenis", "calcados", "nike"], then=Value(10)))
-            if survey.is_elderly:
-                conditions.append(When(category__slug__in=["saude", "health", "medicamentos", "eletrodomesticos"], then=Value(5)))
-            if survey.music_taste:
-                conditions.append(When(category__slug__in=["audio", "eletronicos", "musica", "instrumentos-musicais"], then=Value(8)))
+            if getattr(survey, "preferred_category", None):
+                conditions.append(When(category__name__icontains=survey.preferred_category, then=Value(10)))
+            if getattr(survey, "preferred_brand", None):
+                conditions.append(When(brand__name__icontains=survey.preferred_brand, then=Value(8)))
             if conditions:
                 qs = qs.annotate(
                     relevance=Case(*conditions, default=Value(0), output_field=IntegerField())
