@@ -119,17 +119,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="flex items-start gap-2 pt-2">
-            <input 
-              type="checkbox" 
-              id="terms" 
-              required 
-              className="mt-1 shrink-0 rounded border-border/60 text-primary focus:ring-primary/20"
-            />
-            <label htmlFor="terms" className="text-xs text-muted-foreground">
-              Li e concordo com os <Link href="/terms" target="_blank" className="text-primary hover:underline">Termos de Uso</Link> e a <Link href="/terms" target="_blank" className="text-primary hover:underline">Política de Privacidade</Link> do MySuperStore.
-            </label>
-          </div>
 
           <button
             type="submit"

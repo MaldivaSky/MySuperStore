@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { X, Star, ShoppingCart, Loader2, Info, ArrowRight, Heart, MessageSquare, Share2, Clock, Zap, MessageCircle, Truck } from "lucide-react";
+import { X, Star, ShoppingCart, Loader2, Info, ArrowRight, Heart, MessageSquare, Share2, Clock, Zap, MessageCircle, Truck, Flame } from "lucide-react";
 import { catalogApi, cartApi, wishlistApi, reviewApi, chatApi } from "@/lib/api";
 import { Product, ProductVariant } from "@/types";
 import { useAuthStore } from "@/store/authStore";
@@ -408,10 +408,29 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
                         })}
                       </div>
                       {selectedVariant && (
-                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                          <Info className="h-3.5 w-3.5" />
-                          Estoque disponível: <strong className="text-foreground">{selectedVariant.stock} unidades</strong>
-                        </p>
+                        <div className="flex flex-col gap-2 mt-2">
+                          {/* Social Proof Trigger */}
+                          <div className="flex items-center gap-2 text-xs font-semibold text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-lg border border-blue-500/20 w-fit">
+                            <span className="relative flex h-2 w-2 mr-1">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                            </span>
+                            {((product.views_count || 10) % 15) + 3} pessoas estão com este item no carrinho
+                          </div>
+
+                          {/* Scarcity Trigger */}
+                          {selectedVariant.stock > 0 && selectedVariant.stock <= 5 ? (
+                            <p className="text-xs font-extrabold text-red-500 bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-lg w-fit flex items-center gap-1.5 animate-pulse">
+                              <Flame className="h-3.5 w-3.5" />
+                              ESTOQUE CRÍTICO: APENAS {selectedVariant.stock} UNIDADES RESTANTES!
+                            </p>
+                          ) : (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1.5 ml-1">
+                              <Info className="h-3.5 w-3.5" />
+                              Estoque disponível: <strong className="text-foreground">{selectedVariant.stock} unidades</strong>
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}

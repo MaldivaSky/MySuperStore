@@ -96,7 +96,7 @@ export function BrandLogo({
       />
       <span className="flex flex-col leading-none">
         <span className="font-display font-extrabold text-[1.3rem] tracking-[-0.02em] text-[#F3EFE6]">
-          MySuperStore
+          My<span className="text-[#E6B53C]">Super</span>Store
         </span>
         {tagline && (
           <span className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-[#B98A2A] mt-1.5">
@@ -105,5 +105,23 @@ export function BrandLogo({
         )}
       </span>
     </span>
+  );
+}
+
+export function OfficialLogo({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 1200 800" className={className} xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(600 380)">
+        <g transform="rotate(-20)" fill="none">
+          <ellipse rx="320" ry="92" stroke="#7C7568" strokeWidth="5"></ellipse>
+          <ellipse rx="305" ry="80" stroke="#E6B53C" strokeWidth="22"></ellipse>
+        </g>
+        <circle r="96" fill="#E6B53C"></circle>
+        <ellipse cx="-32" cy="-26" rx="30" ry="20" fill="#FCE6A0" opacity="0.4"></ellipse>
+      </g>
+      <text x="600" y="640" textAnchor="middle" fontFamily="sans-serif" fontWeight="800" fontSize="74" letterSpacing="-2" fill="#F3EFE6">
+        My<tspan fill="#E6B53C">Super</tspan>Store
+      </text>
+    </svg>
   );
 }

@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { useCartStore } from "@/store/cartStore";
 import { ThemeToggle } from "./ThemeToggle";
-import { BrandLogo, SaturnMark } from "./Brand";
+import { BrandLogo, SaturnMark, OfficialLogo } from "./Brand";
 import { 
   Store, 
   LayoutDashboard, 
@@ -48,22 +48,23 @@ export function Header() {
     const val = e.target.value;
     setSearch(val);
     if (val.trim() === "") {
-      router.push(`/store`);
+      router.push(`/`);
     }
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (search.trim()) {
-      router.push(`/store?search=${encodeURIComponent(search.trim())}`);
+      router.push(`/?search=${encodeURIComponent(search.trim())}`);
     } else {
-      router.push(`/store`);
+      router.push(`/`);
     }
   };
 
   const navLinks = [
-    { name: "Loja", href: "/store", icon: Store, show: true },
-    { name: "Promoções", href: "/store/promotions", icon: Zap, show: true },
+    { name: "Loja", href: "/", icon: Store, show: true },
+    { name: "Vender Aqui", href: "/vender", icon: Store, show: true },
+    { name: "White-Label", href: "/white-label", icon: Zap, show: true },
     { name: "Painel Lojista", href: "/seller", icon: LayoutDashboard, show: user?.role === "seller" },
     { name: "SuperAdmin", href: "/admin", icon: LayoutDashboard, show: user?.role === "admin" },
   ].filter(link => link.show);
@@ -73,8 +74,7 @@ export function Header() {
       <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Marca oficial — Saturno */}
         <Link href="/" className="group" aria-label="MySuperStore — início">
-          <BrandLogo tagline markClassName="h-11 w-auto" className="hidden sm:flex" />
-          <SaturnMark className="h-10 w-auto sm:hidden drop-shadow-[0_2px_10px_rgba(230,181,60,0.28)] group-hover:scale-105 transition-transform duration-300" />
+          <OfficialLogo className="h-14 sm:h-16 w-auto drop-shadow-[0_2px_10px_rgba(230,181,60,0.28)] group-hover:scale-105 transition-transform duration-300" />
         </Link>
 
         {/* Desktop Navigation */}
@@ -120,7 +120,7 @@ export function Header() {
           {search.trim() !== "" && (
             <button 
               type="button" 
-              onClick={() => { setSearch(""); router.push("/store"); }}
+              onClick={() => { setSearch(""); router.push("/"); }}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
             >
               <X className="w-3.5 h-3.5" />

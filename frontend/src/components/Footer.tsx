@@ -34,10 +34,10 @@ export function Footer() {
           <div>
             <h3 className="text-white font-bold mb-4">Comprar</h3>
             <ul className="space-y-3">
-              <li><Link href="/store" className="text-neutral-400 text-sm hover:text-primary transition-colors">Ver Catálogo</Link></li>
-              <li><Link href="/store?category=eletronicos" className="text-neutral-400 text-sm hover:text-primary transition-colors">Eletrônicos</Link></li>
-              <li><Link href="/store?category=casa-inteligente" className="text-neutral-400 text-sm hover:text-primary transition-colors">Casa Inteligente</Link></li>
-              <li><Link href="/store?brand=apple" className="text-neutral-400 text-sm hover:text-primary transition-colors">Lojas Oficiais</Link></li>
+              <li><Link href="/" className="text-neutral-400 text-sm hover:text-primary transition-colors">Ver Catálogo</Link></li>
+              <li><Link href="/?category=eletronicos" className="text-neutral-400 text-sm hover:text-primary transition-colors">Eletrônicos</Link></li>
+              <li><Link href="/?category=casa-inteligente" className="text-neutral-400 text-sm hover:text-primary transition-colors">Casa Inteligente</Link></li>
+              <li><Link href="/?brand=apple" className="text-neutral-400 text-sm hover:text-primary transition-colors">Lojas Oficiais</Link></li>
             </ul>
           </div>
 
@@ -56,6 +56,8 @@ export function Footer() {
           <div>
             <h3 className="text-white font-bold mb-4">Seja um Vendedor</h3>
             <ul className="space-y-3">
+              <li><Link href="/vender" className="text-neutral-400 text-sm hover:text-primary transition-colors">Venda na MySuperStore</Link></li>
+              <li><Link href="/white-label" className="text-neutral-400 text-sm hover:text-primary transition-colors">Tenha seu Próprio Marketplace</Link></li>
               <li><Link href="/seller" className="text-neutral-400 text-sm hover:text-primary transition-colors">Painel do Lojista</Link></li>
               <li><a href="#" className="text-neutral-400 text-sm hover:text-primary transition-colors">Taxas e Comissões</a></li>
               <li><a href="#" className="text-neutral-400 text-sm hover:text-primary transition-colors">Como funciona o Fulfillment</a></li>
@@ -97,10 +99,11 @@ export function Footer() {
         </div>
 
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-neutral-500">
-          <p>© {new Date().getFullYear()} MySuperStore. Todos os direitos reservados.</p>
-          <div className="flex gap-6">
-            <a href="#" className="hover:text-white transition-colors">Termos de Uso</a>
-            <a href="#" className="hover:text-white transition-colors">Política de Privacidade</a>
+          <p>© {new Date().getFullYear()} MySuperStore. Operado por <strong className="text-neutral-300">MaldivaSky Tech Solutions - since 2025</strong>.</p>
+          <div className="flex gap-4 md:gap-6 flex-wrap justify-center">
+            <Link href="/legal/termos-cliente" className="hover:text-white transition-colors">Termos do Cliente & Privacidade</Link>
+            <Link href="/legal/contrato-lojista" className="hover:text-white transition-colors">Contrato Lojista (B2B)</Link>
+            <Link href="/legal/contrato-licenca" className="hover:text-white transition-colors">Licenciamento White-Label</Link>
           </div>
         </div>
       </div>
