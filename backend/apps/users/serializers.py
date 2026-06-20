@@ -121,3 +121,33 @@ class UserSurveySerializer(serializers.ModelSerializer):
         fields = ["is_parent", "is_elderly", "sports_fan", "music_taste", "other_interests", "updated_at"]
         read_only_fields = ["updated_at"]
 
+
+# ── Addresses ────────────────────────────────────────────────────────────────
+
+from .models import Address
+
+class AddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = [
+            "id", "label", "recipient_name", "cep", "logradouro", "numero",
+            "complemento", "bairro", "cidade", "uf", "reference_point",
+            "observation", "is_default", "created_at"
+        ]
+        read_only_fields = ["id", "created_at"]
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+        # Se for o primeiro, ou for marcado como is_default, desmarcar os outros
+        if validated_data.get("is_default") or not Address.objects.filter(user=user).exists():
+            Address.objects.filter(user=user).update(is_default=False)
+            validated_data["is_default"] = True
+            
+        validated_data["user"] = user
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        if validated_data.get("is_default") and not instance.is_default:
+            Address.objects.filter(user=instance.user).update(is_default=False)
+        return super().update(instance, validated_data)
+

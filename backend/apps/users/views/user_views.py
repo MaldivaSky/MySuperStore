@@ -47,3 +47,16 @@ class UserSurveyView(APIView):
         serializer.save()
         return Response(serializer.data)
 
+
+from rest_framework import viewsets
+from apps.users.models import Address
+from apps.users.serializers import AddressSerializer
+
+class AddressViewSet(viewsets.ModelViewSet):
+    """CRUD para endereços do usuário autenticado."""
+    serializer_class = AddressSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Address.objects.filter(user=self.request.user)
+

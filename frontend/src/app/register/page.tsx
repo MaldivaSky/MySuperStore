@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { SaturnMark } from "@/components/Brand";
 import { useAuthStore } from "@/store/authStore";
-import { authApi } from "@/lib/api";
+import { authApi, crmApi } from "@/lib/api";
 import { motion } from "framer-motion";
-import { UserPlus, Mail, Lock, User, Phone, Loader2, AlertCircle, CreditCard, Store } from "lucide-react";
+import { UserPlus, Mail, Lock, User, Phone, Loader2, AlertCircle, CreditCard, Store, Eye, EyeOff } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -21,11 +21,29 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [isSeller, setIsSeller] = useState(false);
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showGateway, setShowGateway] = useState(false);
+
+  const getPasswordStrength = (pwd: string) => {
+    if (!pwd) return null;
+    let score = 0;
+    if (pwd.length >= 8) score += 1;
+    if (pwd.match(/[a-z]/) && pwd.match(/[A-Z]/)) score += 1;
+    if (pwd.match(/\d/)) score += 1;
+    if (pwd.match(/[^a-zA-Z\d]/)) score += 1;
+
+    if (score <= 1) return { label: "Fraca (Inapta)", bg: "bg-red-500", text: "text-red-500", width: "w-1/4", valid: false };
+    if (score === 2) return { label: "Razoável (Inapta)", bg: "bg-yellow-500", text: "text-yellow-500", width: "w-2/4", valid: false };
+    if (score === 3) return { label: "Boa (Apta)", bg: "bg-green-400", text: "text-green-400", width: "w-3/4", valid: true };
+    return { label: "Forte (Apta)", bg: "bg-green-600", text: "text-green-600", width: "w-full", valid: true };
+  };
+
+  const strength = getPasswordStrength(password);
 
   const formatCpfCnpj = (value: string, type: string) => {
     const digits = value.replace(/\D/g, "");
@@ -49,13 +67,25 @@ export default function RegisterPage() {
     setCpfCnpj(formatCpfCnpj(e.target.value, personType));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     if (password !== passwordConfirm) {
       setError("As senhas não conferem.");
       return;
+    }
+
+    try {
+      await crmApi.createLead({
+        name: `${firstName} ${lastName}`.trim(),
+        email: email,
+        phone: phone.replace(/\D/g, ''),
+        funnel_type: isSeller ? "lojista" : "comprador",
+        source: "Register Gateway Abanado"
+      });
+    } catch (err) {
+      console.warn("Silent capture fail:", err);
     }
 
     setShowGateway(true);
@@ -88,11 +118,20 @@ export default function RegisterPage() {
       
       router.push(userRes.data.is_seller ? "/seller/onboarding" : "/");
     } catch (err: any) {
-      console.error(err);
-      const detail = err.response?.data?.detail || 
-                     (err.response?.data && Object.values(err.response.data).flat().join(" ")) ||
-                     "Erro ao realizar cadastro.";
-      setError(detail);
+      if (err.response?.data) {
+        const data = err.response.data;
+        if (data.detail) {
+          setError(data.detail);
+        } else if (typeof data === 'object') {
+          const firstKey = Object.keys(data)[0];
+          const firstError = data[firstKey];
+          setError(Array.isArray(firstError) ? firstError[0] : String(firstError));
+        } else {
+          setError("Ocorreu um erro ao criar a conta.");
+        }
+      } else {
+        setError("Ocorreu um erro ao conectar com o servidor.");
+      }
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
     } finally {
@@ -253,14 +292,29 @@ export default function RegisterPage() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-border/60 bg-background/50 text-foreground placeholder-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm"
+                  className={`w-full pl-10 pr-10 py-2.5 rounded-lg border bg-background/50 text-foreground placeholder-muted-foreground focus:ring-2 transition-all outline-none text-sm ${strength ? (strength.valid ? 'border-border/60 focus:border-primary focus:ring-primary/20' : 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20') : 'border-border/60 focus:border-primary focus:ring-primary/20'}`}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
+              {strength && (
+                <div className="pt-1">
+                  <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                    <div className={`h-full ${strength.bg} transition-all duration-300 ${strength.width}`} />
+                  </div>
+                  <p className={`text-[10px] mt-1 font-medium ${strength.text}`}>{strength.label}</p>
+                </div>
+              )}
             </div>
             <div className="space-y-1">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -269,13 +323,20 @@ export default function RegisterPage() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
-                  type="password"
+                  type={showPasswordConfirm ? "text" : "password"}
                   required
                   value={passwordConfirm}
                   onChange={(e) => setPasswordConfirm(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-border/60 bg-background/50 text-foreground placeholder-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm"
+                  className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-border/60 bg-background/50 text-foreground placeholder-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPasswordConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
             </div>
           </div>

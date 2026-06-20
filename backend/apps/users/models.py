@@ -59,6 +59,8 @@ class Address(models.Model):
     bairro = models.CharField(max_length=100)
     cidade = models.CharField(max_length=100)
     uf = models.CharField(max_length=2)
+    reference_point = models.CharField(max_length=200, blank=True)
+    observation = models.TextField(blank=True)
     is_default = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 

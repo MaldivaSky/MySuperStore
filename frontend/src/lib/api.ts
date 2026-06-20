@@ -59,6 +59,7 @@ export const catalogApi = {
   setPromo: (slug: string, data: { promotional_price: number | null, promo_ends_at: string | null }) => 
     api.patch(`/catalog/products/${slug}/set-promo/`, data),
   track: (slug: string, type: "view" | "click") => api.post(`/catalog/products/${slug}/track/`, { type }),
+  getCategories: () => api.get("/catalog/categories/"),
 };
 
 export const cartApi = {
@@ -132,6 +133,10 @@ export const reviewApi = {
 export const userApi = {
   getSurvey: () => api.get("/users/me/survey/"),
   saveSurvey: (data: any) => api.post("/users/me/survey/", data),
+  getAddresses: () => api.get("/users/me/addresses/"),
+  createAddress: (data: any) => api.post("/users/me/addresses/", data),
+  updateAddress: (id: string, data: any) => api.patch(`/users/me/addresses/${id}/`, data),
+  deleteAddress: (id: string) => api.delete(`/users/me/addresses/${id}/`),
 };
 
 export const chatApi = {
@@ -206,7 +211,3 @@ export const crmApi = {
   deleteLead: (id: string) => api.delete(`/crm/leads/${id}/`),
 };
 
-// ── CATALOG API ───────────────────────────────────────────────────────────────
-export const catalogApi = {
-  getCategories: () => api.get("/catalog/categories/"),
-};
