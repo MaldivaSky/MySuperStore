@@ -14,6 +14,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         # Otimiza o carregamento de sub-pedidos, itens e vendedores em uma consulta reduzida
         return (
             Order.objects.filter(user=self.request.user)
+            .select_related("payment")
             .prefetch_related(
                 "sub_orders__items",
                 "sub_orders__seller",
@@ -54,11 +55,11 @@ class SellerSubOrderViewSet(viewsets.ModelViewSet):
     def update_status(self, request, pk=None):
         sub_order = self.get_object()
         new_status = request.data.get("status")
-        
-        # Validar se o status está nas escolhas
-        from .models import SubOrderStatus
-        valid_statuses = [choice[0] for choice in SubOrderStatus.choices]
-        
+
+        # Valida se o status está entre as escolhas válidas de pedido
+        from .models import OrderStatus
+        valid_statuses = [choice[0] for choice in OrderStatus.choices]
+
         if new_status not in valid_statuses:
             return Response({"error": "Status inválido."}, status=status.HTTP_400_BAD_REQUEST)
             
@@ -134,14 +135,44 @@ class ReturnRequestViewSet(viewsets.ModelViewSet):
             
         if new_status:
             rr.status = new_status
-            
-            # Se a devolução foi aprovada e reembolsada, aqui deve-se ligar com a Stripe no futuro
+
+            # Estorno do item: devolve o valor ao cliente (Stripe) e o estoque ao vendedor
             if new_status == "refunded":
-                rr.order_item.sub_order.status = "refunded"
-                rr.order_item.sub_order.save()
-                
+                self._process_item_refund(rr.order_item)
+
         if seller_notes is not None:
             rr.seller_notes = seller_notes
-            
+
         rr.save()
         return Response(self.get_serializer(rr).data)
+
+    def _process_item_refund(self, order_item):
+        """Estorno parcial referente a um único item devolvido."""
+        from django.db import transaction
+        from apps.catalog.models import ProductVariant
+        from apps.payments.models import Payment, PaymentMethod
+        from apps.payments.services import StripeService
+
+        sub_order = order_item.sub_order
+        order = sub_order.order
+        payment = Payment.objects.filter(order=order).first()
+
+        with transaction.atomic():
+            # 1. Estorna o valor do item no provedor (somente cartão; PIX = baixa local)
+            if payment and payment.method in (PaymentMethod.CREDIT_CARD, PaymentMethod.DEBIT_CARD):
+                try:
+                    StripeService.refund_payment(payment, amount=order_item.total)
+                    payment.refunded_amount = (payment.refunded_amount or 0) + order_item.total
+                    payment.save(update_fields=["refunded_amount", "updated_at"])
+                except Exception:
+                    pass  # falha de estorno não deve travar a atualização de status da devolução
+
+            # 2. Devolve o item ao estoque
+            if order_item.variant_id:
+                variant = ProductVariant.objects.select_for_update().get(id=order_item.variant_id)
+                variant.stock += order_item.quantity
+                variant.save(update_fields=["stock"])
+
+            # 3. Marca o sub-pedido como reembolsado
+            sub_order.status = "refunded"
+            sub_order.save(update_fields=["status", "updated_at"])

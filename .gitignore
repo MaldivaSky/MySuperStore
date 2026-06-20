@@ -62,3 +62,5 @@ ehthumbs.db
 .idea/
 *.swp
 *.swo
+# Next.js build info
+frontend/tsconfig.tsbuildinfo

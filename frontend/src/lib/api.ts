@@ -86,6 +86,19 @@ export const ordersApi = {
   create: (data: any) => api.post("/orders/", data),
 };
 
+export type PaymentMethodChoice = "pix" | "credit_card" | "debit_card";
+
+export const paymentsApi = {
+  createIntent: (orderId: string, method: PaymentMethodChoice) =>
+    api.post("/payments/create-intent/", { order_id: orderId, payment_method: method }),
+  confirm: (paymentId: string) => api.post(`/payments/${paymentId}/confirm/`),
+  simulatePix: (paymentId: string) => api.post(`/payments/${paymentId}/simulate-pix/`),
+  cancel: (paymentId: string) => api.post(`/payments/${paymentId}/cancel/`),
+  refund: (paymentId: string, amount?: number) =>
+    api.post(`/payments/${paymentId}/refund/`, amount != null ? { amount } : {}),
+  status: (paymentId: string) => api.get(`/payments/${paymentId}/`),
+};
+
 export const returnsApi = {
   requestReturn: (orderItemId: string, reason: string, customerNotes: string) => 
     api.post("/orders/returns/", {

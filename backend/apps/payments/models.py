@@ -5,6 +5,7 @@ from django.db import models
 class PaymentMethod(models.TextChoices):
     PIX = "pix", "PIX"
     CREDIT_CARD = "credit_card", "Cartão de Crédito"
+    DEBIT_CARD = "debit_card", "Cartão de Débito"
     BOLETO = "boleto", "Boleto Bancário"
 
 
@@ -21,11 +22,16 @@ class Payment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     order = models.OneToOneField("orders.Order", on_delete=models.PROTECT, related_name="payment")
     method = models.CharField(max_length=20, choices=PaymentMethod.choices)
-    # ID do pagamento no Mercado Pago
+    # ID do PaymentIntent no Stripe (cartão). Mantido o nome legado mp_payment_id por compat de migração.
     mp_payment_id = models.CharField(max_length=100, blank=True, db_index=True)
+    # ID do charge/cobrança usado para estornos e transfers
+    stripe_charge_id = models.CharField(max_length=100, blank=True, db_index=True)
     status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    # PIX
+    # Valor já estornado (parcial ou total)
+    refunded_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    stripe_refund_id = models.CharField(max_length=100, blank=True)
+    # PIX — payload "copia e cola" (EMV/BR Code) e QR em base64
     pix_qr_code = models.TextField(blank=True)
     pix_qr_code_base64 = models.TextField(blank=True)
     # Boleto
@@ -34,7 +40,8 @@ class Payment(models.Model):
     # Controle
     expires_at = models.DateTimeField(null=True, blank=True)
     paid_at = models.DateTimeField(null=True, blank=True)
-    raw_response = models.JSONField(default=dict)  # resposta completa do MP
+    refunded_at = models.DateTimeField(null=True, blank=True)
+    raw_response = models.JSONField(default=dict)  # resposta completa do provedor
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -52,6 +52,7 @@ class SubOrderSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     sub_orders = SubOrderSerializer(many=True, read_only=True)
+    payment = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -71,10 +72,22 @@ class OrderSerializer(serializers.ModelSerializer):
             "address_cidade",
             "address_uf",
             "notes",
+            "payment",
             "sub_orders",
             "created_at",
             "updated_at",
         ]
+
+    def get_payment(self, obj):
+        p = getattr(obj, "payment", None)
+        if not p:
+            return None
+        return {
+            "id": str(p.id),
+            "status": p.status,
+            "method": p.method,
+            "refunded_amount": str(p.refunded_amount),
+        }
 
 
 class OrderCreateSerializer(serializers.ModelSerializer):

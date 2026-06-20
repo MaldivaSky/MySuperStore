@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ordersApi, reviewApi, returnsApi } from "@/lib/api";
-import { Loader2, Package, CheckCircle2, Truck, Clock, Star, Send, MessageCircle, X, RefreshCcw, Store } from "lucide-react";
+import { ordersApi, reviewApi, returnsApi, paymentsApi } from "@/lib/api";
+import { Loader2, Package, CheckCircle2, Truck, Clock, Star, Send, MessageCircle, X, RefreshCcw, Store, Ban, Undo2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 
@@ -94,6 +94,36 @@ export default function OrdersPage() {
     }
   };
 
+  const [actioningId, setActioningId] = useState<string | null>(null);
+
+  const handleCancel = async (order: any) => {
+    if (!order.payment?.id) return;
+    if (!confirm(`Cancelar o pedido ${order.order_number}? O estoque será devolvido.`)) return;
+    setActioningId(order.id);
+    try {
+      await paymentsApi.cancel(order.payment.id);
+      await loadOrders();
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || "Erro ao cancelar pedido.");
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  const handleRefund = async (order: any) => {
+    if (!order.payment?.id) return;
+    if (!confirm(`Solicitar estorno total do pedido ${order.order_number}?`)) return;
+    setActioningId(order.id);
+    try {
+      await paymentsApi.refund(order.payment.id);
+      await loadOrders();
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || "Erro ao estornar pedido.");
+    } finally {
+      setActioningId(null);
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "pending": return <Clock className="h-4 w-4 text-amber-500" />;
@@ -148,9 +178,43 @@ export default function OrdersPage() {
                   <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Pedido {order.order_number}</p>
                   <p className="text-sm text-foreground mt-1">{new Date(order.created_at).toLocaleDateString("pt-BR", { day: '2-digit', month: 'long', year: 'numeric' })}</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Total</p>
-                  <p className="text-lg font-display font-bold text-primary">R$ {Number(order.total).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Total</p>
+                    <p className="text-lg font-display font-bold text-primary">R$ {Number(order.total).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                  </div>
+
+                  {/* Ações de pagamento no nível do pedido */}
+                  {order.status === "pending" && order.payment?.id && (
+                    <button
+                      onClick={() => handleCancel(order)}
+                      disabled={actioningId === order.id}
+                      className="text-xs flex items-center gap-1.5 px-3 py-2 rounded-lg border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-colors font-semibold disabled:opacity-50"
+                    >
+                      {actioningId === order.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Ban className="h-3.5 w-3.5" />}
+                      Cancelar
+                    </button>
+                  )}
+                  {["confirmed", "processing"].includes(order.status) && order.payment?.status === "approved" && (
+                    <button
+                      onClick={() => handleRefund(order)}
+                      disabled={actioningId === order.id}
+                      className="text-xs flex items-center gap-1.5 px-3 py-2 rounded-lg border border-amber-500/30 text-amber-500 hover:bg-amber-500/10 transition-colors font-semibold disabled:opacity-50"
+                    >
+                      {actioningId === order.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Undo2 className="h-3.5 w-3.5" />}
+                      Estornar
+                    </button>
+                  )}
+                  {order.status === "refunded" && (
+                    <span className="text-xs flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-500/10 text-amber-500 font-semibold">
+                      <Undo2 className="h-3.5 w-3.5" /> Reembolsado
+                    </span>
+                  )}
+                  {order.status === "cancelled" && (
+                    <span className="text-xs flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-500/10 text-red-500 font-semibold">
+                      <Ban className="h-3.5 w-3.5" /> Cancelado
+                    </span>
+                  )}
                 </div>
               </div>
 
