@@ -1,0 +1,45 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Nova Venda Realizada! | MySuperStore{% endblock %}
+
+{% block content %}
+<div style="text-align: center;">
+    <h2 style="color: #2196F3;">Você realizou uma nova venda! 🚀</h2>
+    <p>Olá, <strong>{{ seller_name }}</strong>,</p>
+    <p>Ótimas notícias! Sua loja <strong>{{ store_name }}</strong> acabou de vender novos produtos no pedido <strong>#{{ order_number }}</strong>. É hora de preparar o envio.</p>
+    
+    <div style="background-color: #1A1820; border-radius: 12px; padding: 20px; margin: 30px 0; text-align: left;">
+        <h3 style="color: #E6B53C; margin-top: 0; border-bottom: 1px solid #2C2A35; padding-bottom: 10px;">Itens a serem enviados</h3>
+        
+        <table width="100%" cellspacing="0" cellpadding="0" style="color: #F3EFE6;">
+            {% for item in items %}
+            <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #2C2A35;">
+                    <strong style="color: #FCE6A0;">{{ item.quantity }}x</strong> {{ item.product_name }}
+                </td>
+                <td align="right" style="padding: 10px 0; border-bottom: 1px solid #2C2A35;">
+                    R$ {{ item.unit_price }}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <table width="100%" cellspacing="0" cellpadding="0" style="color: #F3EFE6; margin-top: 15px;">
+            <tr>
+                <td style="padding: 5px 0; color: #D1CDD2;">Comissão da Plataforma:</td>
+                <td align="right" style="padding: 5px 0;">- R$ {{ commission }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px 0; font-size: 18px; font-weight: bold; color: #4CAF50;">Seu Lucro (Líquido):</td>
+                <td align="right" style="padding: 10px 0; font-size: 18px; font-weight: bold; color: #4CAF50;">R$ {{ seller_amount }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <p style="font-size: 14px;">Acesse seu painel agora mesmo para ver os dados de entrega do cliente.</p>
+    
+    <a href="{{ dashboard_url }}" class="btn" style="display: inline-block;">
+        ACESSAR PAINEL DO LOJISTA
+    </a>
+</div>
+{% endblock %}

@@ -46,10 +46,16 @@ class ProductSpecificationSerializer(serializers.ModelSerializer):
 class ProductVariantSerializer(serializers.ModelSerializer):
     attributes = AttributeValueSerializer(many=True, read_only=True)
     effective_price = serializers.SerializerMethodField()
+    product_name = serializers.CharField(source="product.name", read_only=True)
+    product_description = serializers.CharField(source="product.description", read_only=True)
+    product_image = serializers.SerializerMethodField()
 
     class Meta:
         model = ProductVariant
-        fields = ["id", "sku", "attributes", "price", "effective_price", "stock", "is_active"]
+        fields = [
+            "id", "sku", "attributes", "price", "effective_price", 
+            "stock", "is_active", "product_name", "product_description", "product_image"
+        ]
 
     def get_effective_price(self, obj):
         product = self.context.get("product")
@@ -58,6 +64,23 @@ class ProductVariantSerializer(serializers.ModelSerializer):
         if obj.price is not None:
             return obj.price
         return product.base_price if product else None
+
+    def get_product_image(self, obj):
+        request = self.context.get("request")
+        if not obj.product:
+            return None
+            
+        images = getattr(obj.product, "prefetched_images", None)
+        if images is None:
+            images = list(obj.product.images.all())
+            
+        primary = next((i for i in images if i.is_primary), None) or (images[0] if images else None)
+        if primary and request:
+            try:
+                return request.build_absolute_uri(primary.image.url)
+            except ValueError:
+                return None
+        return None
 
 
 # -- Variantes (escrita) -------------------------------------------------------
@@ -204,7 +227,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             "primary_image",
             "avg_rating", "review_count",
             "is_available", "views_count", "clicks_count", "created_at",
-            "variants",
+            "variants", "is_free_shipping", "estimated_delivery_days",
         ]
 
     def get_primary_image(self, obj):
@@ -289,6 +312,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         fields = [
             "name", "slug", "category", "brand", "description",
             "base_price", "is_available",
+            "is_free_shipping", "estimated_delivery_days",
             "meta_title", "meta_description",
         ]
 
@@ -318,6 +342,7 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
         fields = [
             "name", "category", "brand", "description",
             "base_price", "is_available",
+            "is_free_shipping", "estimated_delivery_days",
             "meta_title", "meta_description",
         ]
 

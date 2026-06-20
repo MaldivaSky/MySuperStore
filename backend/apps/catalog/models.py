@@ -80,6 +80,10 @@ class Product(models.Model):
     views_count = models.PositiveIntegerField(default=0)
     clicks_count = models.PositiveIntegerField(default=0)
     
+    # Logística e Frete
+    is_free_shipping = models.BooleanField(default=False)
+    estimated_delivery_days = models.PositiveIntegerField(default=5)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

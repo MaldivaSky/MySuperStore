@@ -1,8 +1,10 @@
 "use client";
+import React from "react";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
+import { useCartStore } from "@/store/cartStore";
 import { ThemeToggle } from "./ThemeToggle";
 import { BrandLogo, SaturnMark } from "./Brand";
 import { 
@@ -19,19 +21,43 @@ import {
   Search
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout, isAuthenticated } = useAuthStore();
+  const { itemCount, fetchCartCount } = useCartStore();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [search, setSearch] = useState("");
+  const searchParams = useSearchParams();
+  const searchParam = searchParams.get("search") || "";
+  const [search, setSearch] = useState(searchParam);
+
+  // Sincroniza a barra de pesquisa com a URL quando ela muda externamente
+  useEffect(() => {
+    setSearch(searchParam);
+  }, [searchParam]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchCartCount();
+    }
+  }, [isAuthenticated, fetchCartCount]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setSearch(val);
+    if (val.trim() === "") {
+      router.push(`/store`);
+    }
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (search.trim()) {
       router.push(`/store?search=${encodeURIComponent(search.trim())}`);
+    } else {
+      router.push(`/store`);
     }
   };
 
@@ -87,10 +113,19 @@ export function Header() {
             type="text"
             placeholder="Pesquisar produtos..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] focus:border-primary/50 text-white rounded-full pl-10 pr-4 py-1.5 text-xs outline-none transition-all placeholder:text-neutral-500"
+            onChange={handleSearchChange}
+            className="w-full bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] focus:border-primary/50 text-white rounded-full pl-10 pr-8 py-1.5 text-xs outline-none transition-all placeholder:text-neutral-500"
           />
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 pointer-events-none" />
+          {search.trim() !== "" && (
+            <button 
+              type="button" 
+              onClick={() => { setSearch(""); router.push("/store"); }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </form>
 
         <div className="flex items-center gap-4">
@@ -117,7 +152,14 @@ export function Header() {
             )}
 
             <Link href="/cart" className="p-2 rounded-full hover:bg-white/10 text-neutral-300 hover:text-white transition-colors relative group">
-              <ShoppingCart className="h-5 w-5" />
+              <div className="relative">
+                <ShoppingCart className="h-5 w-5" />
+                {itemCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground text-[10px] font-bold h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center shadow-sm">
+                    {itemCount > 99 ? "99+" : itemCount}
+                  </span>
+                )}
+              </div>
               <span className="absolute top-14 right-0 scale-0 group-hover:scale-100 transition-all bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap z-50">Carrinho</span>
             </Link>
           </div>

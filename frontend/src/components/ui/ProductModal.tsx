@@ -3,10 +3,11 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { X, Star, ShoppingCart, Loader2, Info, ArrowRight, Heart, MessageSquare, Share2, Clock, Zap, MessageCircle } from "lucide-react";
+import { X, Star, ShoppingCart, Loader2, Info, ArrowRight, Heart, MessageSquare, Share2, Clock, Zap, MessageCircle, Truck } from "lucide-react";
 import { catalogApi, cartApi, wishlistApi, reviewApi, chatApi } from "@/lib/api";
 import { Product, ProductVariant } from "@/types";
 import { useAuthStore } from "@/store/authStore";
+import { useCartStore } from "@/store/cartStore";
 import { useToast } from "@/components/ui/Toast";
 import { CountdownTimer } from "./CountdownTimer";
 
@@ -128,6 +129,7 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
     setCartMessage("");
     try {
       await cartApi.addItem(selectedVariant.id, quantity);
+      useCartStore.getState().fetchCartCount();
       setCartMessage("Produto adicionado ao carrinho com sucesso!");
       setTimeout(() => setCartMessage(""), 3000);
     } catch (err: any) {
@@ -149,7 +151,7 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+      <div key="modal-main" className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -424,6 +426,30 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
                         {product.description}
                       </p>
 
+                      {/* Logística e Garantia */}
+                      <div className="mt-4 bg-primary/5 rounded-xl p-4 border border-primary/10 space-y-3">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+                          <Truck className="w-4 h-4" /> Logística e Devoluções
+                        </h4>
+                        <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+                          {product.is_free_shipping ? (
+                            <div className="flex items-center gap-2 text-emerald-500 font-semibold">
+                              <Zap className="w-4 h-4" /> Frete Grátis disponível para o seu CEP
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <Truck className="w-4 h-4" /> Frete calculado no checkout
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4" /> Estimativa de entrega: {product.estimated_delivery_days || 5} dias úteis
+                          </div>
+                          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border/40">
+                            <Info className="w-4 h-4" /> Política de Devolução: Você tem até 7 dias após o recebimento para devolver gratuitamente.
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Características Técnicas Dynamicas ou Fixas */}
                       <div className="mt-4 bg-secondary/10 rounded-xl p-4 border border-border/30">
                         <h4 className="text-xs font-bold uppercase tracking-wider mb-3 text-foreground">Características Técnicas</h4>
@@ -598,7 +624,7 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
                         className="w-full h-12 px-3 rounded-xl border border-border/60 bg-background/50 text-foreground focus:border-primary outline-none"
                       >
                         {[...Array(Math.min(10, selectedVariant?.stock || 1))].map((_, i) => (
-                          <option key={i + 1} value={i + 1}>{i + 1}</option>
+                          <option key={i} value={i + 1}>{i + 1}</option>
                         ))}
                       </select>
                     </div>
@@ -624,7 +650,7 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
         </motion.div>
       </div>
       {/* Floating Chat Drawer */}
-      <AnimatePresence>
+      <AnimatePresence key="modal-chat">
         {isChatOpen && (
           <motion.div
             initial={{ opacity: 0, x: 100, y: 50 }}

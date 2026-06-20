@@ -81,7 +81,7 @@ export interface Product {
 // ── Carrinho ─────────────────────────────────────────────────────────────────
 export interface CartItem {
   id: string;
-  variant: ProductVariant & { product_name: string; product_image: string };
+  variant: ProductVariant & { product_name: string; product_image: string; product_description: string };
   quantity: number;
   subtotal: string;
 }

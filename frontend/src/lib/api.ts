@@ -26,7 +26,7 @@ api.interceptors.response.use(
       const refresh = localStorage.getItem("refresh_token");
       if (refresh) {
         try {
-          const { data } = await axios.post(`${API_URL}/auth/refresh/`, { refresh });
+          const { data } = await axios.post(`${API_URL}/auth/token/refresh/`, { refresh });
           localStorage.setItem("access_token", data.access);
           original.headers.Authorization = `Bearer ${data.access}`;
           return api(original);
@@ -45,7 +45,7 @@ export const authApi = {
   register: (data: RegisterPayload) => api.post("/auth/register/", data),
   login: (email: string, password: string) =>
     api.post<TokenPair>("/auth/login/", { email, password }),
-  refresh: (refresh: string) => api.post<{ access: string }>("/auth/refresh/", { refresh }),
+  refresh: (refresh: string) => api.post<{ access: string }>("/auth/token/refresh/", { refresh }),
   me: () => api.get("/users/me/"),
   updateProfile: (data: any) => api.put("/users/me/", data),
 };
@@ -68,6 +68,7 @@ export const cartApi = {
   updateItem: (itemId: string, quantity: number) =>
     api.patch(`/cart/items/${itemId}/`, { quantity }),
   removeItem: (itemId: string) => api.delete(`/cart/items/${itemId}/`),
+  applyCoupon: (code: string) => api.post("/cart/apply_coupon/", { code }),
   triggerAbandonedEmails: () => api.post("/cart/trigger-abandoned-emails/"),
 };
 
@@ -179,3 +180,17 @@ interface TokenPair {
   access: string;
   refresh: string;
 }
+
+export const adminApi = {
+  getDashboardMetrics: () => api.get("/admin/dashboard/metrics/"),
+  sellers: {
+    list: () => api.get("/admin/sellers/"),
+    approve: (id: string) => api.post(`/admin/sellers/${id}/approve/`),
+    reject: (id: string, reason?: string) => api.post(`/admin/sellers/${id}/reject/`, { reason }),
+  },
+  coupons: {
+    list: () => api.get("/admin/coupons/"),
+    create: (data: any) => api.post("/admin/coupons/", data),
+    delete: (id: string) => api.delete(`/admin/coupons/${id}/`),
+  }
+};

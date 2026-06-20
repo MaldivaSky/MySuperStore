@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { cartApi } from "@/lib/api";
 import { Cart } from "@/types";
+import { useCartStore } from "@/store/cartStore";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
@@ -15,11 +16,15 @@ export default function CartPage() {
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  
+  const [couponCode, setCouponCode] = useState("");
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
 
   const loadCart = async () => {
     try {
       const res = await cartApi.get();
       setCart(res.data);
+      useCartStore.getState().setItemCount(res.data.items.length);
     } catch (err) {
       console.error(err);
     } finally {
@@ -53,6 +58,22 @@ export default function CartPage() {
       console.error(err);
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const applyCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!couponCode.trim()) return;
+    setApplyingCoupon(true);
+    try {
+      await cartApi.applyCoupon(couponCode);
+      await loadCart();
+      setCouponCode("");
+    } catch (err) {
+      console.error(err);
+      alert("Cupom inválido ou expirado.");
+    } finally {
+      setApplyingCoupon(false);
     }
   };
 
@@ -113,7 +134,7 @@ export default function CartPage() {
                   <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-white/5 shrink-0 border border-border/20">
                     <Image
                       src={item.variant.product_image || "/placeholder.png"}
-                      alt={item.variant.product_name}
+                      alt={item.variant.product_name || "Produto"}
                       fill
                       className="object-cover"
                     />
@@ -123,6 +144,11 @@ export default function CartPage() {
                     <h4 className="font-bold text-lg leading-tight text-foreground">
                       {item.variant.product_name}
                     </h4>
+                    {item.variant.product_description && (
+                      <p className="text-sm text-neutral-400 line-clamp-2">
+                        {item.variant.product_description}
+                      </p>
+                    )}
                     {item.variant.attributes.length > 0 && (
                       <p className="text-xs text-muted-foreground">
                         {item.variant.attributes.map(a => a.value).join(" • ")}
@@ -180,13 +206,36 @@ export default function CartPage() {
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between text-muted-foreground">
                     <span>Subtotal ({cart.item_count} itens)</span>
-                    <span>R$ {Number(cart.total).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                    <span>R$ {Number(cart.subtotal).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                     <span>Frete</span>
                     <span className="text-green-500 font-semibold">Grátis</span>
                   </div>
+                  {cart.coupon_code && (
+                    <div className="flex justify-between text-emerald-400">
+                      <span>Cupom ({cart.coupon_code})</span>
+                      <span>Aplicado</span>
+                    </div>
+                  )}
                 </div>
+
+                <form onSubmit={applyCoupon} className="flex gap-2 pt-2">
+                  <input
+                    type="text"
+                    placeholder="Cupom de Desconto"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    className="flex-grow bg-secondary/30 border border-border/60 rounded-xl px-4 py-2 text-sm outline-none focus:border-primary transition-all uppercase placeholder:normal-case"
+                  />
+                  <button
+                    type="submit"
+                    disabled={applyingCoupon || !couponCode.trim()}
+                    className="bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 rounded-xl px-4 py-2 text-sm font-semibold transition-all disabled:opacity-50"
+                  >
+                    {applyingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : "Aplicar"}
+                  </button>
+                </form>
 
                 <div className="pt-4 border-t border-border/40 flex justify-between items-center">
                   <span className="font-semibold text-foreground">Total</span>

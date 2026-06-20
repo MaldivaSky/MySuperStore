@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { 
   Store, Package, DollarSign, Tag, Settings, LayoutDashboard, CreditCard, Plus, Truck, 
   CheckCircle, Clock, RefreshCcw, Loader2, Zap, MessageSquare, Users, Trash2, Edit2, 
@@ -14,6 +14,7 @@ import { useToast } from "@/components/ui/Toast";
 export default function SellerDashboard() {
   const { user, isAuthenticated } = useAuthStore();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -88,6 +89,26 @@ export default function SellerDashboard() {
       fetchChatRooms();
     }
   }, [isAuthenticated, user, router]);
+
+  useEffect(() => {
+    const stripeCb = searchParams.get("stripe_callback");
+    if (stripeCb === "success") {
+      sellerApi.stripeCallback().then(() => {
+        toast("Conta Stripe conectada com sucesso!", "success");
+        router.replace("/seller"); // clean URL
+        // Fetch user again to get stripe_authorized = true
+        useAuthStore.getState().fetchUser();
+        setActiveTab("configuracoes");
+      }).catch((err) => {
+        toast("Erro ao confirmar conexão com o Stripe.", "error");
+        console.error(err);
+      });
+    } else if (stripeCb === "refresh") {
+      toast("A conexão com o Stripe foi interrompida ou precisa de mais dados.", "warning");
+      setActiveTab("configuracoes");
+      router.replace("/seller");
+    }
+  }, [searchParams, router]);
 
   // Chat Polling
   useEffect(() => {
@@ -1600,6 +1621,55 @@ export default function SellerDashboard() {
                     <label className="text-xs text-neutral-400 uppercase tracking-wider font-bold block mb-1">Descrição</label>
                     <textarea defaultValue={(user as any)?.seller_profile?.description || "Especialistas em produtos de alta qualidade com entrega expressa."} className="w-full bg-[#141420] border border-white/[0.05] rounded-xl px-4 py-2 text-sm text-white focus:border-blue-500 outline-none resize-none" rows={3}></textarea>
                   </div>
+                </div>
+              </div>
+
+              {/* Stripe Connect - Pagamentos e Repasses */}
+              <div className="bg-[#0a0a14]/80 backdrop-blur-xl border border-white/[0.05] rounded-3xl p-8 col-span-1 md:col-span-2">
+                <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><DollarSign className="w-5 h-5 text-green-500" /> Pagamentos e Repasses (Stripe Connect)</h3>
+                <div className="space-y-4">
+                  <p className="text-sm text-neutral-400">
+                    Para receber os pagamentos das suas vendas automaticamente, você precisa conectar sua conta ao Stripe.
+                    O Stripe é o nosso parceiro de pagamentos e garante que o seu dinheiro caia direto na sua conta de forma segura.
+                  </p>
+                  
+                  {(user as any)?.seller_profile?.stripe_authorized ? (
+                    <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl flex items-center gap-4">
+                      <CheckCircle className="w-8 h-8 text-green-500" />
+                      <div>
+                        <h4 className="text-green-500 font-bold">Conta Conectada e Autorizada!</h4>
+                        <p className="text-xs text-green-500/70">Você está pronto para receber repasses automáticos do marketplace.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                      <div className="flex items-center gap-4 mb-4">
+                        <AlertTriangle className="w-8 h-8 text-amber-500" />
+                        <div>
+                          <h4 className="text-amber-500 font-bold">Ação Necessária</h4>
+                          <p className="text-xs text-amber-500/70">Sua conta ainda não está apta a receber pagamentos automáticos.</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={async () => {
+                          try {
+                            toast("Redirecionando para o Stripe...", "success");
+                            const res = await sellerApi.onboard(
+                              `${window.location.origin}/seller?stripe_callback=success`,
+                              `${window.location.origin}/seller?stripe_callback=refresh`
+                            );
+                            window.location.href = res.data.onboarding_url;
+                          } catch (err: any) {
+                            console.error(err);
+                            toast("Erro ao iniciar conexão com o Stripe.", "error");
+                          }
+                        }}
+                        className="w-full bg-[#635BFF] hover:bg-[#635BFF]/90 text-white font-bold py-3 rounded-xl transition-all shadow-[0_0_15px_rgba(99,91,255,0.3)] flex items-center justify-center gap-2"
+                      >
+                        <CreditCard className="w-5 h-5" /> Conectar com Stripe
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 

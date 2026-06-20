@@ -103,7 +103,10 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             "address_cidade",
             "address_uf",
             "notes",
+            "coupon_code",
         ]
+
+    coupon_code = serializers.CharField(required=False, write_only=True)
 
     def validate(self, data):
         user = self.context["request"].user
@@ -122,6 +125,24 @@ class OrderCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     f"Estoque insuficiente para o produto {variant.product.name} ({variant.sku}). Restam apenas {variant.stock} unidades."
                 )
+
+        coupon_code = data.get("coupon_code")
+        if coupon_code:
+            from apps.orders.models import Coupon
+            from django.utils import timezone
+            try:
+                coupon = Coupon.objects.get(code=coupon_code, active=True)
+                now = timezone.now()
+                if now < coupon.valid_from or now > coupon.valid_to:
+                    raise serializers.ValidationError({"coupon_code": "Este cupom expirou ou ainda não é válido."})
+                # Check if it's seller specific
+                if coupon.seller:
+                    # check if any item is from this seller
+                    seller_matched = any(item.variant.product.seller == coupon.seller for item in cart.items.all())
+                    if not seller_matched:
+                        raise serializers.ValidationError({"coupon_code": f"Este cupom só é válido para produtos da loja {coupon.seller.store_name}."})
+            except Coupon.DoesNotExist:
+                raise serializers.ValidationError({"coupon_code": "Cupom inválido ou inativo."})
 
         return data
 
@@ -152,6 +173,24 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             subtotal = sum(item.subtotal for item in cart_items)
             shipping = 0  # Frete fixado em zero por enquanto
             total = subtotal + shipping
+
+            coupon_code = validated_data.pop("coupon_code", None)
+            discount = 0
+            if coupon_code:
+                from apps.orders.models import Coupon
+                coupon = Coupon.objects.get(code=coupon_code)
+                if coupon.discount_percentage:
+                    # Discount only applies to the seller's items if it's a seller coupon
+                    if coupon.seller:
+                        seller_subtotal = sum(item.subtotal for item in cart_items if item.variant.product.seller == coupon.seller)
+                        discount = seller_subtotal * (coupon.discount_percentage / 100)
+                    else:
+                        discount = subtotal * (coupon.discount_percentage / 100)
+                elif coupon.discount_amount:
+                    discount = coupon.discount_amount
+                
+                total = max(0, total - discount)
+                validated_data["notes"] = f"Cupom aplicado: {coupon_code} (-R$ {discount:.2f})\n" + validated_data.get("notes", "")
 
             # 4. Cria a Order principal
             order = Order.objects.create(

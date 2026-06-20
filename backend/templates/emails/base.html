@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MySuperStore{% endblock %}</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0C0B11;
+            color: #F3EFE6;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #0C0B11;
+            border: 1px solid #1A1820;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            background: linear-gradient(180deg, rgba(230,181,60,0.1) 0%, rgba(12,11,17,1) 100%);
+            border-bottom: 1px solid rgba(230,181,60,0.2);
+        }
+        .header img {
+            max-width: 200px;
+            height: auto;
+        }
+        .brand-text {
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            color: #F3EFE6;
+            margin: 0;
+        }
+        .brand-text span {
+            color: #E6B53C;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        h1, h2, h3 {
+            color: #FCE6A0;
+            margin-top: 0;
+        }
+        p {
+            line-height: 1.6;
+            color: #D1CDD2;
+            margin-bottom: 20px;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #E6B53C;
+            color: #0C0B11 !important;
+            text-decoration: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 16px;
+            text-align: center;
+            margin: 20px 0;
+            box-shadow: 0 4px 15px rgba(230,181,60,0.3);
+            transition: all 0.3s ease;
+        }
+        .footer {
+            text-align: center;
+            padding: 30px 20px;
+            background-color: #08070B;
+            border-top: 1px solid #1A1820;
+            font-size: 12px;
+            color: #7C7568;
+        }
+        .footer p {
+            color: #7C7568;
+            margin: 5px 0;
+        }
+        .slogan {
+            font-style: italic;
+            color: #E6B53C;
+            font-weight: bold;
+        }
+        hr {
+            border: 0;
+            height: 1px;
+            background: #1A1820;
+            margin: 30px 0;
+        }
+    </style>
+</head>
+<body style="background-color: #0C0B11; padding: 20px 0;">
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0C0B11;">
+        <tr>
+            <td align="center">
+                <div class="container">
+                    <div class="header">
+                        <!-- Utilizando texto estilizado como fallback caso a imagem falhe, mas com a imagem oficial em src -->
+                        <img src="http://localhost:3000/logo.png" alt="MySuperStore Logo" style="display: block; margin: 0 auto; max-width: 150px; margin-bottom: 15px;">
+                        <h1 class="brand-text">My<span>Super</span>Store</h1>
+                    </div>
+                    
+                    <div class="content">
+                        {% block content %}
+                        {% endblock %}
+                    </div>
+                    
+                    <div class="footer">
+                        <p class="slogan">"Onde Tudo Orbita Você"</p>
+                        <p>&copy; 2026 MySuperStore Ecosystem. Todos os direitos reservados.</p>
+                        <p>Você está recebendo este e-mail porque é um membro valioso da nossa plataforma.</p>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

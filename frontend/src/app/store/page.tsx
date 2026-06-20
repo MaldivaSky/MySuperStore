@@ -8,9 +8,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { api, wishlistApi, userApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { useToast } from "@/components/ui/Toast";
+import { useCartStore } from "@/store/cartStore";
 import { 
   ShoppingBag, Star, TrendingUp, Search, 
-  ChevronRight, Heart, Filter, X, Loader2, Zap, Clock
+  ChevronRight, Heart, Filter, X, Loader2, Zap, Clock, Truck
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { ProductModal } from "@/components/ui/ProductModal";
@@ -126,6 +127,7 @@ function StorePageContent() {
     setPage(1);
     setHasMore(true);
     fetchProducts(1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [selectedCategory, minPrice, maxPrice, brand, rating, ordering, discountMin, search]);
 
   useEffect(() => {
@@ -545,7 +547,20 @@ function StorePageContent() {
                       <h3 className="font-semibold text-lg leading-tight mb-2 group-hover:text-primary transition-colors line-clamp-2">
                         {product.name}
                       </h3>
-                      <div className="flex items-end justify-between mt-4">
+                      
+                      {/* Logística */}
+                      <div className="flex flex-col gap-1 mb-3">
+                        {product.is_free_shipping && (
+                          <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full w-fit flex items-center gap-1">
+                            <Truck className="w-3 h-3" /> FRETE GRÁTIS
+                          </span>
+                        )}
+                        <span className="text-[11px] text-neutral-400 flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> Chega em aprox. {product.estimated_delivery_days || 5} dias
+                        </span>
+                      </div>
+
+                      <div className="flex items-end justify-between mt-auto">
                         <div className="space-y-0.5">
                           {product.is_flash_sale ? (
                             <>
@@ -573,12 +588,21 @@ function StorePageContent() {
             )}
             
             {/* Infinite Scroll Target */}
-            {!loading && products.length > 0 && (
-              <div ref={observerTarget} className="w-full h-20 flex items-center justify-center mt-8">
-                {loadingMore && <Loader2 className="w-8 h-8 text-primary animate-spin" />}
-                {!hasMore && <p className="text-muted-foreground text-sm font-semibold">Você chegou ao fim da lista.</p>}
-              </div>
-            )}
+            {/* Loading / End of list indicator */}
+            <div ref={observerTarget} className="h-20 mt-8 flex flex-col items-center justify-center gap-4">
+              {loadingMore && <Loader2 className="h-8 w-8 animate-spin text-primary" />}
+              {!hasMore && products.length > 0 && (
+                <div className="flex flex-col items-center gap-4">
+                  <span className="text-neutral-500 font-medium">Você chegou ao fim da lista.</span>
+                  <button 
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    className="px-6 py-2 bg-primary/10 text-primary border border-primary/20 rounded-xl hover:bg-primary/20 transition-all font-semibold"
+                  >
+                    Voltar ao Topo
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </main>

@@ -52,6 +52,8 @@ function CheckoutInner() {
     address_complemento: "", address_bairro: "", address_cidade: "", address_uf: "",
   });
 
+  const [couponCode, setCouponCode] = useState("");
+
   useEffect(() => {
     cartApi.get()
       .then((res) => {
@@ -67,7 +69,11 @@ function CheckoutInner() {
 
   async function createOrderAndIntent(): Promise<{ paymentId: string; clientSecret?: string; pixData?: any } | null> {
     // 1. Cria o pedido a partir do carrinho logado
-    const orderRes = await ordersApi.create(addr);
+    const payload = { ...addr };
+    if (couponCode.trim()) {
+      (payload as any).coupon_code = couponCode.trim();
+    }
+    const orderRes = await ordersApi.create(payload);
     const order = orderRes.data;
     setSuccessOrder(null);
 
@@ -303,6 +309,14 @@ function CheckoutInner() {
               <div className="pt-4 border-t border-border/40 flex justify-between items-center">
                 <span className="font-semibold">Total</span>
                 <span className="font-display font-black text-2xl text-primary">R$ {brl(cart?.total || 0)}</span>
+              </div>
+
+              <div className="pt-2">
+                <label className="text-xs font-semibold text-muted-foreground uppercase">Cupom de Desconto</label>
+                <div className="flex gap-2 mt-1">
+                  <input type="text" placeholder="Código do Cupom" value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    className="w-full px-4 py-2.5 rounded-lg border border-border/60 bg-background focus:border-primary outline-none uppercase" />
+                </div>
               </div>
 
               {error && <p className="text-red-500 text-sm">{error}</p>}

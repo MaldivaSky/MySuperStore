@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
-import { Users, TrendingDown, TrendingUp, DollarSign, ShieldAlert, CheckCircle, Activity, Box } from "lucide-react";
+import { Users, TrendingDown, DollarSign, ShieldAlert, Activity, Tag, Check, X, Trash2 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, BarChart, Bar } from 'recharts';
+import { adminApi } from "@/lib/api";
 
-// Mock Data for Analytics
+// Mock Data for Analytics Charts (as these are not fully implemented in API yet)
 const growthData = [
   { name: 'Jan', revenue: 4000, users: 2400 },
   { name: 'Fev', revenue: 3000, users: 1398 },
@@ -38,6 +39,118 @@ export default function SuperAdminDashboard() {
 
   const [activeTab, setActiveTab] = useState("overview");
 
+  // Real Data State
+  const [metrics, setMetrics] = useState<any>(null);
+  const [sellers, setSellers] = useState<any[]>([]);
+  const [coupons, setCoupons] = useState<any[]>([]);
+  
+  // Reject Modal State
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [rejectSellerId, setRejectSellerId] = useState("");
+  const [rejectReason, setRejectReason] = useState("");
+
+  // Coupon Form State
+  const [couponCode, setCouponCode] = useState("");
+  const [couponDiscountPerc, setCouponDiscountPerc] = useState("");
+  const [couponValidFrom, setCouponValidFrom] = useState("");
+  const [couponValidTo, setCouponValidTo] = useState("");
+  const [couponSellerId, setCouponSellerId] = useState(""); // optional
+
+  useEffect(() => {
+    if (user?.role === "admin") {
+      fetchDashboard();
+      fetchSellers();
+      fetchCoupons();
+    }
+  }, [user]);
+
+  const fetchDashboard = async () => {
+    try {
+      const res = await adminApi.getDashboardMetrics();
+      setMetrics(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchSellers = async () => {
+    try {
+      const res = await adminApi.sellers.list();
+      setSellers(res.data.results || res.data); // handles paginated or list
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchCoupons = async () => {
+    try {
+      const res = await adminApi.coupons.list();
+      setCoupons(res.data.results || res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleApproveSeller = async (id: string) => {
+    try {
+      await adminApi.sellers.approve(id);
+      fetchSellers();
+      fetchDashboard();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleRejectSeller = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!rejectSellerId) return;
+    try {
+      await adminApi.sellers.reject(rejectSellerId, rejectReason);
+      setIsRejectModalOpen(false);
+      setRejectSellerId("");
+      setRejectReason("");
+      fetchSellers();
+      fetchDashboard();
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao rejeitar lojista.");
+    }
+  };
+
+  const handleCreateCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const payload: any = {
+        code: couponCode,
+        discount_percentage: couponDiscountPerc ? parseFloat(couponDiscountPerc) : null,
+        valid_from: couponValidFrom,
+        valid_to: couponValidTo,
+        active: true
+      };
+      if (couponSellerId) payload.seller = couponSellerId;
+      
+      await adminApi.coupons.create(payload);
+      setCouponCode("");
+      setCouponDiscountPerc("");
+      setCouponValidFrom("");
+      setCouponValidTo("");
+      setCouponSellerId("");
+      fetchCoupons();
+    } catch (err) {
+      alert("Erro ao criar cupom. Verifique os dados.");
+      console.error(err);
+    }
+  };
+
+  const handleDeleteCoupon = async (id: string) => {
+    try {
+      await adminApi.coupons.delete(id);
+      fetchCoupons();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#05050a] flex flex-col md:flex-row text-white font-sans">
       {/* Sidebar Admin Premium */}
@@ -55,8 +168,8 @@ export default function SuperAdminDashboard() {
           {[
             { id: "overview", label: "Visão Geral", icon: Activity },
             { id: "churn", label: "Gestão de Churn", icon: TrendingDown },
-            { id: "sellers", label: "Lojistas & Comissões", icon: Users },
-            { id: "moderation", label: "Moderação NLP", icon: Box },
+            { id: "sellers", label: "Gestão de Lojistas", icon: Users },
+            { id: "coupons", label: "Central de Cupons", icon: Tag },
           ].map((tab) => (
             <button 
               key={tab.id}
@@ -89,15 +202,15 @@ export default function SuperAdminDashboard() {
           </div>
         </header>
 
-        {activeTab === "overview" && (
+        {activeTab === "overview" && metrics && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                { title: "GMV Total (Mensal)", value: "R$ 4.2M", change: "+24%", isPos: true, icon: DollarSign },
-                { title: "Lojistas Ativos", value: "1,492", change: "+5.2%", isPos: true, icon: Users },
-                { title: "Taxa de Churn", value: "2.4%", change: "-1.1%", isPos: true, icon: TrendingDown }, // Low churn is positive
-                { title: "Aprovações Pendentes", value: "84", change: "+12", isPos: false, icon: ShieldAlert },
+                { title: "GMV Total (30d)", value: `R$ ${metrics.revenue.value.toLocaleString('pt-BR', {minimumFractionDigits:2})}`, change: metrics.revenue.change, isPos: metrics.revenue.is_positive, icon: DollarSign },
+                { title: "Lojistas Ativos", value: metrics.active_sellers.value, change: metrics.active_sellers.change, isPos: metrics.active_sellers.is_positive, icon: Users },
+                { title: "Taxa de Churn", value: metrics.churn.value, change: metrics.churn.change, isPos: metrics.churn.is_positive, icon: TrendingDown },
+                { title: "Aprovações Pendentes", value: metrics.pending_approvals.value, change: metrics.pending_approvals.change, isPos: metrics.pending_approvals.is_positive, icon: ShieldAlert },
               ].map((m, i) => (
                 <div key={i} className="bg-[#0a0a14]/80 backdrop-blur-xl border border-white/[0.05] p-6 rounded-3xl hover:border-blue-500/30 transition-colors group">
                   <div className="flex justify-between items-start mb-4">
@@ -172,14 +285,145 @@ export default function SuperAdminDashboard() {
           </div>
         )}
 
-        {/* Placeholder for other tabs */}
-        {(activeTab === "sellers" || activeTab === "moderation") && (
-          <div className="w-full h-64 border border-dashed border-white/20 rounded-3xl flex items-center justify-center text-neutral-500 font-semibold animate-in fade-in duration-500">
-            Módulo em Desenvolvimento ({activeTab})
+        {activeTab === "sellers" && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-[#0a0a14]/80 backdrop-blur-xl border border-white/[0.05] p-8 rounded-3xl">
+              <h3 className="text-xl font-bold mb-6">Lojistas Pendentes e Aprovados</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="text-neutral-500 border-b border-white/10">
+                      <th className="pb-3">Loja</th>
+                      <th className="pb-3">Proprietário</th>
+                      <th className="pb-3">Status</th>
+                      <th className="pb-3 text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sellers.map((s: any) => (
+                      <tr key={s.id} className="border-b border-white/[0.02] hover:bg-white/[0.02]">
+                        <td className="py-4 font-semibold">{s.store_name}</td>
+                        <td className="py-4 text-neutral-400">{s.user_name} ({s.user_email})</td>
+                        <td className="py-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            s.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400' :
+                            s.status === 'pending' ? 'bg-amber-500/10 text-amber-400' :
+                            'bg-rose-500/10 text-rose-400'
+                          }`}>
+                            {s.status.toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="py-4 flex justify-end gap-2">
+                          {s.status === 'pending' && (
+                            <>
+                              <button onClick={() => handleApproveSeller(s.id)} className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500/20"><Check className="w-4 h-4"/></button>
+                              <button onClick={() => { setRejectSellerId(s.id); setIsRejectModalOpen(true); }} className="p-2 bg-rose-500/10 text-rose-400 rounded-lg hover:bg-rose-500/20"><X className="w-4 h-4"/></button>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "coupons" && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Form */}
+              <div className="bg-[#0a0a14]/80 backdrop-blur-xl border border-white/[0.05] p-8 rounded-3xl col-span-1 h-fit">
+                <h3 className="text-xl font-bold mb-6 text-blue-400 flex items-center gap-2"><Tag className="w-5 h-5"/> Novo Cupom</h3>
+                <form onSubmit={handleCreateCoupon} className="space-y-4">
+                  <div>
+                    <label className="block text-sm text-neutral-400 mb-1">Código (Ex: PROMO10)</label>
+                    <input type="text" required value={couponCode} onChange={e=>setCouponCode(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 focus:border-blue-500 outline-none uppercase text-white" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-neutral-400 mb-1">Desconto (%)</label>
+                    <input type="number" step="0.01" required value={couponDiscountPerc} onChange={e=>setCouponDiscountPerc(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 focus:border-blue-500 outline-none text-white" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-neutral-400 mb-1">Válido De</label>
+                    <input type="datetime-local" required value={couponValidFrom} onChange={e=>setCouponValidFrom(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 focus:border-blue-500 outline-none text-white" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-neutral-400 mb-1">Válido Até</label>
+                    <input type="datetime-local" required value={couponValidTo} onChange={e=>setCouponValidTo(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 focus:border-blue-500 outline-none text-white" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-neutral-400 mb-1">ID do Lojista (Opcional - Cupom Global se vazio)</label>
+                    <input type="text" placeholder="UUID do Vendedor" value={couponSellerId} onChange={e=>setCouponSellerId(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 focus:border-blue-500 outline-none text-white" />
+                  </div>
+                  <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors mt-2">
+                    Emitir Cupom
+                  </button>
+                </form>
+              </div>
+
+              {/* List */}
+              <div className="bg-[#0a0a14]/80 backdrop-blur-xl border border-white/[0.05] p-8 rounded-3xl col-span-2">
+                <h3 className="text-xl font-bold mb-6">Cupons Ativos</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="text-neutral-500 border-b border-white/10">
+                        <th className="pb-3">Código</th>
+                        <th className="pb-3">Desconto</th>
+                        <th className="pb-3">Lojista</th>
+                        <th className="pb-3 text-right">Validade</th>
+                        <th className="pb-3 text-right">Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {coupons.map((c: any) => (
+                        <tr key={c.id} className="border-b border-white/[0.02] hover:bg-white/[0.02]">
+                          <td className="py-4 font-bold text-emerald-400">{c.code}</td>
+                          <td className="py-4">{c.discount_percentage}%</td>
+                          <td className="py-4 text-neutral-400">{c.seller_name || <span className="text-blue-400 font-semibold">Global (Plataforma)</span>}</td>
+                          <td className="py-4 text-right text-sm text-neutral-500">{new Date(c.valid_to).toLocaleDateString()}</td>
+                          <td className="py-4 flex justify-end">
+                            <button onClick={() => handleDeleteCoupon(c.id)} className="p-2 text-neutral-500 hover:text-rose-400 transition-colors">
+                              <Trash2 className="w-4 h-4"/>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {coupons.length === 0 && <p className="text-neutral-500 text-center py-8">Nenhum cupom ativo no momento.</p>}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
       </div>
+
+      {/* Reject Seller Modal */}
+      {isRejectModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+          <div className="bg-[#0a0a14] border border-white/[0.05] p-8 rounded-3xl max-w-md w-full relative">
+            <button onClick={() => setIsRejectModalOpen(false)} className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-white bg-white/[0.02] rounded-full"><X className="w-4 h-4"/></button>
+            <h3 className="text-xl font-bold text-rose-400 mb-2 flex items-center gap-2"><ShieldAlert className="w-5 h-5"/> Recusar Lojista</h3>
+            <p className="text-sm text-neutral-400 mb-6">Informe o motivo da recusa. Este motivo será enviado por e-mail ao lojista.</p>
+            <form onSubmit={handleRejectSeller} className="space-y-4">
+              <textarea 
+                value={rejectReason}
+                onChange={e => setRejectReason(e.target.value)}
+                required
+                placeholder="Ex: Documentação inválida ou fotos dos produtos não estão no padrão exigido."
+                className="w-full bg-[#141420] border border-white/[0.05] rounded-xl px-4 py-3 text-sm text-white focus:border-rose-500 outline-none min-h-[120px] resize-none"
+              ></textarea>
+              <button type="submit" className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl transition-all">
+                Confirmar Recusa e Enviar E-mail
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

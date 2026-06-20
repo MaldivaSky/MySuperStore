@@ -1,0 +1,43 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Seu carrinho está te esperando! | MySuperStore{% endblock %}
+
+{% block content %}
+<div style="text-align: center;">
+    <h2>Você deixou algo para trás... 🛒</h2>
+    <p>Olá, <strong>{{ recipient_name }}</strong>,</p>
+    <p>Percebemos que você tem um gosto incrível e adicionou alguns itens excepcionais ao seu carrinho. No entanto, sua compra ainda não foi finalizada.</p>
+    
+    <div style="background-color: #1A1820; border-radius: 12px; padding: 20px; margin: 30px 0;">
+        <h3 style="color: #E6B53C; margin-top: 0; text-align: left;">Os itens da sua órbita:</h3>
+        
+        <table width="100%" cellspacing="0" cellpadding="0" style="color: #F3EFE6;">
+            {% for item in items %}
+            <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #2C2A35;">
+                    <strong style="color: #FCE6A0;">{{ item.quantity }}x</strong> {{ item.product_name }}
+                </td>
+                <td align="right" style="padding: 10px 0; border-bottom: 1px solid #2C2A35; font-weight: bold;">
+                    R$ {{ item.price }}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <!-- Cupom Automático de 10% de incentivo -->
+    <div style="background: linear-gradient(135deg, rgba(230,181,60,0.1) 0%, rgba(230,181,60,0.2) 100%); border: 1px dashed #E6B53C; border-radius: 12px; padding: 20px; margin: 30px 0;">
+        <p style="color: #E6B53C; font-weight: bold; margin: 0 0 10px 0; font-size: 18px;">🎁 Surpresa Especial!</p>
+        <p style="margin: 0; color: #F3EFE6;">Volte agora e ganhe <strong>10% de Desconto</strong> usando o cupom abaixo no Checkout:</p>
+        <div style="font-size: 24px; font-weight: 900; letter-spacing: 2px; color: #FCE6A0; margin-top: 15px; padding: 10px; background-color: #0C0B11; border-radius: 8px; display: inline-block;">
+            VOLTA10
+        </div>
+    </div>
+
+    <p style="font-size: 14px;">Os estoques são limitados. Garanta seus produtos antes que eles saiam de órbita!</p>
+    
+    <a href="{{ checkout_url }}" class="btn" style="display: block; font-size: 18px; padding: 20px;">
+        FINALIZAR MINHA COMPRA AGORA
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Confirmação de Pagamento | MySuperStore{% endblock %}
+
+{% block content %}
+<div style="text-align: center;">
+    <h2 style="color: #4CAF50;">Tudo certo! 🎉</h2>
+    <p>Olá, <strong>{{ recipient_name }}</strong>,</p>
+    <p>O pagamento do seu pedido <strong>#{{ order_number }}</strong> foi confirmado. Nossos lojistas já receberam o alerta e estão preparando seus produtos para o envio.</p>
+    
+    <div style="background-color: #1A1820; border-radius: 12px; padding: 20px; margin: 30px 0; text-align: left;">
+        <h3 style="color: #E6B53C; margin-top: 0; border-bottom: 1px solid #2C2A35; padding-bottom: 10px;">Resumo do Pedido</h3>
+        
+        <table width="100%" cellspacing="0" cellpadding="0" style="color: #F3EFE6;">
+            <tr>
+                <td style="padding: 8px 0; color: #D1CDD2;">Subtotal:</td>
+                <td align="right" style="padding: 8px 0;">R$ {{ subtotal }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #D1CDD2;">Frete:</td>
+                <td align="right" style="padding: 8px 0;">R$ {{ shipping }}</td>
+            </tr>
+            {% if discount and discount != "0.00" %}
+            <tr>
+                <td style="padding: 8px 0; color: #E6B53C;">Descontos:</td>
+                <td align="right" style="padding: 8px 0; color: #E6B53C;">- R$ {{ discount }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td colspan="2"><hr style="margin: 10px 0; border-top: 1px solid #2C2A35;"></td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; font-size: 18px; font-weight: bold; color: #4CAF50;">Total Pago:</td>
+                <td align="right" style="padding: 8px 0; font-size: 18px; font-weight: bold; color: #4CAF50;">R$ {{ total }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <p style="font-size: 14px;">Você receberá atualizações sobre o rastreamento em breve.</p>
+    
+    <a href="{{ orders_url }}" class="btn" style="display: inline-block;">
+        ACOMPANHAR MEU PEDIDO
+    </a>
+</div>
+{% endblock %}
