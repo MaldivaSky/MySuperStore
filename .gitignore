@@ -64,3 +64,6 @@ ehthumbs.db
 *.swo
 # Next.js build info
 frontend/tsconfig.tsbuildinfo
+
+# Arquivo-fonte de referencia da marca (nao versionar)
+frontend/MySuperStore Marca.html

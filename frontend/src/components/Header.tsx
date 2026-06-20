@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { ThemeToggle } from "./ThemeToggle";
+import { BrandLogo, SaturnMark } from "./Brand";
 import { 
   Store, 
   LayoutDashboard, 
@@ -14,7 +14,8 @@ import {
   X,
   LogOut,
   User,
-  Heart
+  Heart,
+  Zap
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
@@ -26,6 +27,7 @@ export function Header() {
 
   const navLinks = [
     { name: "Loja", href: "/store", icon: Store, show: true },
+    { name: "Promoções", href: "/store/promotions", icon: Zap, show: true },
     { name: "Painel Lojista", href: "/seller", icon: LayoutDashboard, show: user?.role === "seller" },
     { name: "SuperAdmin", href: "/admin", icon: LayoutDashboard, show: user?.role === "admin" },
   ].filter(link => link.show);
@@ -33,20 +35,10 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/[0.06] bg-[#050510]/80 backdrop-blur-xl transition-colors duration-300">
       <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="relative w-12 h-12 drop-shadow-xl group-hover:scale-105 transition-transform duration-300">
-            <Image
-              src="/logo.png?v=4"
-              alt="MySuperStore Logo"
-              fill
-              priority
-              className="object-contain"
-            />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-white">
-            MySuperStore
-          </span>
+        {/* Marca oficial — Saturno */}
+        <Link href="/" className="group" aria-label="MySuperStore — início">
+          <BrandLogo tagline markClassName="h-11 w-auto" className="hidden sm:flex" />
+          <SaturnMark className="h-10 w-auto sm:hidden drop-shadow-[0_2px_10px_rgba(230,181,60,0.28)] group-hover:scale-105 transition-transform duration-300" />
         </Link>
 
         {/* Desktop Navigation */}

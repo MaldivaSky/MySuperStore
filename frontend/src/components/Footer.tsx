@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Facebook, Twitter, Instagram, Linkedin, ShieldCheck, Truck, HeadphonesIcon, CreditCard } from "lucide-react";
+import { SaturnMark } from "./Brand";
 
 export function Footer() {
   return (
@@ -11,14 +12,15 @@ export function Footer() {
           
           {/* Brand & Sobre */}
           <div className="space-y-4">
-            <h2 className="text-2xl font-display font-black text-white tracking-tight flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-blue-600 flex items-center justify-center">
-                <span className="text-white text-lg font-bold">M</span>
+            <div className="flex items-center gap-2.5">
+              <SaturnMark className="h-10 w-auto drop-shadow-[0_2px_10px_rgba(230,181,60,0.25)]" />
+              <div className="flex flex-col leading-none">
+                <span className="font-display font-extrabold text-xl tracking-[-0.02em] text-[#F3EFE6]">MySuperStore</span>
+                <span className="font-mono text-[8px] uppercase tracking-[0.18em] text-saturn-400 mt-1.5">poder &amp; premium</span>
               </div>
-              MySuperStore
-            </h2>
+            </div>
             <p className="text-neutral-400 text-sm leading-relaxed">
-              O ecossistema definitivo para quem busca produtos premium, entrega acelerada e segurança absoluta em cada transação.
+              No MySuperStore, tudo gira em torno do cliente. O ecossistema definitivo para quem busca produtos premium, entrega acelerada e segurança absoluta em cada transação.
             </p>
             <div className="flex gap-4 pt-2">
               <a href="#" className="text-neutral-500 hover:text-white transition-colors"><Instagram className="w-5 h-5" /></a>

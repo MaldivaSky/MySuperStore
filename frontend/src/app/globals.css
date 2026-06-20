@@ -13,7 +13,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 20% 10%;
 
-    --primary: 43 80% 45%; /* Deep warm gold (#CE9B1D) */
+    --primary: 40 64% 44%; /* Ouro profundo Saturno (#B98A2A) */
     --primary-foreground: 40 20% 98%;
 
     --secondary: 40 15% 92%; /* Soft warm silver/gray */
@@ -36,33 +36,33 @@
   }
 
   .dark {
-    --background: 220 20% 4%; /* Deep black-charcoal from logo */
-    --foreground: 0 0% 95%; /* Clean silver-white text */
+    --background: 255 22% 5%; /* Tinta Saturno (#0C0B11) */
+    --foreground: 40 18% 94%; /* Branco-marfim da marca (#F3EFE6) */
 
-    --card: 220 20% 6%; /* Deep card background */
-    --card-foreground: 0 0% 95%;
+    --card: 255 24% 8%; /* Superfície escura violácea */
+    --card-foreground: 40 18% 94%;
 
-    --popover: 220 20% 6%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 255 24% 8%;
+    --popover-foreground: 40 18% 94%;
 
-    --primary: 43 85% 55%; /* Shining gold from logo (#D4AF37) */
-    --primary-foreground: 220 20% 4%;
+    --primary: 43 78% 57%; /* Ouro Saturno (#E6B53C) */
+    --primary-foreground: 255 22% 6%;
 
-    --secondary: 220 15% 12%; /* Dark silver-gray */
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 255 18% 11%; /* Violeta escuro */
+    --secondary-foreground: 40 18% 96%;
 
-    --muted: 220 15% 10%;
-    --muted-foreground: 220 10% 65%;
+    --muted: 255 16% 10%;
+    --muted-foreground: 40 6% 64%;
 
-    --accent: 43 80% 15%; /* Glowing gold tint */
-    --accent-foreground: 43 85% 55%;
+    --accent: 43 55% 14%; /* Brilho dourado sutil */
+    --accent-foreground: 43 78% 60%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 220 15% 12%;
-    --input: 220 15% 12%;
-    --ring: 43 85% 55%;
+    --border: 255 14% 14%;
+    --input: 255 14% 14%;
+    --ring: 43 78% 57%;
   }
 }
 
@@ -74,6 +74,19 @@
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+}
+
+/* Texto com gradiente dourado da marca Saturno — para destaques premium */
+.text-gold {
+  background: linear-gradient(135deg, #FCE6A0 0%, #E6B53C 45%, #B9842A 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Aura dourada para a marca/CTAs */
+.glow-gold {
+  box-shadow: 0 4px 24px -4px rgba(230, 181, 60, 0.35);
 }
 
 /* Glassmorphism utility classes */

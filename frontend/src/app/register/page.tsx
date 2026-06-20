@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
+import { SaturnMark } from "@/components/Brand";
 import { useAuthStore } from "@/store/authStore";
 import { authApi } from "@/lib/api";
 import { motion } from "framer-motion";
@@ -80,17 +80,9 @@ export default function RegisterPage() {
         className="w-full max-w-lg space-y-6 p-8 rounded-2xl border border-border/40 bg-card/60 backdrop-blur-md shadow-2xl relative z-10"
       >
         <div className="text-center space-y-2">
-          <Link href="/" className="inline-flex items-center gap-2 group mb-2">
-            <div className="relative w-10 h-10 rounded-full bg-black flex items-center justify-center p-1 border border-primary/30 group-hover:border-primary/80 transition-all duration-300">
-              <Image
-                src="/logo.png?v=2"
-                alt="MySuperStore Logo"
-                width={36}
-                height={36}
-                className="object-contain"
-              />
-            </div>
-            <span className="font-display text-xl font-bold text-foreground">
+          <Link href="/" className="inline-flex items-center gap-2.5 group mb-2">
+            <SaturnMark className="h-11 w-auto drop-shadow-[0_2px_12px_rgba(230,181,60,0.3)] group-hover:scale-105 transition-transform duration-300" />
+            <span className="font-display text-xl font-extrabold tracking-[-0.02em] text-foreground">
               MySuperStore
             </span>
           </Link>

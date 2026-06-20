@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320">
+  <defs>
+    <radialGradient id="sph" cx="38%" cy="30%" r="74%">
+      <stop offset="0%" stop-color="#FCE6A0"/>
+      <stop offset="44%" stop-color="#E6B53C"/>
+      <stop offset="100%" stop-color="#A4711B"/>
+    </radialGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="0.22">
+      <stop offset="0%" stop-color="#B9842A"/>
+      <stop offset="48%" stop-color="#F6D26A"/>
+      <stop offset="100%" stop-color="#E6B53C"/>
+    </linearGradient>
+    <mask id="front"><rect x="-80" y="135" width="560" height="240" fill="#fff"/></mask>
+  </defs>
+  <rect width="320" height="320" rx="72" fill="#0C0B11"/>
+  <g transform="translate(-10,45.25) scale(0.85)">
+    <g transform="rotate(-20 200 135)" fill="none">
+      <ellipse cx="200" cy="135" rx="158" ry="49" stroke="#7C7568" stroke-width="2"/>
+      <ellipse cx="200" cy="135" rx="150" ry="43" stroke="url(#ring)" stroke-width="11"/>
+    </g>
+    <circle cx="200" cy="135" r="46" fill="url(#sph)"/>
+    <ellipse cx="185" cy="119" rx="15" ry="10" fill="#FCE6A0" opacity="0.35"/>
+    <g transform="rotate(-20 200 135)" fill="none" mask="url(#front)">
+      <ellipse cx="200" cy="135" rx="158" ry="49" stroke="#7C7568" stroke-width="2"/>
+      <ellipse cx="200" cy="135" rx="150" ry="43" stroke="url(#ring)" stroke-width="11"/>
+    </g>
+    <path d="M334 62 l3.2 9.6 9.6 3.2 -9.6 3.2 -3.2 9.6 -3.2 -9.6 -9.6 -3.2 9.6 -3.2 z" fill="#FCE6A0"/>
+  </g>
+</svg>

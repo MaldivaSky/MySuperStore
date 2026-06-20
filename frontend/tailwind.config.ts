@@ -73,10 +73,25 @@ const config: Config = {
         success: { DEFAULT: "#16a34a", light: "#dcfce7" },
         warning: { DEFAULT: "#d97706", light: "#fef3c7" },
         error: { DEFAULT: "#dc2626", light: "#fee2e2" },
+        // Paleta da marca Saturno (ouro premium)
+        saturn: {
+          50: "#FCE6A0",
+          100: "#F6D26A",
+          200: "#E6B53C",  // ouro principal
+          300: "#D2A23A",
+          400: "#B98A2A",  // ouro profundo / accent
+          500: "#A4711B",
+          600: "#7A5E26",
+          ring: "#7C7568",
+          ink: "#0C0B11",   // fundo da marca
+          surface: "#1A1626",
+          paper: "#F3EFE6",
+        },
       },
       fontFamily: {
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],
-        display: ["var(--font-outfit)", "system-ui", "sans-serif"],
+        display: ["var(--font-sora)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
       },
       borderRadius: {
         lg: "var(--radius)",

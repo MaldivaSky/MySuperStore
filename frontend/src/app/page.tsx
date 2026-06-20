@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { SaturnMark } from "@/components/Brand";
 import { motion } from "framer-motion";
 import { useEffect, useRef } from "react";
 import {
@@ -152,18 +153,20 @@ export default function Home() {
           {/* ====================================================== */}
           <section className="max-w-5xl mx-auto px-6 pt-12 pb-24 md:pt-20 md:pb-32 flex flex-col items-center text-center">
 
-            {/* Logo — fundo #000 do PNG se funde com o bg-black da página */}
+            {/* Marca Saturno — autoridade da home */}
             <motion.div
               initial={{ opacity: 0, scale: 0.92 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8 }}
+              className="flex flex-col items-center"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/logo.png?v=4"
-                alt="MySuperStore"
-                className="w-[420px] md:w-[520px] lg:w-[600px] h-auto mx-auto"
-              />
+              <SaturnMark className="w-44 md:w-56 lg:w-64 h-auto drop-shadow-[0_8px_40px_rgba(230,181,60,0.35)]" />
+              <h1 className="mt-6 font-display font-extrabold tracking-[-0.03em] text-5xl md:text-6xl lg:text-7xl text-[#F3EFE6]">
+                MySuperStore
+              </h1>
+              <p className="mt-4 font-mono text-xs md:text-sm uppercase tracking-[0.34em] text-saturn-400">
+                poder &amp; premium
+              </p>
             </motion.div>
 
             {/* Subtítulo */}
