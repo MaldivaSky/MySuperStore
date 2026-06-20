@@ -14,10 +14,28 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["email", "first_name", "last_name", "phone", "role", "password", "password_confirm"]
+        fields = ["email", "person_type", "cpf_cnpj", "first_name", "last_name", "phone", "role", "password", "password_confirm"]
+
+    def validate_cpf_cnpj(self, value):
+        if value and User.objects.filter(cpf_cnpj=value).exists():
+            raise serializers.ValidationError("Este CPF/CNPJ já está vinculado a outra conta.")
+        return value
+
+    def validate_phone(self, value):
+        if value and User.objects.filter(phone=value).exists():
+            raise serializers.ValidationError("Este telefone já está registrado.")
+        return value
 
     def validate(self, data):
-        if data["password"] != data.pop("password_confirm"):
+        cpf_cnpj = data.get("cpf_cnpj", "")
+        person_type = data.get("person_type", "PF")
+        
+        if person_type == "PF" and cpf_cnpj and len(cpf_cnpj) != 11:
+            raise serializers.ValidationError({"cpf_cnpj": "CPF deve ter exatamente 11 dígitos."})
+        if person_type == "PJ" and cpf_cnpj and len(cpf_cnpj) != 14:
+            raise serializers.ValidationError({"cpf_cnpj": "CNPJ deve ter exatamente 14 dígitos."})
+            
+        if data.get("password") != data.pop("password_confirm", None):
             raise serializers.ValidationError({"password_confirm": "As senhas não conferem."})
         return data
 

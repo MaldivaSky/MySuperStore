@@ -10,12 +10,18 @@ class UserRole(models.TextChoices):
     ADMIN = "admin", "Administrador"
 
 
+class PersonType(models.TextChoices):
+    PF = "PF", "Pessoa Física"
+    PJ = "PJ", "Pessoa Jurídica"
+
 class User(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(max_length=255, unique=True)
+    person_type = models.CharField(max_length=2, choices=PersonType.choices, default=PersonType.PF)
+    cpf_cnpj = models.CharField(max_length=20, unique=True, null=True, blank=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    phone = models.CharField(max_length=20, blank=True)
+    phone = models.CharField(max_length=20, unique=True, null=True, blank=True)
     role = models.CharField(max_length=20, choices=UserRole.choices, default=UserRole.CUSTOMER)
     avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
     is_active = models.BooleanField(default=False)  # ativo somente após verificação de e-mail

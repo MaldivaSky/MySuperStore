@@ -168,6 +168,8 @@ export const sellerDashboardApi = {
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface RegisterPayload {
   email: string;
+  person_type: string;
+  cpf_cnpj: string;
   first_name: string;
   last_name: string;
   phone?: string;
@@ -193,4 +195,18 @@ export const adminApi = {
     create: (data: any) => api.post("/admin/coupons/", data),
     delete: (id: string) => api.delete(`/admin/coupons/${id}/`),
   }
+};
+
+// ── CRM API ───────────────────────────────────────────────────────────────────
+export const crmApi = {
+  createLead: (data: { name: string; email?: string; phone: string; company?: string; funnel_type: string; source: string }) => 
+    api.post("/crm/leads/", data),
+  getLeads: () => api.get("/crm/leads/"),
+  updateLeadStatus: (id: string, status: string) => api.patch(`/crm/leads/${id}/`, { status }),
+  deleteLead: (id: string) => api.delete(`/crm/leads/${id}/`),
+};
+
+// ── CATALOG API ───────────────────────────────────────────────────────────────
+export const catalogApi = {
+  getCategories: () => api.get("/catalog/categories/"),
 };

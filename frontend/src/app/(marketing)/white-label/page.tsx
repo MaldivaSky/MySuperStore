@@ -8,9 +8,10 @@ import { motion } from "framer-motion";
 import {
   Rocket, ShieldCheck, CreditCard, 
   MessageCircle, Search, Target, DollarSign, Lock, Smartphone, 
-  BarChart3, Clock, AlertTriangle, Users, Globe, ChevronDown, XCircle, CheckCircle2, Server
+  BarChart3, Clock, AlertTriangle, Users, Globe, ChevronDown, XCircle, CheckCircle2, Server, Loader2
 } from "lucide-react";
 import { useState } from "react";
+import { crmApi } from "@/lib/api";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 30 },
@@ -19,6 +20,35 @@ const fadeIn = {
 
 export default function WhiteLabelPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [showLeadModal, setShowLeadModal] = useState(false);
+  const [leadName, setLeadName] = useState("");
+  const [leadPhone, setLeadPhone] = useState("");
+  const [leadEmail, setLeadEmail] = useState("");
+  const [isSubmittingLead, setIsSubmittingLead] = useState(false);
+  
+  const WHATSAPP_URL = "https://wa.me/5511919889233?text=Rafael, quero agir rápido. Como compro a licença White-label da plataforma e crio o meu marketplace?";
+
+  const handleLeadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingLead(true);
+    try {
+      await crmApi.createLead({
+        name: leadName,
+        phone: leadPhone,
+        email: leadEmail,
+        funnel_type: "white_label",
+        source: "Landing Page White-Label"
+      });
+      // Redirecionar para o WhatsApp
+      window.location.href = WHATSAPP_URL;
+    } catch (err) {
+      console.error(err);
+      // Fallback de segurança: se der erro na API, vai pro whats igual pra n perder a venda
+      window.location.href = WHATSAPP_URL;
+    } finally {
+      setIsSubmittingLead(false);
+    }
+  };
 
   const faqs = [
     {
@@ -76,10 +106,8 @@ export default function WhiteLabelPage() {
               </p>
 
               <div className="mt-16 flex flex-col sm:flex-row items-center justify-center gap-6 w-full max-w-2xl">
-                <a
-                  href="https://wa.me/5511919889233?text=Rafael, quero agir rápido. Como compro a licença White-label da plataforma e crio o meu marketplace?"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={() => setShowLeadModal(true)}
                   className="group relative flex items-center justify-center gap-3 px-8 py-6 bg-gradient-to-b from-[#E6B53C] to-[#B38F25] text-black font-black rounded-2xl transition-all duration-300 w-full hover:scale-105 hover:shadow-[0_0_50px_rgba(230,181,60,0.5)] overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-white/20 translate-y-[-100%] group-hover:translate-y-[100%] transition-transform duration-700 ease-in-out"></div>
@@ -88,7 +116,7 @@ export default function WhiteLabelPage() {
                     <span className="text-lg md:text-xl tracking-tight leading-none mb-1">Adquirir Licença White-Label</span>
                     <span className="text-[10px] uppercase tracking-wider opacity-80">Falar com Fundador via WhatsApp</span>
                   </div>
-                </a>
+                </button>
               </div>
             </motion.div>
           </section>
@@ -262,10 +290,8 @@ export default function WhiteLabelPage() {
                     Você pode fechar essa página, continuar tentando criar sua plataforma do zero e gastar milhares de reais e anos da sua vida. Ou você pode clicar no botão abaixo, adquirir a licença pronta, e ter o **seu próprio mercado operando com a sua marca na próxima segunda-feira.**
                   </p>
 
-                  <a
-                    href="https://wa.me/5511919889233?text=Rafael, acabei de ler a página. Entendi que a urgência é real. Quero comprar a licença White-label da plataforma e colocar meu marketplace no ar. Como procedemos?"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={() => setShowLeadModal(true)}
                     className="group relative flex flex-col items-center justify-center gap-2 px-12 py-8 bg-[#25D366] hover:bg-[#1DA851] text-white font-black rounded-full transition-all duration-500 hover:scale-[1.03] shadow-[0_0_50px_rgba(37,211,102,0.5)] w-full max-w-2xl overflow-hidden"
                   >
                     <div className="absolute inset-0 bg-white/20 translate-y-[-100%] group-hover:translate-y-[100%] transition-transform duration-700 ease-in-out"></div>
@@ -274,7 +300,7 @@ export default function WhiteLabelPage() {
                       FALAR COM O FUNDADOR AGORA
                     </div>
                     <span className="text-sm md:text-lg font-normal opacity-90 z-10">(Atendimento Direto pelo WhatsApp de Alto Nível)</span>
-                  </a>
+                  </button>
                   <p className="mt-6 text-neutral-500 flex items-center gap-2 justify-center"><Lock className="w-4 h-4"/> Conversa 100% confidencial e sem compromisso imediato.</p>
                 </div>
               </div>
@@ -285,6 +311,77 @@ export default function WhiteLabelPage() {
 
         <Footer />
       </div>
+
+      {/* LEAD CAPTURE MODAL */}
+      {showLeadModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }} 
+            animate={{ scale: 1, opacity: 1 }} 
+            className="bg-[#050510] border border-[#E6B53C]/30 rounded-3xl w-full max-w-md flex flex-col overflow-hidden shadow-[0_0_80px_rgba(230,181,60,0.2)]"
+          >
+            <div className="p-8 pb-0 text-center">
+              <h2 className="text-3xl font-black text-white mb-2">Liberação de Acesso</h2>
+              <p className="text-sm text-neutral-400">Preencha rapidamente para ser redirecionado ao WhatsApp Pessoal do Fundador.</p>
+            </div>
+            
+            <form onSubmit={handleLeadSubmit} className="p-8 space-y-4">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Nome Completo</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={leadName}
+                  onChange={e => setLeadName(e.target.value)}
+                  className="w-full mt-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] focus:ring-1 focus:ring-[#E6B53C] outline-none transition-all"
+                  placeholder="Ex: João Silva"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">E-mail Corporativo</label>
+                <input 
+                  type="email" 
+                  required 
+                  value={leadEmail}
+                  onChange={e => setLeadEmail(e.target.value)}
+                  className="w-full mt-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] focus:ring-1 focus:ring-[#E6B53C] outline-none transition-all"
+                  placeholder="joao@empresa.com"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">WhatsApp</label>
+                <input 
+                  type="tel" 
+                  required 
+                  value={leadPhone}
+                  onChange={e => setLeadPhone(e.target.value)}
+                  className="w-full mt-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] focus:ring-1 focus:ring-[#E6B53C] outline-none transition-all"
+                  placeholder="(11) 99999-9999"
+                />
+              </div>
+              
+              <div className="pt-4 flex flex-col gap-3">
+                <button 
+                  type="submit"
+                  disabled={isSubmittingLead}
+                  className="w-full py-4 rounded-xl bg-gradient-to-r from-[#E6B53C] to-[#B38F25] text-black font-black hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                >
+                  {isSubmittingLead ? <Loader2 className="w-5 h-5 animate-spin" /> : <Rocket className="w-5 h-5" />}
+                  {isSubmittingLead ? "Carregando..." : "Prosseguir para o WhatsApp"}
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setShowLeadModal(false)}
+                  className="w-full py-3 text-neutral-500 hover:text-white transition-colors text-sm font-semibold"
+                >
+                  Voltar
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
     </div>
   );
 }

@@ -7,7 +7,7 @@ import { SaturnMark } from "@/components/Brand";
 import { useAuthStore } from "@/store/authStore";
 import { authApi } from "@/lib/api";
 import { motion } from "framer-motion";
-import { UserPlus, Mail, Lock, User, Phone, Loader2, AlertCircle } from "lucide-react";
+import { UserPlus, Mail, Lock, User, Phone, Loader2, AlertCircle, CreditCard, Store } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -16,6 +16,8 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [personType, setPersonType] = useState("PF");
+  const [cpfCnpj, setCpfCnpj] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -24,6 +26,28 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showGateway, setShowGateway] = useState(false);
+
+  const formatCpfCnpj = (value: string, type: string) => {
+    const digits = value.replace(/\D/g, "");
+    if (type === "PF") {
+      return digits
+        .substring(0, 11)
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d{1,2})/, "$1-$2");
+    } else {
+      return digits
+        .substring(0, 14)
+        .replace(/(\d{2})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d)/, "$1/$2")
+        .replace(/(\d{4})(\d{1,2})/, "$1-$2");
+    }
+  };
+
+  const handleCpfCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCpfCnpj(formatCpfCnpj(e.target.value, personType));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +70,9 @@ export default function RegisterPage() {
         email,
         first_name: firstName,
         last_name: lastName,
-        phone,
+        person_type: personType,
+        cpf_cnpj: cpfCnpj.replace(/\D/g, ''),
+        phone: phone.replace(/\D/g, ''),
         role: isSeller ? "seller" : "customer",
         password,
         password_confirm: passwordConfirm,
@@ -60,7 +86,7 @@ export default function RegisterPage() {
       const userRes = await authApi.me();
       loginStore({ access: data.access, refresh: data.refresh }, userRes.data);
       
-      router.push(userRes.data.is_seller ? "/seller/dashboard" : "/");
+      router.push(userRes.data.is_seller ? "/seller/onboarding" : "/");
     } catch (err: any) {
       console.error(err);
       const detail = err.response?.data?.detail || 
@@ -164,19 +190,58 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Telefone
-            </label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="(xx) xxxxx-xxxx"
-                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-border/60 bg-background/50 text-foreground placeholder-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm"
-              />
+          {/* Tipo de Pessoa */}
+          <div className="space-y-3 pt-2">
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tipo de Cadastro</label>
+            <div className="flex gap-4">
+              <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${personType === "PF" ? "border-primary bg-primary/10 text-primary font-bold" : "border-border/60 bg-background/50 text-muted-foreground hover:border-primary/50"}`}>
+                <input type="radio" checked={personType === "PF"} onChange={() => { setPersonType("PF"); setCpfCnpj(""); }} className="hidden" />
+                <User className="w-4 h-4" /> Pessoa Física
+              </label>
+              <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${personType === "PJ" ? "border-primary bg-primary/10 text-primary font-bold" : "border-border/60 bg-background/50 text-muted-foreground hover:border-primary/50"}`}>
+                <input type="radio" checked={personType === "PJ"} onChange={() => { setPersonType("PJ"); setCpfCnpj(""); }} className="hidden" />
+                <Store className="w-4 h-4" /> Pessoa Jurídica
+              </label>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {personType === "PF" ? "CPF" : "CNPJ"}
+              </label>
+              <div className="relative">
+                <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  required
+                  value={cpfCnpj}
+                  onChange={handleCpfCnpjChange}
+                  placeholder={personType === "PF" ? "000.000.000-00" : "00.000.000/0000-00"}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-border/60 bg-background/50 text-foreground placeholder-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1 mt-1 sm:mt-0">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Telefone / WhatsApp
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                  type="tel"
+                  required
+                  value={phone}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    const masked = val.replace(/^(\d{2})(\d{4,5})(\d{4}).*/, '($1) $2-$3');
+                    setPhone(masked || val);
+                  }}
+                  placeholder="(11) 99999-9999"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-border/60 bg-background/50 text-foreground placeholder-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm"
+                />
+              </div>
             </div>
           </div>
 

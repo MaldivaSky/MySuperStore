@@ -9,8 +9,11 @@ import {
   Store, ArrowRight, ShieldCheck, CreditCard, Zap, Rocket, 
   MessageCircle, Search, Flame, ShoppingCart, TrendingUp,
   CheckCircle2, XCircle, Target, DollarSign, Lock, Smartphone, 
-  BarChart3, Clock, AlertTriangle, Users, Globe, ChevronDown, Check, MousePointerClick, Server, Crosshair, Mail
+  BarChart3, Clock, AlertTriangle, Users, Globe, ChevronDown, Check, MousePointerClick, Server, Crosshair, Mail, Loader2
 } from "lucide-react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { crmApi } from "@/lib/api";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 30 },
@@ -18,6 +21,35 @@ const fadeIn = {
 };
 
 export default function VenderPage() {
+  const router = useRouter();
+  const [showLeadModal, setShowLeadModal] = useState(false);
+  const [leadName, setLeadName] = useState("");
+  const [leadPhone, setLeadPhone] = useState("");
+  const [leadEmail, setLeadEmail] = useState("");
+  const [isSubmittingLead, setIsSubmittingLead] = useState(false);
+
+  const handleLeadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingLead(true);
+    try {
+      await crmApi.createLead({
+        name: leadName,
+        phone: leadPhone,
+        email: leadEmail,
+        funnel_type: "lojista",
+        source: "Landing Page Lojista"
+      });
+      // Redirect to register with type=seller
+      router.push("/register?type=seller");
+    } catch (err) {
+      console.error(err);
+      // Fallback
+      router.push("/register?type=seller");
+    } finally {
+      setIsSubmittingLead(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#050510] text-neutral-200 font-sans selection:bg-[#E6B53C] selection:text-black">
       {/* Background Ambience */}
@@ -54,8 +86,8 @@ export default function VenderPage() {
               </p>
 
               <div className="mt-16 flex flex-col sm:flex-row items-center justify-center gap-6 w-full max-w-2xl">
-                <Link
-                  href="/register"
+                <button
+                  onClick={() => setShowLeadModal(true)}
                   className="group relative flex items-center justify-center gap-3 px-8 py-6 bg-gradient-to-b from-[#E6B53C] to-[#B38F25] text-black font-black rounded-2xl transition-all duration-300 w-full hover:scale-105 hover:shadow-[0_0_50px_rgba(230,181,60,0.5)] overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-white/20 translate-y-[-100%] group-hover:translate-y-[100%] transition-transform duration-700 ease-in-out"></div>
@@ -65,7 +97,7 @@ export default function VenderPage() {
                     <span className="text-[10px] uppercase tracking-wider opacity-80">Isenção de taxa para lojistas fundadores</span>
                   </div>
                   <ArrowRight className="h-6 w-6 group-hover:translate-x-2 transition-transform ml-auto sm:ml-0" />
-                </Link>
+                </button>
               </div>
             </motion.div>
           </section>
@@ -282,14 +314,14 @@ export default function VenderPage() {
               <div className="mt-40 mb-32 text-center relative z-20">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-3xl h-[200px] bg-[#E6B53C]/20 blur-[100px] pointer-events-none"></div>
                 <h3 className="text-3xl md:text-5xl font-black text-white mb-10 relative tracking-tight">O que você está esperando para explodir de vender?</h3>
-                <Link
-                  href="/register"
+                <button
+                  onClick={() => setShowLeadModal(true)}
                   className="relative inline-flex items-center justify-center gap-4 px-12 py-6 lg:py-8 bg-gradient-to-b from-[#E6B53C] to-[#B38F25] text-black font-black rounded-full text-xl md:text-3xl hover:scale-105 hover:shadow-[0_0_80px_rgba(212,175,55,0.6)] transition-all duration-300 group overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-white/20 translate-y-[-100%] group-hover:translate-y-[100%] transition-transform duration-700 ease-in-out"></div>
                   <Store className="w-8 h-8 md:w-10 md:h-10" />
                   <span className="tracking-tight">CRIAR MINHA LOJA GRÁTIS AGORA</span>
-                </Link>
+                </button>
                 <p className="mt-6 text-neutral-400">Menos de 2 minutos para configurar. Cancele quando quiser.</p>
               </div>
 
@@ -300,6 +332,77 @@ export default function VenderPage() {
 
         <Footer />
       </div>
+
+      {/* LEAD CAPTURE MODAL */}
+      {showLeadModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }} 
+            animate={{ scale: 1, opacity: 1 }} 
+            className="bg-[#050510] border border-[#E6B53C]/30 rounded-3xl w-full max-w-md flex flex-col overflow-hidden shadow-[0_0_80px_rgba(230,181,60,0.2)]"
+          >
+            <div className="p-8 pb-0 text-center">
+              <h2 className="text-3xl font-black text-white mb-2">Quase Lá!</h2>
+              <p className="text-sm text-neutral-400">Só precisamos de 3 informações para liberar a criação da sua loja.</p>
+            </div>
+            
+            <form onSubmit={handleLeadSubmit} className="p-8 space-y-4">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Nome do Lojista</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={leadName}
+                  onChange={e => setLeadName(e.target.value)}
+                  className="w-full mt-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] focus:ring-1 focus:ring-[#E6B53C] outline-none transition-all"
+                  placeholder="Ex: João Silva"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">E-mail Profissional</label>
+                <input 
+                  type="email" 
+                  required 
+                  value={leadEmail}
+                  onChange={e => setLeadEmail(e.target.value)}
+                  className="w-full mt-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] focus:ring-1 focus:ring-[#E6B53C] outline-none transition-all"
+                  placeholder="joao@minhaloja.com"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">WhatsApp da Loja</label>
+                <input 
+                  type="tel" 
+                  required 
+                  value={leadPhone}
+                  onChange={e => setLeadPhone(e.target.value)}
+                  className="w-full mt-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] focus:ring-1 focus:ring-[#E6B53C] outline-none transition-all"
+                  placeholder="(11) 99999-9999"
+                />
+              </div>
+              
+              <div className="pt-4 flex flex-col gap-3">
+                <button 
+                  type="submit"
+                  disabled={isSubmittingLead}
+                  className="w-full py-4 rounded-xl bg-gradient-to-r from-[#E6B53C] to-[#B38F25] text-black font-black hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                >
+                  {isSubmittingLead ? <Loader2 className="w-5 h-5 animate-spin" /> : <Store className="w-5 h-5" />}
+                  {isSubmittingLead ? "Carregando..." : "Prosseguir e Criar Loja"}
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setShowLeadModal(false)}
+                  className="w-full py-3 text-neutral-500 hover:text-white transition-colors text-sm font-semibold"
+                >
+                  Voltar
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
     </div>
   );
 }
