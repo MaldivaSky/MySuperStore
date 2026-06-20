@@ -129,7 +129,7 @@ export default function PromotionsPage() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(234,179,8,0.15),transparent_60%)]"></div>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col items-center text-center">
             
-            <Link href="/store" className="self-start mb-6 text-sm text-neutral-400 hover:text-white flex items-center gap-2 transition-colors">
+            <Link href="/" className="self-start mb-6 text-sm text-neutral-400 hover:text-white flex items-center gap-2 transition-colors">
               <ArrowLeft className="w-4 h-4" /> Voltar para a Loja
             </Link>
 

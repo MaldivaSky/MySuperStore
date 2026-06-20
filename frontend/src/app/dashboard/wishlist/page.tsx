@@ -86,7 +86,7 @@ export default function WishlistPage() {
             Explore nossa loja e clique no coração dos produtos para salvá-os aqui.
           </p>
           <Link 
-            href="/store"
+            href="/"
             className="inline-block mt-4 px-6 py-2.5 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground font-semibold transition-all"
           >
             Navegar na Loja

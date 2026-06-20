@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Animaz Pet Shop - Coleção Moda WorldCup Brasil. Bandanas, coleiras, peitorais e roupas oficiais da seleção para seu pet.">
+    <meta name="theme-color" content="#1A0B2E">
+    <title>Animaz Pet Shop | Coleção WorldCup Brasil 🇧🇷</title>
+    <link rel="icon" type="image/png" href="https://animaz.f1cdn.com.br/parametros_gerais/16/16/false/true/16933163974835.png">
+    <link rel="stylesheet" href="css/styles.css">
+
+</head>
+<body>
+
+    <!-- ===== ANNOUNCEMENT BAR ===== -->
+    <div class="announcement-bar">
+        <span class="announcement-text">
+            Olá! 🇧🇷⚡ Vista seu pet para torcer pelo Brasil com o look completo! Leve a roupinha de Copa + coleira e guias e ganhe <strong>10% OFF no combo</strong> 🛍️💥
+        </span>
+    </div>
+
+    <!-- ===== HEADER ===== -->
+    <header class="site-header" id="main-header">
+        <div class="header-inner">
+            <a href="#" class="header-logo" id="logo-link">
+                <img src="https://animaz.f1cdn.com.br/parametros_gerais/170/94/true/false/16946268791365.png" alt="Animaz Pet Shop">
+            </a>
+
+            <div class="search-bar" id="search-wrapper">
+                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.3-4.3"></path>
+                </svg>
+                <input type="text" id="search-input" placeholder="Buscar produtos para seu pet..." autocomplete="off">
+                <button id="search-clear" class="hidden" aria-label="Limpar busca">✕</button>
+            </div>
+
+            <button class="cart-btn" id="cart-toggle" aria-label="Abrir carrinho" onclick="toggleCart()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="8" cy="21" r="1"></circle>
+                    <circle cx="19" cy="21" r="1"></circle>
+                    <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
+                </svg>
+                <span id="cart-badge" style="display:none;">0</span>
+            </button>
+        </div>
+    </header>
+
+
+    <!-- ===== HERO — Banner Profissional ===== -->
+    <section class="hero" id="hero">
+        <div class="hero-carousel-wrapper" id="banner-carousel-wrap">
+
+            <!-- Slide 1: Copa + Pet -->
+            <div class="banner-slide slide-copa active">
+                <img src="assets/banners/banner-copa-wide.png" alt="Copa + Pet — 10% OFF" class="banner-img">
+            </div>
+
+            <!-- Slide 2: Arraial do Pet -->
+            <div class="banner-slide slide-arraial">
+                <img src="assets/banners/banner-arraial-novo.png" alt="Arraial do Pet — Moda Junina" class="banner-img">
+            </div>
+
+            <!-- Slide 3: Banho e Tosa -->
+            <div class="banner-slide slide-banho">
+                <img src="assets/banners/banner-banho.png" alt="Banho e Tosa" class="banner-img">
+            </div>
+
+            <!-- Slide 4: Funcionamento -->
+            <div class="banner-slide slide-func">
+                <img src="assets/banners/banner-funcionamento-novo.png" alt="Horários Animaz" class="banner-img">
+            </div>
+
+
+
+            <!-- Setas de navegação -->
+            <button class="banner-nav-btn banner-nav-prev" onclick="slideBanner(-1)" aria-label="Banner anterior">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <button class="banner-nav-btn banner-nav-next" onclick="slideBanner(1)" aria-label="Próximo banner">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+
+            <!-- Dots -->
+            <div class="carousel-dots" id="banner-dots">
+                <button class="dot active" data-index="0" aria-label="Banner 1"></button>
+                <button class="dot" data-index="1" aria-label="Banner 2"></button>
+                <button class="dot" data-index="2" aria-label="Banner 3"></button>
+                <button class="dot" data-index="3" aria-label="Banner 4"></button>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ===== VITRINE ===== -->
+    <main id="vitrine">
+        <div class="categories-bar">
+            <div class="categories-bar-inner">
+                <div class="categories-header">
+                    <h2 class="categories-title">Nossos Produtos</h2>
+                    <div>
+                        <label for="sort-select" class="sr-only">Ordenar por</label>
+                        <select id="sort-select" onchange="sortProducts(this.value)">
+                            <option value="default">Ordenar por</option>
+                            <option value="name-asc">Nome (A-Z)</option>
+                            <option value="name-desc">Nome (Z-A)</option>
+                            <option value="price-asc">Menor preço</option>
+                            <option value="price-desc">Maior preço</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="categories" id="categories">
+                    <!-- Rendered via JS -->
+                </div>
+            </div>
+        </div>
+
+        <div class="products-section">
+            <!-- ===== PREMIUM COPA DETAIL SECTION (COLLAPSIBLE) ===== -->
+            <div class="promo-box campaign-details-card animate-in" id="campaign-regulations">
+                <button class="regulation-toggle-btn" onclick="toggleRegulations()" aria-expanded="false" aria-controls="regulation-content">
+                    <div class="toggle-title-area">
+                        <span class="promo-box-badge">🇧🇷⚡ REGULAMENTO</span>
+                        <h3 class="campaign-headline-compact">Combo da Copa: Monte o Look Completo e Ganhe 10% OFF!</h3>
+                    </div>
+                    <div class="toggle-action-area">
+                        <span class="promo-box-date">🗓️ Válido de 01/06 a 20/06</span>
+                        <span class="toggle-icon">▼</span>
+                    </div>
+                </button>
+                <div class="regulation-content-collapsible" id="regulation-content">
+                    <div class="promo-box-content-grid">
+                        <div class="campaign-info-visual">
+                            <img src="assets/banners/banner-combo.png" alt="Look Completo Copa" class="campaign-visual-img">
+                        </div>
+                        <div class="campaign-info-text">
+                            <p class="campaign-paragraph">Vista seu pet para torcer pelo Brasil com o look completo de campeão! Comprando o combo promocional, você ganha <strong>10% de desconto adicional</strong> sobre o valor total do pedido.</p>
+                            
+                            <div class="campaign-steps-horizontal">
+                                <div class="campaign-step-item-horizontal">
+                                    <span class="step-num">1</span>
+                                    <div class="step-details">
+                                        <h4>Selecione a roupinha</h4>
+                                        <p>Escolha a roupinha oficial UV50+ Brasil (Azul ou Amarela) no tamanho adequado do seu pet.</p>
+                                    </div>
+                                </div>
+                                <div class="campaign-step-item-horizontal">
+                                    <span class="step-num">2</span>
+                                    <div class="step-details">
+                                        <h4>Adicione guia e coleira</h4>
+                                        <p>Combine com guias e coleiras oficiais da seleção brasileira para completar o visual.</p>
+                                    </div>
+                                </div>
+                                <div class="campaign-step-item-horizontal">
+                                    <span class="step-num">3</span>
+                                    <div class="step-details">
+                                        <h4>Ganhe 10% OFF no Combo</h4>
+                                        <p>O desconto promocional de 10% é aplicado diretamente no total do seu carrinho! 🛍️💥</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="campaign-footer-notice">
+                                <p>💚 <strong>Seu pet entra em campo com estilo de campeão da cabeça às patas!</strong> 💙 Válido para compras e delivery de 01 a 20 de junho.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="products-grid" id="products-grid">
+                <!-- Rendered via JS -->
+            </div>
+
+            <div class="empty-state hidden" id="empty-state">
+                <div class="empty-state-icon">🔍</div>
+                <h3>Nenhum produto encontrado</h3>
+                <p>Tente buscar por outros termos ou selecione outra categoria.</p>
+            </div>
+
+            <div class="loading-state" id="loading-state">
+                <div class="loading-spinner"></div>
+                <p class="loading-text">Carregando catálogo...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- ===== CART OVERLAY ===== -->
+    <div class="cart-overlay" id="cart-overlay" onclick="closeCart()"></div>
+
+    <!-- ===== CART DRAWER ===== -->
+    <aside class="cart-drawer" id="cart-drawer" aria-label="Carrinho de compras">
+        <div class="cart-header">
+            <h2>
+                <div class="cart-header-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="8" cy="21" r="1"></circle>
+                        <circle cx="19" cy="21" r="1"></circle>
+                        <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
+                    </svg>
+                </div>
+                Meu Pedido
+            </h2>
+            <button class="cart-close-btn" onclick="closeCart()" aria-label="Fechar carrinho">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+        </div>
+
+        <div class="cart-items" id="cart-items">
+            <!-- Rendered via JS -->
+        </div>
+
+        <div class="cart-footer" id="cart-footer">
+            <div class="cart-total-row">
+                <span class="cart-total-label">Total</span>
+                <span id="cart-total">R$ 0,00</span>
+            </div>
+            <div class="cart-actions">
+                <button class="btn-export btn-whatsapp" onclick="sendToWhatsApp()" id="btn-whatsapp" style="width:100%;justify-content:center;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                    Confirmar no WhatsApp
+                </button>
+            </div>
+            <button class="btn-clear-cart" onclick="clearCart()" id="btn-clear-cart">Limpar Pedido</button>
+        </div>
+    </aside>
+
+    <!-- ===== CHECKOUT MODAL ===== -->
+    <div class="checkout-modal" id="checkout-modal" onclick="handleCheckoutModalClick(event)">
+        <div class="checkout-modal-card">
+            <button class="checkout-modal-close" onclick="closeCheckoutModal()" aria-label="Fechar">✕</button>
+            <h3 class="checkout-modal-title">Quase lá!</h3>
+            <p class="checkout-modal-subtitle">Preencha seus dados para finalizarmos o pedido diretamente no WhatsApp da loja.</p>
+            <form id="checkout-form" onsubmit="submitCheckout(event)">
+                <div class="form-group">
+                    <label for="checkout-name">Nome Completo *</label>
+                    <input type="text" id="checkout-name" required placeholder="Digite seu nome completo">
+                </div>
+                <div class="form-group">
+                    <label for="checkout-cpf">CPF *</label>
+                    <input type="text" id="checkout-cpf" required placeholder="000.000.000-00" maxlength="14" oninput="maskCPF(this)">
+                </div>
+                <div class="form-group">
+                    <label for="checkout-address">Endereço de Entrega *</label>
+                    <textarea id="checkout-address" required placeholder="Rua, número, complemento, bairro, cidade e ponto de referência" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn-submit-checkout">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                    Enviar Pedido no WhatsApp
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== LIGHTBOX ===== -->
+    <div class="lightbox" id="lightbox">
+        <button class="lightbox-close-btn" onclick="closeLightbox()" aria-label="Fechar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+        </button>
+        <button class="lightbox-nav-btn prev" onclick="navigateLightbox(-1)" aria-label="Anterior">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <div class="lightbox-content">
+            <img src="" alt="" id="lightbox-image">
+            <p id="lightbox-caption"></p>
+        </div>
+        <button class="lightbox-nav-btn next" onclick="navigateLightbox(1)" aria-label="Próximo">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="lightbox-thumbnails" id="lightbox-thumbnails"></div>
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="site-footer" id="footer">
+        <div class="footer-inner">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-logo">
+                        <img src="https://animaz.f1cdn.com.br/parametros_gerais/170/94/true/false/16946268791365.png" alt="Animaz">
+                    </div>
+                    <p class="footer-slogan">Cuidado pet a pet.</p>
+                    <p class="footer-desc">Tudo para o seu pet com amor e dedicação. Funcionamos de domingo a domingo para cuidar do seu melhor amigo.</p>
+                </div>
+
+                <div class="footer-col">
+                    <h3 class="footer-heading">Contato</h3>
+                    <ul class="footer-list">
+                        <li>
+                            <span class="footer-icon-circle">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                            </span>
+                            <a href="https://wa.me/5592981870014" target="_blank">+55 (92) 98187-0014</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="footer-col">
+                    <h3 class="footer-heading">Unidades</h3>
+                    <ul class="footer-list">
+                        <li>
+                            <div class="footer-unit-card">
+                                <span class="footer-icon-circle">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                </span>
+                                <div>
+                                    <div class="footer-unit-name">Parque 10</div>
+                                    <div class="footer-unit-hours">08h às 22h</div>
+                                    <div class="footer-unit-address" style="font-size: 11px; color: #555; margin-top: 2px;">Av. Maneca Marques, 1902</div>
+                                </div>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="footer-unit-card">
+                                <span class="footer-icon-circle">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                </span>
+                                <div>
+                                    <div class="footer-unit-name">Compensa</div>
+                                    <div class="footer-unit-hours">08h às 20h</div>
+                                    <div class="footer-unit-address" style="font-size: 11px; color: #555; margin-top: 2px;">Av. Brasil, 1713</div>
+                                </div>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="footer-unit-card">
+                                <span class="footer-icon-circle">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                </span>
+                                <div>
+                                    <div class="footer-unit-name">Ponta Negra</div>
+                                    <div class="footer-unit-hours">08h às 22h</div>
+                                    <div class="footer-unit-address" style="font-size: 11px; color: #555; margin-top: 2px;">Av. Coronel Teixeira, 6525</div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="footer-col">
+                    <h3 class="footer-heading">Serviços</h3>
+                    <ul class="footer-list">
+                        <li class="footer-service-item"><span class="footer-icon-circle">🛁</span> Banho & Tosa</li>
+                        <li class="footer-service-item"><span class="footer-icon-circle">🏥</span> Veterinário</li>
+                        <li class="footer-service-item"><span class="footer-icon-circle">🚗</span> Clique e Retire</li>
+                        <li class="footer-service-item"><span class="footer-icon-circle">🛵</span> Delivery</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2026 Animaz Pet Center. Todos os direitos reservados.</p>
+                <p>Feito com 💜 para os pets de Manaus</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ===== LIGHTBOX MODAL PARA ZOOM ===== -->
+    <div id="lightbox" class="lightbox-modal">
+        <span class="lightbox-close" onclick="closeLightbox()">&times;</span>
+        <button class="lightbox-nav lightbox-prev" onclick="navigateLightbox(-1)">&#10094;</button>
+        <img class="lightbox-content" id="lightbox-image">
+        <button class="lightbox-nav lightbox-next" onclick="navigateLightbox(1)">&#10095;</button>
+        <div id="lightbox-thumbnails" class="lightbox-thumbnails"></div>
+    </div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script src="data/products.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="js/export.js"></script>
+</body>
+</html>

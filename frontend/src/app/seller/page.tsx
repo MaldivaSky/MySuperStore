@@ -93,12 +93,10 @@ export default function SellerDashboard() {
   useEffect(() => {
     const stripeCb = searchParams.get("stripe_callback");
     if (stripeCb === "success") {
-      sellerApi.stripeCallback().then(() => {
+      sellerDashboardApi.stripeCallback().then(() => {
         toast("Conta Stripe conectada com sucesso!", "success");
         router.replace("/seller"); // clean URL
-        // Fetch user again to get stripe_authorized = true
-        useAuthStore.getState().fetchUser();
-        setActiveTab("configuracoes");
+        window.location.reload();
       }).catch((err) => {
         toast("Erro ao confirmar conexão com o Stripe.", "error");
         console.error(err);
@@ -1624,6 +1622,26 @@ export default function SellerDashboard() {
                 </div>
               </div>
 
+              {/* Premium Glassdoor */}
+              <div className="bg-gradient-to-br from-[#0a0a14] to-[#E6B53C]/10 backdrop-blur-xl border border-[#E6B53C]/20 rounded-3xl p-8 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#E6B53C]/20 rounded-full blur-[50px]"></div>
+                <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[#E6B53C] relative z-10"><Store className="w-5 h-5" /> Premium Glassdoor</h3>
+                <p className="text-sm text-neutral-300 mb-6 relative z-10">
+                  Sua loja possui uma vitrine exclusiva. Exiba seus produtos em um ambiente livre de concorrência com design premium.
+                </p>
+                <div className="space-y-4 relative z-10">
+                  <a 
+                    href={`/s/${(user as any)?.seller_profile?.slug}`} 
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#E6B53C] to-[#B38F25] text-black font-black py-3 rounded-xl hover:opacity-90 transition-opacity"
+                  >
+                    <Eye className="w-5 h-5" /> Acessar Minha Vitrine
+                  </a>
+                  <p className="text-xs text-neutral-500 text-center">Para alterar os 3 banners rotativos, entre em contato com o suporte provisoriamente.</p>
+                </div>
+              </div>
+
               {/* Stripe Connect - Pagamentos e Repasses */}
               <div className="bg-[#0a0a14]/80 backdrop-blur-xl border border-white/[0.05] rounded-3xl p-8 col-span-1 md:col-span-2">
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><DollarSign className="w-5 h-5 text-green-500" /> Pagamentos e Repasses (Stripe Connect)</h3>
@@ -1654,7 +1672,7 @@ export default function SellerDashboard() {
                         onClick={async () => {
                           try {
                             toast("Redirecionando para o Stripe...", "success");
-                            const res = await sellerApi.onboard(
+                            const res = await sellerDashboardApi.onboard(
                               `${window.location.origin}/seller?stripe_callback=success`,
                               `${window.location.origin}/seller?stripe_callback=refresh`
                             );

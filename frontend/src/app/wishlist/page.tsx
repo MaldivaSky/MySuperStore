@@ -75,7 +75,7 @@ export default function WishlistPage() {
             <Heart className="w-16 h-16 text-neutral-600 mb-4" />
             <h2 className="text-xl font-bold text-neutral-300 mb-2">Sua lista de desejos está vazia</h2>
             <p className="text-neutral-500 mb-6">Explore nosso catálogo e salve os produtos que você mais gosta.</p>
-            <a href="/store" className="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-8 rounded-xl transition-all">
+            <a href="/" className="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-8 rounded-xl transition-all">
               Explorar Produtos
             </a>
           </div>

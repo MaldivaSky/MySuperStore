@@ -11,7 +11,9 @@ export const api = axios.create({
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("access_token");
-    if (token) config.headers.Authorization = `Bearer ${token}`;
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
   }
   return config;
 });
@@ -28,11 +30,12 @@ api.interceptors.response.use(
         try {
           const { data } = await axios.post(`${API_URL}/auth/token/refresh/`, { refresh });
           localStorage.setItem("access_token", data.access);
-          original.headers.Authorization = `Bearer ${data.access}`;
+          original.headers['Authorization'] = `Bearer ${data.access}`;
           return api(original);
         } catch {
-          localStorage.removeItem("access_token");
-          localStorage.removeItem("refresh_token");
+          import("@/store/authStore").then((mod) => {
+            mod.useAuthStore.getState().logout();
+          });
         }
       }
     }
@@ -58,10 +61,12 @@ export const catalogApi = {
   categories: () => api.get("/catalog/categories/"),
   tree: () => api.get("/catalog/categories/tree/"),
   brands: () => api.get("/catalog/brands/"),
+  banners: () => api.get("/catalog/banners/"),
   setPromo: (slug: string, data: { promotional_price: number | null, promo_ends_at: string | null }) => 
     api.patch(`/catalog/products/${slug}/set-promo/`, data),
   track: (slug: string, type: "view" | "click") => api.post(`/catalog/products/${slug}/track/`, { type }),
   getCategories: () => api.get("/catalog/categories/"),
+  getSellerPublicProfile: (slug: string) => api.get(`/sellers/${slug}/`),
 };
 
 export const cartApi = {
@@ -151,6 +156,8 @@ export const chatApi = {
 
 export const sellerDashboardApi = {
   apply: (data: { store_name: string; description: string; cpf_cnpj?: string }) => api.post("/sellers/apply/", data),
+  onboard: (success_url: string, refresh_url: string) => api.post("/sellers/me/onboard/", { success_url, refresh_url }),
+  stripeCallback: () => api.post("/sellers/me/stripe/callback/"),
   getLeads: () => api.get("/sellers/me/leads/"),
   getMentor: () => api.get("/sellers/me/mentor/"),
   triggerMentorAction: (action: string, productSlug: string) => 

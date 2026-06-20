@@ -45,6 +45,28 @@ class UserSurveyView(APIView):
         serializer = UserSurveySerializer(survey, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        
+        try:
+            from apps.crm.models import Lead
+            lead = Lead.objects.filter(email=request.user.email).first()
+            if lead:
+                notes = lead.notes + "\n\n--- Pesquisa de Perfil (Atualizada) ---\n"
+                for key, value in serializer.validated_data.items():
+                    if value:
+                        notes += f"- {key}: {value}\n"
+                        
+                # Define o Funnel Type com base na intenção
+                intent = serializer.validated_data.get("primary_intent")
+                if intent == "comprar":
+                    lead.funnel_type = "comprador"
+                elif intent in ["vender", "ambos"]:
+                    lead.funnel_type = "lojista"
+                    
+                lead.notes = notes.strip()
+                lead.save(update_fields=["notes", "funnel_type", "updated_at"])
+        except Exception as e:
+            print(f"Erro ao sincronizar pesquisa com CRM: {e}")
+
         return Response(serializer.data)
 
 

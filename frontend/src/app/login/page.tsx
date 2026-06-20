@@ -32,7 +32,7 @@ export default function LoginPage() {
       const userRes = await authApi.me();
       loginStore(data, userRes.data);
       
-      router.push(userRes.data.is_seller ? "/seller/dashboard" : "/store");
+      router.push(userRes.data.is_seller ? "/seller/dashboard" : "/");
     } catch (err: any) {
       console.error(err);
       setError(err.response?.data?.detail || "Email ou senha incorretos.");
@@ -50,7 +50,7 @@ export default function LoginPage() {
       localStorage.setItem("access_token", data.access);
       localStorage.setItem("refresh_token", data.refresh);
       loginStore({ access: data.access, refresh: data.refresh }, data.user);
-      router.push(data.user.is_seller ? "/seller/dashboard" : "/store");
+      router.push(data.user.is_seller ? "/seller/dashboard" : "/");
     } catch (err: any) {
       setError(err.response?.data?.detail || "Erro no login do Google.");
     } finally {

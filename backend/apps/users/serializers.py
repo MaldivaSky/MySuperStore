@@ -118,7 +118,11 @@ from .models import UserSurvey
 class UserSurveySerializer(serializers.ModelSerializer):
     class Meta:
         model = UserSurvey
-        fields = ["is_parent", "is_elderly", "sports_fan", "music_taste", "other_interests", "updated_at"]
+        fields = [
+            "date_of_birth", "preferred_category", "education_level", 
+            "marital_status", "gender", "preferred_brand", "profession", 
+            "primary_intent", "other_interests", "updated_at"
+        ]
         read_only_fields = ["updated_at"]
 
 

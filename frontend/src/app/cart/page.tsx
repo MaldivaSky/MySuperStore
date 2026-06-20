@@ -112,7 +112,7 @@ export default function CartPage() {
               Volte para a loja, explore as melhores ofertas e adicione produtos incríveis ao seu carrinho.
             </p>
             <Link 
-              href="/store"
+              href="/"
               className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/95 transition-all mt-4"
             >
               Explorar Loja
@@ -252,7 +252,7 @@ export default function CartPage() {
                   Finalizar Compra
                 </button>
                 
-                <Link href="/store" className="block text-center text-sm text-muted-foreground hover:text-primary transition-colors">
+                <Link href="/" className="block text-center text-sm text-muted-foreground hover:text-primary transition-colors">
                   Continuar comprando
                 </Link>
               </div>

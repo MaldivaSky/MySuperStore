@@ -8,9 +8,10 @@ import { OfficialLogo } from "@/components/Brand";
 import { 
   Rocket, Store, Image as ImageIcon, FileText, DollarSign, 
   Clock, CheckCircle2, ChevronRight, UploadCloud, ShieldCheck, Zap,
-  Loader2, Play, Flame, ArrowRight
+  Loader2, Play, Flame, ArrowRight, ArrowLeft
 } from "lucide-react";
 import Confetti from "react-confetti";
+import { useAuthStore } from "@/store/authStore";
 
 export default function SellerOnboardingPage() {
   const router = useRouter();
@@ -26,8 +27,31 @@ export default function SellerOnboardingPage() {
   // Fase 0 Data (Store Creation)
   const [storeName, setStoreName] = useState("");
   const [storeDescription, setStoreDescription] = useState("");
+  const [personType, setPersonType] = useState("PF");
   const [storeCpfCnpj, setStoreCpfCnpj] = useState("");
   const [isSubmittingStore, setIsSubmittingStore] = useState(false);
+
+  const formatCpfCnpj = (value: string, type: string) => {
+    const digits = value.replace(/\D/g, "");
+    if (type === "PF") {
+      return digits
+        .substring(0, 11)
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d{1,2})/, "$1-$2");
+    } else {
+      return digits
+        .substring(0, 14)
+        .replace(/(\d{2})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d)/, "$1/$2")
+        .replace(/(\d{4})(\d{1,2})/, "$1-$2");
+    }
+  };
+
+  const handleCpfCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setStoreCpfCnpj(formatCpfCnpj(e.target.value, personType));
+  };
 
   // Fase 1 Data (Product Skeleton)
   const [productName, setProductName] = useState("");
@@ -165,6 +189,11 @@ export default function SellerOnboardingPage() {
               exit={{ opacity: 0, x: -50 }}
               className="max-w-xl w-full bg-[#0A0A15] border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden"
             >
+              <div className="mb-4">
+                <button onClick={() => router.back()} className="text-neutral-400 hover:text-white flex items-center gap-2 transition-colors text-sm font-semibold uppercase tracking-widest">
+                  <ArrowLeft className="w-4 h-4" /> Voltar
+                </button>
+              </div>
               <div className="mb-10 text-center relative z-10">
                 <Store className="w-12 h-12 text-[#E6B53C] mx-auto mb-4" />
                 <h2 className="text-3xl font-black text-white mb-3">Fundação da sua Loja</h2>
@@ -195,14 +224,41 @@ export default function SellerOnboardingPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">CPF ou CNPJ</label>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2 block">Tipo de Pessoa</label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer text-sm">
+                      <input 
+                        type="radio" 
+                        name="personType" 
+                        value="PF" 
+                        checked={personType === "PF"} 
+                        onChange={() => { setPersonType("PF"); setStoreCpfCnpj(""); }}
+                        className="accent-[#E6B53C]" 
+                      />
+                      Pessoa Física (CPF)
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-sm">
+                      <input 
+                        type="radio" 
+                        name="personType" 
+                        value="PJ" 
+                        checked={personType === "PJ"} 
+                        onChange={() => { setPersonType("PJ"); setStoreCpfCnpj(""); }}
+                        className="accent-[#E6B53C]" 
+                      />
+                      Pessoa Jurídica (CNPJ)
+                    </label>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">{personType === "PF" ? "CPF" : "CNPJ"}</label>
                   <input 
                     type="text" 
                     required 
                     value={storeCpfCnpj}
-                    onChange={e => setStoreCpfCnpj(e.target.value)}
+                    onChange={handleCpfCnpjChange}
                     className="w-full mt-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] outline-none transition-colors"
-                    placeholder="000.000.000-00 ou 00.000.000/0001-00"
+                    placeholder={personType === "PF" ? "000.000.000-00" : "00.000.000/0001-00"}
                   />
                 </div>
                 <div className="pt-4">

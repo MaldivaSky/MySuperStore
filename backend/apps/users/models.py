@@ -94,10 +94,14 @@ class AffiliateLink(models.Model):
 
 class UserSurvey(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="survey")
-    is_parent = models.BooleanField(default=False)
-    is_elderly = models.BooleanField(default=False)
-    sports_fan = models.BooleanField(default=False)
-    music_taste = models.CharField(max_length=100, blank=True)
+    date_of_birth = models.DateField(null=True, blank=True)
+    preferred_category = models.CharField(max_length=100, blank=True)
+    education_level = models.CharField(max_length=100, blank=True)
+    marital_status = models.CharField(max_length=50, blank=True)
+    gender = models.CharField(max_length=50, blank=True)
+    preferred_brand = models.CharField(max_length=100, blank=True)
+    profession = models.CharField(max_length=100, blank=True)
+    primary_intent = models.CharField(max_length=50, blank=True)
     other_interests = models.JSONField(default=list, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 

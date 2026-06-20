@@ -93,10 +93,14 @@ function StorePageContent() {
   // Onboarding Survey State
   const [showSurveyModal, setShowSurveyModal] = useState(false);
   const [surveyData, setSurveyData] = useState({
-    is_parent: false,
-    sports_fan: false,
-    is_elderly: false,
-    music_taste: ""
+    date_of_birth: "",
+    preferred_category: "",
+    education_level: "",
+    marital_status: "",
+    gender: "",
+    preferred_brand: "",
+    profession: "",
+    primary_intent: ""
   });
 
   // Load product if parameter exists in url (sharing link)
@@ -114,7 +118,7 @@ function StorePageContent() {
       userApi.getSurvey()
         .then((res) => {
           const d = res.data;
-          if (!d.is_parent && !d.sports_fan && !d.is_elderly && !d.music_taste) {
+          if (!d.preferred_category && !d.profession && !d.date_of_birth) {
             setShowSurveyModal(true);
           }
         })
@@ -675,58 +679,110 @@ function StorePageContent() {
               </p>
 
               <div className="space-y-6">
-                <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
-                  <div>
-                    <label className="text-sm font-bold block">Você tem filhos / é pai ou mãe?</label>
-                    <span className="text-xs text-neutral-400">Ver produtos infantis e brinquedos</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-sm font-bold block">Data de Nascimento</label>
+                    <input
+                      type="date"
+                      value={surveyData.date_of_birth}
+                      onChange={(e) => setSurveyData({ ...surveyData, date_of_birth: e.target.value })}
+                      className="w-full bg-white/[0.02] border border-white/[0.08] text-white rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:bg-white/[0.05] outline-none transition-all"
+                    />
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={surveyData.is_parent}
-                    onChange={(e) => setSurveyData({ ...surveyData, is_parent: e.target.checked })}
-                    className="w-5 h-5 accent-primary cursor-pointer bg-transparent border-white/20 rounded"
-                  />
-                </div>
 
-                <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
-                  <div>
-                    <label className="text-sm font-bold block">É fã de esportes ou atividades físicas?</label>
-                    <span className="text-xs text-neutral-400">Ver tênis, vestuário e equipamentos</span>
+                  <div className="space-y-1">
+                    <label className="text-sm font-bold block">Gênero</label>
+                    <select
+                      value={surveyData.gender}
+                      onChange={(e) => setSurveyData({ ...surveyData, gender: e.target.value })}
+                      className="w-full bg-[#141428] border border-white/[0.08] text-white rounded-xl px-4 py-3 text-sm focus:border-primary outline-none cursor-pointer"
+                    >
+                      <option value="">Selecione...</option>
+                      <option value="M">Masculino</option>
+                      <option value="F">Feminino</option>
+                      <option value="O">Outro</option>
+                      <option value="N">Prefiro não informar</option>
+                    </select>
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={surveyData.sports_fan}
-                    onChange={(e) => setSurveyData({ ...surveyData, sports_fan: e.target.checked })}
-                    className="w-5 h-5 accent-primary cursor-pointer bg-transparent border-white/20 rounded"
-                  />
-                </div>
 
-                <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
-                  <div>
-                    <label className="text-sm font-bold block">Interesse em utilidades e eletrodomésticos?</label>
-                    <span className="text-xs text-neutral-400">Recomendar marcas de casa inteligente</span>
+                  <div className="space-y-1 md:col-span-2">
+                    <label className="text-sm font-bold block text-primary">Qual o seu objetivo principal aqui?</label>
+                    <select
+                      value={surveyData.primary_intent}
+                      onChange={(e) => setSurveyData({ ...surveyData, primary_intent: e.target.value })}
+                      className="w-full bg-[#141428] border border-primary/40 text-white rounded-xl px-4 py-3 text-sm focus:border-primary outline-none cursor-pointer shadow-[0_0_15px_rgba(230,181,60,0.1)]"
+                    >
+                      <option value="">Selecione seu objetivo...</option>
+                      <option value="comprar">Apenas Comprar</option>
+                      <option value="vender">Apenas Vender (Criar Loja)</option>
+                      <option value="ambos">Comprar e Vender</option>
+                    </select>
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={surveyData.is_elderly}
-                    onChange={(e) => setSurveyData({ ...surveyData, is_elderly: e.target.checked })}
-                    className="w-5 h-5 accent-primary cursor-pointer bg-transparent border-white/20 rounded"
-                  />
-                </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-bold block">Qual estilo de música você mais curte?</label>
-                  <select
-                    value={surveyData.music_taste}
-                    onChange={(e) => setSurveyData({ ...surveyData, music_taste: e.target.value })}
-                    className="w-full bg-[#141428] border border-white/[0.08] text-white rounded-xl px-4 py-3 text-sm focus:border-primary outline-none cursor-pointer"
-                  >
-                    <option value="">Nenhum / Prefiro não responder</option>
-                    <option value="Rock">Rock / Pop</option>
-                    <option value="Eletronica">Eletrônica / Dance</option>
-                    <option value="Sertanejo">Sertanejo / Pop Brasil</option>
-                    <option value="Classica">Clássica / Jazz</option>
-                  </select>
+                  <div className="space-y-1 md:col-span-2">
+                    <label className="text-sm font-bold block">Qual categoria de produtos você mais compra?</label>
+                    <select
+                      value={surveyData.preferred_category}
+                      onChange={(e) => setSurveyData({ ...surveyData, preferred_category: e.target.value })}
+                      className="w-full bg-[#141428] border border-white/[0.08] text-white rounded-xl px-4 py-3 text-sm focus:border-primary outline-none cursor-pointer"
+                    >
+                      <option value="">Nenhuma preferência...</option>
+                      {categories.map((c) => (
+                        <option key={c.slug} value={c.name}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm font-bold block">Estado Civil</label>
+                    <select
+                      value={surveyData.marital_status}
+                      onChange={(e) => setSurveyData({ ...surveyData, marital_status: e.target.value })}
+                      className="w-full bg-[#141428] border border-white/[0.08] text-white rounded-xl px-4 py-3 text-sm focus:border-primary outline-none cursor-pointer"
+                    >
+                      <option value="">Selecione...</option>
+                      <option value="Solteiro">Solteiro(a)</option>
+                      <option value="Casado">Casado(a)</option>
+                      <option value="Divorciado">Divorciado(a)</option>
+                      <option value="Viuvo">Viúvo(a)</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm font-bold block">Escolaridade</label>
+                    <select
+                      value={surveyData.education_level}
+                      onChange={(e) => setSurveyData({ ...surveyData, education_level: e.target.value })}
+                      className="w-full bg-[#141428] border border-white/[0.08] text-white rounded-xl px-4 py-3 text-sm focus:border-primary outline-none cursor-pointer"
+                    >
+                      <option value="">Selecione...</option>
+                      <option value="Medio">Ensino Médio</option>
+                      <option value="Superior">Ensino Superior</option>
+                      <option value="Pos">Pós-Graduação</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm font-bold block">Sua Profissão</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Engenheiro, Professor"
+                      value={surveyData.profession}
+                      onChange={(e) => setSurveyData({ ...surveyData, profession: e.target.value })}
+                      className="w-full bg-white/[0.02] border border-white/[0.08] text-white rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:bg-white/[0.05] outline-none transition-all placeholder:text-neutral-600"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm font-bold block">Marca Favorita</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Apple, Samsung, Nike"
+                      value={surveyData.preferred_brand}
+                      onChange={(e) => setSurveyData({ ...surveyData, preferred_brand: e.target.value })}
+                      className="w-full bg-white/[0.02] border border-white/[0.08] text-white rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:bg-white/[0.05] outline-none transition-all placeholder:text-neutral-600"
+                    />
+                  </div>
                 </div>
 
                 <button

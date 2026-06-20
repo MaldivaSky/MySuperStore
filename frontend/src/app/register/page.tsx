@@ -372,25 +372,6 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* Seller Option */}
-          <div className="py-2">
-            <label className="flex items-start gap-3 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={isSeller}
-                onChange={(e) => setIsSeller(e.target.checked)}
-                className="mt-1 accent-primary h-4 w-4 rounded border-border focus:ring-primary"
-              />
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                  Quero ser um Seller no marketplace
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  Venda seus próprios produtos e receba repasses via Stripe Connect.
-                </span>
-              </div>
-            </label>
-          </div>
 
           <button
             type="submit"
@@ -451,27 +432,18 @@ export default function RegisterPage() {
           >
             <div className="p-6 border-b border-white/10 bg-white/5">
               <h2 className="text-2xl font-black text-white">
-                {isSeller ? "Acordo de Operação B2B (Contrato Lojista)" : "Termos de Uso e Política de Privacidade"}
+                Termos de Uso e Política de Privacidade
               </h2>
               <p className="text-sm text-neutral-400 mt-1">É obrigatória a leitura e aceite para acessar o ecossistema.</p>
             </div>
             
             <div className="p-6 overflow-y-auto flex-grow text-neutral-300 text-sm space-y-4 prose prose-invert">
-              {isSeller ? (
-                <>
-                  <p><strong>Cláusula 1: Da Relação Comercial</strong><br/>Este instrumento rege as obrigações entre a Plataforma MySuperStore e a Entidade Vendedora ("Lojista"). A Plataforma fornece licenciamento de uso de software, vitrine digital e infraestrutura de pagamentos (Stripe Connect).</p>
-                  <p><strong>Cláusula 2: Das Taxas e Regras de Repasse (Split Payment)</strong><br/>No milissegundo de compensação bancária, a comissão da Plataforma é retida de forma automática. O montante remanescente é injetado diretamente na sub-conta do Lojista. Essa operação elimina a configuração de bitributação para a Plataforma e garante liquidez imediata para o fluxo de caixa do Lojista.</p>
-                  <p><strong>Cláusula 3: SLA de Fulfillment e Penalidades</strong><br/>O Lojista possui 48 horas úteis para inserir o código de rastreio sistêmico do pedido. Falhas recorrentes em prazo, elevação de taxa de chargeback acima de 1.5%, ou envio de mercadorias defeituosas acarretarão no bloqueio profilático de saldo retido e suspensão da vitrine do Lojista.</p>
-                  <p><strong>Cláusula 4: Restrições de Catálogo</strong><br/>É estritamente proibida a inserção, comercialização ou tentativa de fraude envolvendo produtos listados em listas de compliance internacionais, itens que violem patentes registradas (pirataria), armamentos, ou produtos que não detenham aprovação das agências reguladoras.</p>
-                </>
-              ) : (
                 <>
                   <p><strong>1. Aceitação dos Termos</strong><br/>Ao criar uma conta, acessar ou utilizar a MySuperStore ("Plataforma"), você ("Usuário" ou "Cliente") concorda expressamente e sem ressalvas com as condições descritas neste documento. Se você não concordar com qualquer um dos termos, você está proibido de usar ou acessar este site.</p>
                   <p><strong>2. Definição do Serviço (Marketplace)</strong><br/>A MySuperStore atua como intermediadora de negócios (Marketplace), provendo tecnologia e ambiente virtual para que Vendedores Independentes ("Lojistas") comercializem seus produtos para Clientes finais.</p>
                   <p><strong>3. Política de Arrependimento e Devolução (CDC)</strong><br/>Em estrita conformidade com o Artigo 49 do Código de Defesa do Consumidor, o Cliente tem o direito de se arrepender da compra no prazo máximo de 7 (sete) dias corridos, contados a partir do recebimento do produto.</p>
                   <p><strong>4. Política de Privacidade (LGPD)</strong><br/>Seus dados são tratados sob os rigorosos padrões da Lei Geral de Proteção de Dados. Coletamos apenas os dados essenciais para o processamento de pagamentos, emissão de notas fiscais e logística.</p>
                 </>
-              )}
             </div>
 
             <div className="p-6 border-t border-white/10 flex gap-4 bg-white/5">

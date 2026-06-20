@@ -12,13 +12,16 @@ class SellerPublicSerializer(serializers.ModelSerializer):
 
     logo_url = serializers.SerializerMethodField()
     banner_url = serializers.SerializerMethodField()
+    banner2_url = serializers.SerializerMethodField()
+    banner3_url = serializers.SerializerMethodField()
     product_count = serializers.SerializerMethodField()
+    avg_rating = serializers.SerializerMethodField()
 
     class Meta:
         model = Seller
         fields = [
             "id", "store_name", "slug", "description",
-            "logo_url", "banner_url", "product_count", "created_at",
+            "logo_url", "banner_url", "banner2_url", "banner3_url", "product_count", "avg_rating", "created_at",
         ]
 
     def get_logo_url(self, obj):
@@ -33,8 +36,27 @@ class SellerPublicSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(obj.banner.url)
         return None
 
+    def get_banner2_url(self, obj):
+        request = self.context.get("request")
+        if obj.banner2 and request:
+            return request.build_absolute_uri(obj.banner2.url)
+        return None
+
+    def get_banner3_url(self, obj):
+        request = self.context.get("request")
+        if obj.banner3 and request:
+            return request.build_absolute_uri(obj.banner3.url)
+        return None
+
     def get_product_count(self, obj):
         return obj.products.filter(is_available=True).count()
+
+    def get_avg_rating(self, obj):
+        from django.db.models import Avg, Q
+        rating = obj.products.filter(is_available=True).aggregate(
+            avg=Avg("reviews__rating", filter=Q(reviews__status="approved"))
+        )["avg"]
+        return round(rating, 1) if rating else 0.0
 
 
 class SellerApplySerializer(serializers.ModelSerializer):
@@ -114,7 +136,7 @@ class SellerUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Seller
-        fields = ["description", "logo", "banner", "pix_key"]
+        fields = ["description", "logo", "banner", "banner2", "banner3", "pix_key"]
 
 
 from .models import ChatRoom, ChatMessage

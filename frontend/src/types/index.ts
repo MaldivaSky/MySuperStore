@@ -89,8 +89,10 @@ export interface CartItem {
 export interface Cart {
   id: string;
   items: CartItem[];
+  subtotal: string;
   total: string;
   item_count: number;
+  coupon_code: string | null;
 }
 
 // ── Pedidos ───────────────────────────────────────────────────────────────────
