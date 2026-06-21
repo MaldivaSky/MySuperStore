@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+  html,body{height:100%;margin:0;background:#0C0B11}
+  @keyframes mss-glow{0%{opacity:0;transform:translate(-50%,-50%) scale(.55)}100%{opacity:.85;transform:translate(-50%,-50%) scale(1)}}
+  @keyframes mss-breathe{0%,100%{opacity:.6;transform:translate(-50%,-50%) scale(.96)}50%{opacity:.95;transform:translate(-50%,-50%) scale(1.06)}}
+  @keyframes mss-pop{0%{opacity:0;transform:scale(.2)}100%{opacity:1;transform:scale(1)}}
+  @keyframes mss-draw{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}
+  @keyframes mss-appear{from{opacity:0}to{opacity:1}}
+  @keyframes mss-glint{0%{stroke-dashoffset:100;opacity:0}12%{opacity:1}88%{opacity:1}100%{stroke-dashoffset:0;opacity:0}}
+  @keyframes mss-sparkle{0%{opacity:0;transform:scale(0) rotate(-50deg)}55%{opacity:1;transform:scale(1.25) rotate(0)}100%{opacity:.95;transform:scale(1) rotate(0)}}
+  @keyframes mss-twinkle{0%,100%{opacity:.55;transform:scale(.9)}50%{opacity:1;transform:scale(1.12)}}
+  @keyframes mss-letter{from{opacity:0;transform:translateY(125%)}to{opacity:1;transform:translateY(0)}}
+  @keyframes mss-tag{from{opacity:0;letter-spacing:.08em;transform:translateY(10px)}to{opacity:1;letter-spacing:.34em;transform:translateY(0)}}
+  @keyframes mss-shadow{0%,100%{filter:drop-shadow(0 6px 22px rgba(230,181,60,.28))}50%{filter:drop-shadow(0 6px 34px rgba(230,181,60,.5))}}
+</style>
+</helmet>
+
+<div key="{{ runId }}" onClick="{{ onStageClick }}" style="position:relative;width:100vw;height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center;background:radial-gradient(125% 95% at 50% 32%, #1A1626 0%, #0C0B11 62%);font-family:'Sora',system-ui,sans-serif;cursor:default;user-select:none">
+
+  <div style="position:absolute;top:43%;left:50%;width:640px;height:640px;border-radius:50%;background:radial-gradient(circle, rgba(230,181,60,.18) 0%, rgba(230,181,60,.06) 38%, rgba(230,181,60,0) 68%);animation:mss-glow 1s ease-out .15s both, mss-breathe 5.5s ease-in-out 2.6s infinite;pointer-events:none"></div>
+
+  <div style="position:relative;display:flex;flex-direction:column;align-items:center">
+
+    <svg viewBox="0 0 400 300" width="392" height="294" style="overflow:visible;display:block;animation:mss-shadow 5s ease-in-out 2.4s infinite">
+      <defs>
+        <radialGradient id="msi_sph" cx="38%" cy="30%" r="74%">
+          <stop offset="0%" stop-color="#FCE6A0"></stop>
+          <stop offset="44%" stop-color="#E6B53C"></stop>
+          <stop offset="100%" stop-color="#A4711B"></stop>
+        </radialGradient>
+        <linearGradient id="msi_ring" x1="0" y1="0" x2="1" y2="0.22">
+          <stop offset="0%" stop-color="#B9842A"></stop>
+          <stop offset="48%" stop-color="#F6D26A"></stop>
+          <stop offset="100%" stop-color="#E6B53C"></stop>
+        </linearGradient>
+        <mask id="msi_front"><rect x="-80" y="135" width="560" height="240" fill="#fff"></rect></mask>
+      </defs>
+
+      <g transform="rotate(-20 200 135)" fill="none">
+        <ellipse cx="200" cy="135" rx="158" ry="49" stroke="#7C7568" stroke-width="2" style="animation:mss-appear .9s ease-out .7s both"></ellipse>
+        <ellipse cx="200" cy="135" rx="150" ry="43" stroke="url(#msi_ring)" stroke-width="11" pathLength="100" stroke-dasharray="100" stroke-linecap="round" style="animation:mss-draw 1.05s cubic-bezier(.45,0,.15,1) .55s both"></ellipse>
+      </g>
+
+      <g style="transform-box:fill-box;transform-origin:center;animation:mss-pop .8s cubic-bezier(.34,1.5,.5,1) .25s both">
+        <circle cx="200" cy="135" r="46" fill="url(#msi_sph)"></circle>
+        <ellipse cx="185" cy="119" rx="15" ry="10" fill="#FCE6A0" opacity="0.35"></ellipse>
+      </g>
+
+      <g transform="rotate(-20 200 135)" fill="none" mask="url(#msi_front)">
+        <ellipse cx="200" cy="135" rx="158" ry="49" stroke="#7C7568" stroke-width="2" style="animation:mss-appear .9s ease-out .7s both"></ellipse>
+        <ellipse cx="200" cy="135" rx="150" ry="43" stroke="url(#msi_ring)" stroke-width="11" pathLength="100" stroke-dasharray="100" stroke-linecap="round" style="animation:mss-draw 1.05s cubic-bezier(.45,0,.15,1) .55s both"></ellipse>
+      </g>
+
+      <g transform="rotate(-20 200 135)" fill="none">
+        <ellipse cx="200" cy="135" rx="150" ry="43" stroke="#FFF7DE" stroke-width="5" pathLength="100" stroke-dasharray="9 91" stroke-linecap="round" style="animation:mss-glint 1.15s cubic-bezier(.4,0,.2,1) 1.05s both"></ellipse>
+      </g>
+
+      <g style="transform-box:fill-box;transform-origin:center;animation:mss-sparkle .65s cubic-bezier(.34,1.5,.5,1) 1.35s both, mss-twinkle 3.4s ease-in-out 2.2s infinite">
+        <path d="M334 60 l3.4 10.2 10.2 3.4 -10.2 3.4 -3.4 10.2 -3.4 -10.2 -10.2 -3.4 10.2 -3.4 z" fill="#FCE6A0"></path>
+      </g>
+    </svg>
+
+    <div style="display:inline-flex;align-items:flex-end;margin-top:30px;font-weight:800;font-size:62px;letter-spacing:-0.02em;line-height:1">
+      <span style="display:inline-block;overflow:hidden;padding-bottom:.16em"><span style="display:inline-block;color:#F3EFE6;animation:mss-letter .6s cubic-bezier(.22,1,.36,1) 1.50s both">M</span></span>
+      <span style="display:inline-block;overflow:hidden;padding-bottom:.16em"><span style="display:inline-block;color:#F3EFE6;animation:mss-letter .6s cubic-bezier(.22,1,.36,1) 1.55s both">y</span></span>
+      <span style="display:inline-block;overflow:hidden;padding-bottom:.16em"><span style="display:inline-block;color:#E6B53C;animation:mss-letter .6s cubic-bezier(.22,1,.36,1) 1.61s both">S</span></span>
+      <span style="display:inline-block;overflow:hidden;padding-bottom:.16em"><span style="display:inline-block;color:#E6B53C;animation:mss-letter .6s cubic-bezier(.22,1,.36,1) 1.67s both">u</span></span>
+      <span style="display:inline-block;overflow:hidden;padding-bottom:.16em"><span style="display:inline-block;color:#E6B53C;animation:mss-letter .6s cubic-bezier(.22,1,.36,1) 1.73s both">p</span></span>
+      <span style="display:inline-block;overflow:hidden;padding-bottom:.16em"><span style="display:inline-block;color:#E6B53C;animation:mss-letter .6s cubic-bezier(.22,1,.36,1) 1.79s both">e</span></span>
+      <span style="display:inline-block;overflow:hidden;padding-bottom:.16em"><span style="display:inline-block;color:#E6B53C;animation:mss-letter .6s cubic-bezier(.22,1,.36,1) 1.85s both">r</span></span>
+      <span style="display:inline-block;overflow:hidden;padding-bottom:.16em"><span style="display:inline-block;color:#F3EFE6;animation:mss-letter .6s cubic-bezier(.22,1,.36,1) 1.91s both">S</span></span>
+      <span style="display:inline-block;overflow:hidden;padding-bottom:.16em"><span style="display:inline-block;color:#F3EFE6;animation:mss-letter .6s cubic-bezier(.22,1,.36,1) 1.97s both">t</span></span>
+      <span style="display:inline-block;overflow:hidden;padding-bottom:.16em"><span style="display:inline-block;color:#F3EFE6;animation:mss-letter .6s cubic-bezier(.22,1,.36,1) 2.03s both">o</span></span>
+      <span style="display:inline-block;overflow:hidden;padding-bottom:.16em"><span style="display:inline-block;color:#F3EFE6;animation:mss-letter .6s cubic-bezier(.22,1,.36,1) 2.09s both">r</span></span>
+      <span style="display:inline-block;overflow:hidden;padding-bottom:.16em"><span style="display:inline-block;color:#F3EFE6;animation:mss-letter .6s cubic-bezier(.22,1,.36,1) 2.15s both">e</span></span>
+    </div>
+
+    <div style="margin-top:22px;font-weight:600;font-size:13px;letter-spacing:.34em;text-transform:uppercase;color:#D2A23A;animation:mss-tag .85s cubic-bezier(.22,1,.36,1) 2.3s both">Onde tudo orbita você</div>
+
+  </div>
+
+  <div style="position:absolute;bottom:26px;right:30px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(243,239,230,.32);animation:mss-appear 1s ease-out 3s both;pointer-events:none">clique para repetir</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;}}">
+class Component extends DCLogic {
+  state = { runId: 0 };
+  renderVals() {
+    return {
+      runId: this.state.runId,
+      onStageClick: () => this.setState(s => ({ runId: s.runId + 1 })),
+    };
+  }
+}
+</script>
+</body>
+</html>

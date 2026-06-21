@@ -56,6 +56,7 @@ import { ToastProvider } from "@/components/ui/Toast";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { BottomNav } from "@/components/BottomNav";
 import { AuthProvider } from "@/components/AuthProvider";
+import { SplashScreen } from "@/components/ui/SplashScreen";
 
 export default function RootLayout({
   children,
@@ -79,6 +80,7 @@ export default function RootLayout({
                   {children}
                 </div>
                 <BottomNav />
+                <SplashScreen />
               </AuthProvider>
             </ToastProvider>
           </GoogleOAuthProvider>
