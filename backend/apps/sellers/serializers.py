@@ -26,24 +26,32 @@ class SellerPublicSerializer(serializers.ModelSerializer):
 
     def get_logo_url(self, obj):
         request = self.context.get("request")
+        if getattr(obj, "logo_external", None):
+            return obj.logo_external
         if obj.logo and request:
             return request.build_absolute_uri(obj.logo.url)
         return None
 
     def get_banner_url(self, obj):
         request = self.context.get("request")
+        if getattr(obj, "banner_external", None):
+            return obj.banner_external
         if obj.banner and request:
             return request.build_absolute_uri(obj.banner.url)
         return None
 
     def get_banner2_url(self, obj):
         request = self.context.get("request")
+        if getattr(obj, "banner2_external", None):
+            return obj.banner2_external
         if obj.banner2 and request:
             return request.build_absolute_uri(obj.banner2.url)
         return None
 
     def get_banner3_url(self, obj):
         request = self.context.get("request")
+        if getattr(obj, "banner3_external", None):
+            return obj.banner3_external
         if obj.banner3 and request:
             return request.build_absolute_uri(obj.banner3.url)
         return None

@@ -21,7 +21,8 @@ import {
   Activity,
   Star,
   MessageCircle,
-  CheckCircle2
+  CheckCircle2,
+  AlertTriangle
 } from "lucide-react";
 
 function DashboardContent() {

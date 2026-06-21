@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "*.railway.app" },
       // DummyJSON CDN (imagens do seed demo)
       { protocol: "https", hostname: "cdn.dummyjson.com" },
+      // Logo Nike
+      { protocol: "https", hostname: "upload.wikimedia.org" },
       // Adicione o domínio R2/S3 em produção:
       // { protocol: "https", hostname: "*.r2.cloudflarestorage.com" },
     ],
