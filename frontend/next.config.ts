@@ -20,5 +20,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  webpack: (config) => {
-    // Remove watchOptions em produção (n
+};
+
+export default nextConfig;
