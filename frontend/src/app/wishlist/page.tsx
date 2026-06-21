@@ -85,7 +85,7 @@ export default function WishlistPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {wishlist.map((item) => {
-              const p = item.product;
+              const p = item;
               return (
                 <div key={item.id} className="bg-[#0a0a14]/60 backdrop-blur-xl border border-white/5 rounded-3xl overflow-hidden group hover:border-white/20 transition-all">
                   <div 
