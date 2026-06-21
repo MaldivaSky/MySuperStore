@@ -19,7 +19,8 @@ import {
   Loader2, 
   Send,
   Activity,
-  Star
+  Star,
+  MessageCircle
 } from "lucide-react";
 
 function DashboardContent() {
@@ -286,6 +287,14 @@ function DashboardContent() {
               >
                 <Star className="h-4 w-4" />
                 Reputação
+              </button>
+
+              <button 
+                onClick={() => router.push("/seller/dashboard/chats")}
+                className="px-4 py-2 ml-2 rounded-xl bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 font-bold flex items-center gap-2 transition-colors text-sm"
+              >
+                <MessageCircle className="h-4 w-4" />
+                Mensagens
               </button>
             </div>
           </div>

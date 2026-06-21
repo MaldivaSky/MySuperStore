@@ -16,6 +16,7 @@ DEBUG = env.bool("DJANGO_DEBUG", default=False)
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
 
 DJANGO_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -34,6 +35,7 @@ THIRD_PARTY_APPS = [
     "django_celery_beat",
     "drf_spectacular",
     "django_extensions",
+    "channels",
 ]
 
 LOCAL_APPS = [
@@ -189,6 +191,16 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
+
+# ── Channels ────────────────────────────────────────────────────────────────
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [env("REDIS_URL", default="redis://localhost:6379/2")],
+        },
+    },
+}
 
 # ── Email ────────────────────────────────────────────────────────────────────
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
