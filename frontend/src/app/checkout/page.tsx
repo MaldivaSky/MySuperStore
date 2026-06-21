@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Header } from "@/components/Header";
 import { cartApi, ordersApi, paymentsApi, PaymentMethodChoice, userApi } from "@/lib/api";
 import { getStripe } from "@/lib/stripe";
@@ -11,7 +11,8 @@ import { Elements, CardElement, useStripe, useElements } from "@stripe/react-str
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2, CheckCircle2, ShieldCheck, MapPin, CreditCard, ShoppingBag,
-  QrCode, Copy, Check, Banknote, Lock, FileText, Gift
+  QrCode, Copy, Check, Banknote, Lock, FileText, Gift, Search, Home, Briefcase,
+  Building2, X, ChevronRight, Star, PlusCircle
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -409,59 +410,101 @@ function CheckoutInner() {
                 <h3 className="font-display font-bold text-xl flex items-center gap-3">
                   <MapPin className="h-6 w-6 text-primary" /> Endereço de Entrega
                 </h3>
-                {userAddresses.length > 0 && (
-                  <button 
-                    type="button" 
-                    onClick={() => setUseCustomAddress(!useCustomAddress)}
-                    className="text-sm text-primary hover:underline"
-                  >
-                    {useCustomAddress ? "Usar endereço cadastrado" : "Usar outro endereço"}
-                  </button>
-                )}
               </div>
 
-              <AnimatePresence mode="wait">
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-start gap-4 justify-between group">
-                    <div className="flex gap-4 items-start">
-                      <MapPin className="w-5 h-5 text-neutral-400 mt-1" />
-                      <div>
-                        <p className="font-bold text-lg">{addr.address_recipient || "Destinatário Padrão"}</p>
-                        <p className="text-muted-foreground">{addr.address_logradouro}, {addr.address_numero}</p>
-                        {addr.address_complemento && <p className="text-muted-foreground">{addr.address_complemento}</p>}
-                        <p className="text-muted-foreground">{addr.address_bairro} — {addr.address_cidade}/{addr.address_uf}</p>
-                        <p className="text-muted-foreground mt-1">CEP: {addr.address_cep}</p>
-                      </div>
+              {/* Saved address card */}
+              {addr.address_logradouro && !useCustomAddress ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white/5 border border-primary/20 rounded-2xl p-5 flex items-start gap-4 justify-between"
+                >
+                  <div className="flex gap-4 items-start">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                      <MapPin className="w-5 h-5 text-primary" />
                     </div>
-                    <button 
-                      type="button" 
-                      onClick={() => setUseCustomAddress(true)}
-                      className="px-4 py-2 rounded-xl text-sm font-semibold bg-white/5 hover:bg-white/10 border border-white/10 transition-all opacity-80 hover:opacity-100 whitespace-nowrap"
-                    >
-                      Alterar Endereço
-                    </button>
-                  </motion.div>
-              </AnimatePresence>
+                    <div>
+                      <p className="font-bold text-base">{addr.address_recipient || "Destinatário"}</p>
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {addr.address_logradouro}, {addr.address_numero}
+                        {addr.address_complemento ? ` — ${addr.address_complemento}` : ""}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {addr.address_bairro} · {addr.address_cidade}/{addr.address_uf}
+                      </p>
+                      <p className="text-xs text-muted-foreground/70 mt-1">CEP {addr.address_cep}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setUseCustomAddress(true)}
+                    className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold bg-white/5 hover:bg-primary/10 border border-white/10 hover:border-primary/30 text-muted-foreground hover:text-primary transition-all"
+                  >
+                    Alterar <ChevronRight className="w-4 h-4" />
+                  </button>
+                </motion.div>
+              ) : !useCustomAddress ? (
+                <button
+                  type="button"
+                  onClick={() => setUseCustomAddress(true)}
+                  className="w-full flex items-center gap-3 p-5 rounded-2xl border-2 border-dashed border-border/50 hover:border-primary/40 hover:bg-primary/5 transition-all text-muted-foreground hover:text-primary"
+                >
+                  <PlusCircle className="w-5 h-5" />
+                  <span className="font-semibold text-sm">Adicionar endereço de entrega</span>
+                </button>
+              ) : null}
 
               {/* Address Modal */}
               <AnimatePresence>
                 {useCustomAddress && (
                   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-background border border-border/40 p-8 rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                      <h2 className="text-2xl font-bold font-display mb-6">Alterar Endereço de Entrega</h2>
-                      <div className="grid grid-cols-1 md:grid-cols-6 gap-5">
-                        <Field className="md:col-span-4" label="Destinatário" value={addr.address_recipient} onChange={onAddr("address_recipient")} required />
-                        <Field className="md:col-span-2" label="CEP" value={addr.address_cep} onChange={onAddr("address_cep")} required maxLength={9} placeholder="00000-000" />
-                        <Field className="md:col-span-4" label="Logradouro" value={addr.address_logradouro} onChange={onAddr("address_logradouro")} required />
-                        <Field className="md:col-span-2" label="Número" value={addr.address_numero} onChange={onAddr("address_numero")} required />
-                        <Field className="md:col-span-3" label="Bairro" value={addr.address_bairro} onChange={onAddr("address_bairro")} required />
-                        <Field className="md:col-span-2" label="Cidade" value={addr.address_cidade} onChange={onAddr("address_cidade")} required />
-                        <Field className="md:col-span-1" label="UF" value={addr.address_uf} onChange={onAddr("address_uf")} required maxLength={2} />
-                        <Field className="md:col-span-6" label="Complemento (opcional)" value={addr.address_complemento} onChange={onAddr("address_complemento")} />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 16 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 16 }}
+                      className="bg-[#0e0e1a] border border-white/10 rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+                    >
+                      {/* Modal Header */}
+                      <div className="flex items-center justify-between p-6 border-b border-white/10">
+                        <div>
+                          <h2 className="text-xl font-display font-bold">Endereço de Entrega</h2>
+                          <p className="text-xs text-muted-foreground mt-0.5">Digite o CEP para preencher automaticamente</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setUseCustomAddress(false)}
+                          className="p-2 rounded-full hover:bg-white/10 text-muted-foreground hover:text-white transition-all"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
                       </div>
-                      <div className="mt-8 flex justify-end gap-4">
-                        <button type="button" onClick={() => setUseCustomAddress(false)} className="px-6 py-3 rounded-xl font-bold text-muted-foreground hover:bg-white/5 transition-all">Cancelar</button>
-                        <button type="button" onClick={() => setUseCustomAddress(false)} className="px-6 py-3 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-lg">Salvar Endereço</button>
-                      </div>
+
+                      <AddressModalContent
+                        initial={{
+                          recipient_name: addr.address_recipient,
+                          cep: addr.address_cep,
+                          logradouro: addr.address_logradouro,
+                          numero: addr.address_numero,
+                          complemento: addr.address_complemento,
+                          bairro: addr.address_bairro,
+                          cidade: addr.address_cidade,
+                          uf: addr.address_uf,
+                        }}
+                        onSave={(data) => {
+                          setAddr({
+                            address_recipient: data.recipient_name,
+                            address_cep: data.cep,
+                            address_logradouro: data.logradouro,
+                            address_numero: data.numero,
+                            address_complemento: data.complemento,
+                            address_bairro: data.bairro,
+                            address_cidade: data.cidade,
+                            address_uf: data.uf,
+                          });
+                          setUseCustomAddress(false);
+                        }}
+                        onCancel={() => setUseCustomAddress(false)}
+                      />
                     </motion.div>
                   </div>
                 )}
@@ -840,6 +883,262 @@ function Field({ label, className = "", ...props }: { label: string; className?:
       <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider pl-1">{label}</label>
       <input {...props}
         className="w-full px-4 py-3 rounded-xl border border-border bg-background focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-neutral-600 font-medium" />
+    </div>
+  );
+}
+
+// ─── Professional Address Modal ───────────────────────────────────────────────
+const LABEL_OPTIONS = [
+  { id: "Casa",     icon: Home,      label: "Casa" },
+  { id: "Trabalho", icon: Briefcase, label: "Trabalho" },
+  { id: "Outro",    icon: Building2, label: "Outro" },
+];
+
+function AddressModalContent({
+  initial,
+  onSave,
+  onCancel,
+}: {
+  initial: {
+    recipient_name: string; cep: string; logradouro: string;
+    numero: string; complemento: string; bairro: string;
+    cidade: string; uf: string;
+  };
+  onSave: (data: typeof initial) => void;
+  onCancel: () => void;
+}) {
+  const [cepLoading, setCepLoading] = useState(false);
+  const [cepError, setCepError]   = useState("");
+  const [saving, setSaving]       = useState(false);
+  const [labelType, setLabelType] = useState("Casa");
+
+  const [form, setForm] = useState({
+    recipient_name: initial.recipient_name || "",
+    cep:            initial.cep || "",
+    logradouro:     initial.logradouro || "",
+    numero:         initial.numero || "",
+    complemento:    initial.complemento || "",
+    bairro:         initial.bairro || "",
+    cidade:         initial.cidade || "",
+    uf:             initial.uf || "",
+    reference_point: "",
+    is_default:     true,
+  });
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm(prev => ({ ...prev, [k]: e.target.value }));
+
+  const handleCep = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, "").substring(0, 8);
+    const fmt = raw.length > 5 ? `${raw.substring(0, 5)}-${raw.substring(5)}` : raw;
+    setForm(prev => ({ ...prev, cep: fmt, logradouro: "", bairro: "", cidade: "", uf: "" }));
+    setCepError("");
+    if (raw.length === 8) {
+      setCepLoading(true);
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${raw}/json/`);
+        const data = await res.json();
+        if (data.erro) {
+          setCepError("CEP não encontrado. Verifique e tente novamente.");
+        } else {
+          setForm(prev => ({
+            ...prev,
+            logradouro: data.logradouro || "",
+            bairro:     data.bairro     || "",
+            cidade:     data.localidade || "",
+            uf:         data.uf         || "",
+          }));
+        }
+      } catch {
+        setCepError("Erro ao buscar CEP. Verifique sua conexão.");
+      } finally {
+        setCepLoading(false);
+      }
+    }
+  };
+
+  const isReady = form.logradouro && form.bairro && form.cidade && form.uf;
+
+  const handleSave = async () => {
+    if (!isReady || !form.numero) return;
+    setSaving(true);
+    try {
+      const payload = {
+        label:          labelType,
+        recipient_name: form.recipient_name,
+        cep:            form.cep.replace(/\D/g, ""),
+        logradouro:     form.logradouro,
+        numero:         form.numero,
+        complemento:    form.complemento,
+        bairro:         form.bairro,
+        cidade:         form.cidade,
+        uf:             form.uf,
+        reference_point: form.reference_point,
+        is_default:     form.is_default,
+      };
+      await userApi.createAddress(payload);
+    } catch { /* não bloqueia o checkout mesmo se falhar */ }
+    finally { setSaving(false); }
+    onSave(form);
+  };
+
+  return (
+    <div className="p-6 space-y-5">
+      {/* Quick label chips */}
+      <div>
+        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Este endereço é...</p>
+        <div className="flex gap-2">
+          {LABEL_OPTIONS.map((opt) => {
+            const Icon = opt.icon;
+            const active = labelType === opt.id;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setLabelType(opt.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${
+                  active
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-white/10 bg-white/5 text-muted-foreground hover:border-white/20"
+                }`}
+              >
+                <Icon className="w-4 h-4" />{opt.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Recipient */}
+      <div className="space-y-1.5">
+        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Nome do Destinatário</label>
+        <input
+          value={form.recipient_name}
+          onChange={set("recipient_name")}
+          placeholder="Ex: João da Silva"
+          required
+          className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-foreground placeholder-neutral-600 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all font-medium"
+        />
+      </div>
+
+      {/* CEP — full row, prominent */}
+      <div className="space-y-1.5">
+        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">CEP</label>
+        <div className="relative">
+          <input
+            value={form.cep}
+            onChange={handleCep}
+            placeholder="00000-000"
+            maxLength={9}
+            required
+            className={`w-full pl-4 pr-12 py-3.5 rounded-xl border ${
+              cepError ? "border-red-500/50 bg-red-500/5" : isReady ? "border-emerald-500/50 bg-emerald-500/5" : "border-white/10 bg-white/5"
+            } text-foreground placeholder-neutral-600 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all font-mono font-medium text-lg`}
+          />
+          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+            {cepLoading
+              ? <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              : isReady
+                ? <Check className="w-5 h-5 text-emerald-500" />
+                : <Search className="w-5 h-5 text-muted-foreground" />
+            }
+          </div>
+        </div>
+        {cepError && <p className="text-xs text-red-400 font-medium">{cepError}</p>}
+      </div>
+
+      {/* Autocompleted address — read-only display */}
+      {isReady && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3 space-y-0.5"
+        >
+          <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1">Endereço encontrado ✓</p>
+          <p className="text-sm font-semibold text-foreground">{form.logradouro}</p>
+          <p className="text-xs text-muted-foreground">{form.bairro} · {form.cidade}/{form.uf}</p>
+        </motion.div>
+      )}
+
+      {/* Number + Complement — only user-input fields */}
+      {isReady && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid grid-cols-2 gap-4"
+        >
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Número <span className="text-red-400">*</span></label>
+            <input
+              value={form.numero}
+              onChange={set("numero")}
+              placeholder="Ex: 123"
+              required
+              autoFocus
+              className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-foreground placeholder-neutral-600 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all font-medium"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Complemento</label>
+            <input
+              value={form.complemento}
+              onChange={set("complemento")}
+              placeholder="Apto, Bloco..."
+              className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-foreground placeholder-neutral-600 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all font-medium"
+            />
+          </div>
+        </motion.div>
+      )}
+
+      {/* Reference point */}
+      {isReady && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-1.5"
+        >
+          <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Ponto de Referência</label>
+          <input
+            value={form.reference_point}
+            onChange={set("reference_point")}
+            placeholder="Ex: Em frente à padaria, portão azul..."
+            className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-foreground placeholder-neutral-600 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all font-medium"
+          />
+        </motion.div>
+      )}
+
+      {/* Save as default toggle */}
+      {isReady && (
+        <label className="flex items-center gap-3 cursor-pointer py-1">
+          <input
+            type="checkbox"
+            checked={form.is_default}
+            onChange={(e) => setForm(prev => ({ ...prev, is_default: e.target.checked }))}
+            className="w-4 h-4 rounded border-border accent-primary"
+          />
+          <span className="text-sm text-muted-foreground">Salvar como endereço principal</span>
+        </label>
+      )}
+
+      {/* Actions */}
+      <div className="flex gap-3 pt-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 py-3 rounded-xl font-semibold text-muted-foreground hover:bg-white/5 border border-white/10 transition-all"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!isReady || !form.numero || !form.recipient_name || saving}
+          className="flex-1 py-3 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+          Usar este Endereço
+        </button>
+      </div>
     </div>
   );
 }

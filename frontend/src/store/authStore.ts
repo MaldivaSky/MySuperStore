@@ -24,9 +24,11 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   isAuthenticated: boolean;
+  _hydrated: boolean;
   login: (tokens: { access: string; refresh: string }, user: User) => void;
   logout: () => void;
   updateUser: (user: Partial<User>) => void;
+  setHydrated: (v: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -36,10 +38,14 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
+      _hydrated: false,
+
       login: (tokens, user) => {
         if (typeof window !== "undefined") {
           localStorage.setItem("access_token", tokens.access);
-          localStorage.setItem("refresh_token", tokens.refresh);
+          if (tokens.refresh) {
+            localStorage.setItem("refresh_token", tokens.refresh);
+          }
         }
         set({
           accessToken: tokens.access,
@@ -48,6 +54,7 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: true,
         });
       },
+
       logout: () => {
         if (typeof window !== "undefined") {
           localStorage.removeItem("access_token");
@@ -60,14 +67,30 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
         });
       },
+
       updateUser: (updatedUser) => {
         set((state) => ({
           user: state.user ? { ...state.user, ...updatedUser } : null,
         }));
       },
+
+      setHydrated: (v) => set({ _hydrated: v }),
     }),
     {
       name: "mysuperstore-auth",
+      // Persist everything except the internal _hydrated flag
+      partialize: (state) => ({
+        user: state.user,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
+        isAuthenticated: state.isAuthenticated,
+      }),
+      onRehydrateStorage: () => (state) => {
+        // After zustand rehydrates from localStorage, mark as hydrated
+        if (state) {
+          state.setHydrated(true);
+        }
+      },
     }
   )
 );
