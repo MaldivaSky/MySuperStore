@@ -1,5 +1,8 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
+
 import { useEffect, useState } from "react";
 import { ordersApi, reviewApi, returnsApi, paymentsApi } from "@/lib/api";
 import { Loader2, Package, CheckCircle2, Truck, Clock, Star, Send, MessageCircle, X, RefreshCcw, Store, Ban, Undo2 } from "lucide-react";
