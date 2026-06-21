@@ -129,8 +129,17 @@ function CheckoutInner() {
     loadData();
   }, [router]);
 
-  const onAddr = (k: keyof typeof addr) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setAddr((a) => ({ ...a, [k]: e.target.value }));
+  const onAddr = (k: keyof typeof addr) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value;
+    if (k === "address_cep") {
+      val = val.replace(/\D/g, "");
+      if (val.length > 5) {
+        val = val.replace(/^(\d{5})(\d)/, "$1-$2");
+      }
+      val = val.substring(0, 9);
+    }
+    setAddr((a) => ({ ...a, [k]: val }));
+  };
 
   useEffect(() => {
     const cep = addr.address_cep.replace(/\D/g, "");
@@ -441,7 +450,7 @@ function CheckoutInner() {
                       <h2 className="text-2xl font-bold font-display mb-6">Alterar Endereço de Entrega</h2>
                       <div className="grid grid-cols-1 md:grid-cols-6 gap-5">
                         <Field className="md:col-span-4" label="Destinatário" value={addr.address_recipient} onChange={onAddr("address_recipient")} required />
-                        <Field className="md:col-span-2" label="CEP" value={addr.address_cep} onChange={onAddr("address_cep")} required maxLength={8} />
+                        <Field className="md:col-span-2" label="CEP" value={addr.address_cep} onChange={onAddr("address_cep")} required maxLength={9} placeholder="00000-000" />
                         <Field className="md:col-span-4" label="Logradouro" value={addr.address_logradouro} onChange={onAddr("address_logradouro")} required />
                         <Field className="md:col-span-2" label="Número" value={addr.address_numero} onChange={onAddr("address_numero")} required />
                         <Field className="md:col-span-3" label="Bairro" value={addr.address_bairro} onChange={onAddr("address_bairro")} required />
