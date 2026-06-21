@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-
+import { Suspense } from "react";
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -14,7 +14,15 @@ import {
 import { api, returnsApi, catalogApi, chatApi, sellerDashboardApi } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 
-export default function SellerDashboard() {
+export default function SellerPage() {
+  return (
+    <Suspense fallback={null}>
+      <SellerDashboard />
+    </Suspense>
+  );
+}
+
+function SellerDashboard() {
   const { user, isAuthenticated } = useAuthStore();
   const router = useRouter();
   const searchParams = useSearchParams();
