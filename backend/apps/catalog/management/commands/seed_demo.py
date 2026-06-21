@@ -108,9 +108,12 @@ class Command(BaseCommand):
                             help="Remove dados demo e recria do zero")
         parser.add_argument("--skip-images", action="store_true",
                             help="Pula download de imagens (mais rapido)")
+        parser.add_argument("--external-images", action="store_true",
+                            help="Armazena URL externa diretamente (sem download, ideal para producao)")
 
     def handle(self, *args, **options):
         self.skip_images = options["skip_images"]
+        self.external_images = options.get("external_images", False)
 
         if options["reset"]:
             self._reset()
@@ -332,7 +335,7 @@ class Command(BaseCommand):
                 continue
 
             # Imagem principal
-            if not self.skip_images:
+            if not self.skip_images or self.external_images:
                 self._save_image(product, p.get("thumbnail"), primary=True)
 
             # Variantes
@@ -402,6 +405,15 @@ class Command(BaseCommand):
     def _save_image(self, product, url, primary=False):
         from apps.catalog.models import ProductImage
         if not url:
+            return
+        # Modo externo: armazena a URL diretamente no campo image.name (sem download)
+        if self.external_images:
+            try:
+                img = ProductImage(product=product, is_primary=primary, order=1)
+                img.image.name = url
+                img.save()
+            except Exception:
+                pass
             return
         try:
             r = requests.get(url, timeout=10)

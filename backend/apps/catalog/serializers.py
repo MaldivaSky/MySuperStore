@@ -69,17 +69,21 @@ class ProductVariantSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if not obj.product:
             return None
-            
+
         images = getattr(obj.product, "prefetched_images", None)
         if images is None:
             images = list(obj.product.images.all())
-            
+
         primary = next((i for i in images if i.is_primary), None) or (images[0] if images else None)
-        if primary and request:
-            try:
-                return request.build_absolute_uri(primary.image.url)
-            except ValueError:
-                return None
+        if primary:
+            name = primary.image.name or ""
+            if name.startswith("http://") or name.startswith("https://"):
+                return name
+            if request:
+                try:
+                    return request.build_absolute_uri(primary.image.url)
+                except ValueError:
+                    return None
         return None
 
 
@@ -236,11 +240,15 @@ class ProductListSerializer(serializers.ModelSerializer):
         if images is None:
             images = list(obj.images.all())
         primary = next((i for i in images if i.is_primary), None) or (images[0] if images else None)
-        if primary and request:
-            try:
-                return request.build_absolute_uri(primary.image.url)
-            except ValueError:
-                return None
+        if primary:
+            name = primary.image.name or ""
+            if name.startswith("http://") or name.startswith("https://"):
+                return name
+            if request:
+                try:
+                    return request.build_absolute_uri(primary.image.url)
+                except ValueError:
+                    return None
         return None
 
     def get_min_price(self, obj):
