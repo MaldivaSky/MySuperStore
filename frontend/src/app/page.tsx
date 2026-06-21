@@ -95,8 +95,10 @@ function StorePageContent() {
 
   // Lista de marcas destaque — edite aqui para promover marcas no marketplace
   const FEATURED_BRAND_NAMES = [
-    "Apple", "Samsung", "Nike", "Rolex", "Brastemp", "Sony",
-    "Adidas", "LG", "Motorola", "Dell", "HP", "Xiaomi",
+    "Apple", "Samsung", "Sony", "LG", "Motorola",
+    "Xiaomi", "Dell", "HP", "Asus", "Nike",
+    "Adidas", "Puma", "Lacoste", "Calvin Klein", "Rolex",
+    "Casio", "Fossil", "L'Oreal", "Brastemp", "Electrolux",
   ];
   const [featuredBrands, setFeaturedBrands] = useState<{ id: string; name: string; slug: string }[]>([]);
 
