@@ -9,6 +9,24 @@ from .models import (
 PROFANITY = {"merda", "bosta", "caralho", "porra", "fuder", "arrombado", "safado", "idiota"}
 
 
+def get_clean_image_url(image_field, request=None):
+    if not image_field:
+        return None
+    name = image_field.name or ""
+    if "dummyjson.com" in name or "unsplash.com" in name or "loremflickr.com" in name or "http" in name:
+        clean_name = name.replace("%3A", ":")
+        if clean_name.startswith("https:/") and not clean_name.startswith("https://"):
+            clean_name = clean_name.replace("https:/", "https://")
+        if clean_name.startswith("http:/") and not clean_name.startswith("http://"):
+            clean_name = clean_name.replace("http:/", "http://")
+        return clean_name
+    if request:
+        try:
+            return request.build_absolute_uri(image_field.url)
+        except ValueError:
+            return None
+    return image_field.url
+
 # -- Atributos -----------------------------------------------------------------
 
 class AttributeValueSerializer(serializers.ModelSerializer):
@@ -22,10 +40,14 @@ class AttributeValueSerializer(serializers.ModelSerializer):
 # -- Imagens -------------------------------------------------------------------
 
 class ProductImageSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
     class Meta:
         model = ProductImage
         fields = ["id", "image", "is_primary", "order"]
 
+    def get_image(self, obj):
+        return get_clean_image_url(obj.image, self.context.get("request"))
 
 class ProductImageUploadSerializer(serializers.ModelSerializer):
     class Meta:
@@ -76,14 +98,7 @@ class ProductVariantSerializer(serializers.ModelSerializer):
 
         primary = next((i for i in images if i.is_primary), None) or (images[0] if images else None)
         if primary:
-            name = primary.image.name or ""
-            if name.startswith("http://") or name.startswith("https://"):
-                return name
-            if request:
-                try:
-                    return request.build_absolute_uri(primary.image.url)
-                except ValueError:
-                    return None
+            return get_clean_image_url(primary.image, request)
         return None
 
 
@@ -241,14 +256,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             images = list(obj.images.all())
         primary = next((i for i in images if i.is_primary), None) or (images[0] if images else None)
         if primary:
-            name = primary.image.name or ""
-            if name.startswith("http://") or name.startswith("https://"):
-                return name
-            if request:
-                try:
-                    return request.build_absolute_uri(primary.image.url)
-                except ValueError:
-                    return None
+            return get_clean_image_url(primary.image, request)
         return None
 
     def get_min_price(self, obj):

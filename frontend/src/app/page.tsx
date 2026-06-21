@@ -430,7 +430,7 @@ function StorePageContent() {
                   <span className="w-2 h-2 rounded-full bg-yellow-500/50"></span> Ofertas
                 </h4>
                 <div className="flex flex-col gap-2">
-                  {[10, 20, 50].map((disc) => (
+                  {[10, 20, 30].map((disc) => (
                     <button
                       key={disc}
                       className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all duration-300 ${
