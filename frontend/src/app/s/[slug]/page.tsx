@@ -10,6 +10,7 @@ import { catalogApi } from "@/lib/api";
 import { Star, Store, MapPin, ExternalLink, Search, Package, ShoppingBag, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
+import { ProductModal } from "@/components/ui/ProductModal";
 
 export default function PremiumGlassdoorPage() {
   const { slug } = useParams() as { slug: string };
@@ -21,6 +22,15 @@ export default function PremiumGlassdoorPage() {
   const [loading, setLoading] = useState(true);
   
   const [activeSlide, setActiveSlide] = useState(0);
+
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("all");
+
+  const handleProductClick = (product: any) => {
+    setSelectedProduct(product);
+    setIsModalOpen(true);
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -76,6 +86,8 @@ export default function PremiumGlassdoorPage() {
   }
 
   const banners = [seller.banner_url, seller.banner2_url, seller.banner3_url].filter(Boolean);
+  const categories = Array.from(new Set(products.map(p => p.category_name))).filter(Boolean) as string[];
+  const displayProducts = activeCategory === "all" ? products : products.filter(p => p.category_name === activeCategory);
 
   return (
     <div className="min-h-screen bg-[#05050A] text-white font-sans overflow-x-hidden selection:bg-[#E6B53C] selection:text-black">
@@ -103,13 +115,22 @@ export default function PremiumGlassdoorPage() {
             )}
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="relative group cursor-pointer">
-              <Search className="w-5 h-5 text-neutral-400 group-hover:text-white transition-colors" />
-            </div>
-            <button className="relative p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors">
-              <ShoppingBag className="w-5 h-5" />
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide max-w-[50vw]">
+            <button
+              onClick={() => setActiveCategory("all")}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${activeCategory === "all" ? "bg-[#E6B53C] text-black" : "bg-white/5 text-neutral-400 hover:text-white"}`}
+            >
+              Todos
             </button>
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${activeCategory === cat ? "bg-[#E6B53C] text-black" : "bg-white/5 text-neutral-400 hover:text-white"}`}
+              >
+                {cat}
+              </button>
+            ))}
           </div>
         </div>
       </header>
@@ -198,16 +219,16 @@ export default function PremiumGlassdoorPage() {
             </div>
           </div>
 
-          {products.length === 0 ? (
+          {displayProducts.length === 0 ? (
             <div className="py-20 text-center bg-white/5 rounded-3xl border border-dashed border-white/10">
               <Package className="w-16 h-16 mx-auto text-neutral-600 mb-4" />
               <h3 className="text-xl font-bold mb-2">Nenhum produto disponível</h3>
-              <p className="text-neutral-400">Esta loja ainda não possui produtos à venda.</p>
+              <p className="text-neutral-400">Esta categoria não possui produtos no momento.</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {products.map((product) => (
-                <Link href={`/product/${product.slug}`} key={product.id}>
+              {displayProducts.map((product) => (
+                <div onClick={() => handleProductClick(product)} className="cursor-pointer" key={product.id}>
                   <div className="group bg-[#0A0A15]/60 backdrop-blur-md border border-white/[0.05] rounded-3xl overflow-hidden hover:border-[#E6B53C]/50 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
                     <div className="relative aspect-[4/5] bg-white/5 overflow-hidden">
                       {product.primary_image ? (
@@ -242,7 +263,7 @@ export default function PremiumGlassdoorPage() {
                       </div>
                     </div>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           )}
@@ -261,6 +282,17 @@ export default function PremiumGlassdoorPage() {
           </div>
         </div>
       </footer>
+
+      {selectedProduct && (
+        <ProductModal 
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setTimeout(() => setSelectedProduct(null), 300); // Allow exit animation
+          }}
+          slug={selectedProduct.slug}
+        />
+      )}
     </div>
   );
 }

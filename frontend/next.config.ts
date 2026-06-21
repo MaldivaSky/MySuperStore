@@ -16,10 +16,18 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
+    // Extrai a base URL do backend (remove /api/v1) para o proxy de media local
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+    const backendBase = apiUrl.replace(/\/api.*$/, "");
+
     return [
       {
         source: "/api/:path*",
-        destination: `${process.env.NEXT_PUBLIC_API_URL}/:path*`,
+        destination: `${apiUrl}/:path*`,
+      },
+      {
+        source: "/media/:path*",
+        destination: `${backendBase}/media/:path*`,
       },
     ];
   },

@@ -31,23 +31,23 @@ const heroBanners = [
     subtitle: "Descubra o novo iPhone 15 Pro Max em Titânio.",
     cta: "Comprar Apple",
     image: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&q=80&w=2070",
-    link: "/store?brand=apple",
+    link: "/?search=iphone",
   },
   {
     id: 2,
     title: "Lançamentos Nike",
-    subtitle: "O futuro dos sneakers chegou. Conforto e performance.",
-    cta: "Explorar Air Max",
-    image: "https://images.unsplash.com/photo-1552346154-21d32810baa3?auto=format&fit=crop&q=80&w=2070",
-    link: "/store?brand=nike",
+    subtitle: "A vitrine exclusiva da marca. Conforto e performance.",
+    cta: "Explorar Loja Oficial",
+    image: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&q=80&w=2070",
+    link: "/s/nike",
   },
   {
     id: 3,
-    title: "Casa Inteligente",
-    subtitle: "Sua cozinha mais conectada com Brastemp.",
-    cta: "Ver Eletros",
-    image: "https://images.unsplash.com/photo-1584568694244-14fbdf83bd30?auto=format&fit=crop&q=80&w=2070",
-    link: "/store?category=eletrodomesticos",
+    title: "Especial Copa do Mundo",
+    subtitle: "Preparado para a emoção? Calçados e artigos esportivos.",
+    cta: "Ver Ofertas",
+    image: "/world_cup_banner.png",
+    link: "/?search=esporte",
   }
 ];
 
@@ -72,6 +72,7 @@ function StorePageContent() {
   const search = searchParams.get("search") || "";
   const { toast } = useToast();
   const { isAuthenticated } = useAuthStore();
+  const router = useRouter();
   
   // Filters state
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -343,6 +344,7 @@ function StorePageContent() {
                   {heroBanners[activeBanner].title}
                 </motion.h1>
                 <motion.button 
+                  onClick={() => router.push(heroBanners[activeBanner].link)}
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.5 }}
@@ -604,11 +606,10 @@ function StorePageContent() {
 
                     <div className="aspect-[4/5] relative bg-secondary/30 overflow-hidden">
                       {product.primary_image ? (
-                        <Image
+                        <img
                           src={product.primary_image}
                           alt={product.name}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-500"
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">

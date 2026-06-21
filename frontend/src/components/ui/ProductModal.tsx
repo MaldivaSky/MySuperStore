@@ -202,13 +202,11 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
                   onMouseMove={handleMouseMove}
                 >
                   {selectedImage ? (
-                    <Image
+                    <img
                       src={selectedImage}
                       alt={product.name}
-                      fill
-                      className={`object-contain transition-transform duration-200 ${isZooming ? "" : "p-4"}`}
+                      className={`absolute inset-0 w-full h-full object-contain transition-transform duration-200 ${isZooming ? "" : "p-4"}`}
                       style={isZooming ? zoomStyle : {}}
-                      sizes="(max-w-768px) 100vw, 50vw"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -235,7 +233,7 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
                           selectedImage === img.image ? "border-primary" : "border-transparent hover:border-primary/50"
                         }`}
                       >
-                        <Image src={img.image} alt="Thumbnail" fill className="object-cover" />
+                        <img src={img.image} alt="Thumbnail" className="w-full h-full object-cover" />
                       </button>
                     ))}
                   </div>
@@ -617,7 +615,7 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
                       >
                         <div className="aspect-square bg-secondary/30 rounded-lg mb-3 flex items-center justify-center relative overflow-hidden">
                           {item.primary_image ? (
-                            <Image src={item.primary_image} alt={item.name} fill className="object-cover opacity-80 group-hover:scale-110 group-hover:opacity-100 transition-all" />
+                            <img src={item.primary_image} alt={item.name} className="w-full h-full object-cover opacity-80 group-hover:scale-110 group-hover:opacity-100 transition-all" />
                           ) : (
                             <span className="text-xs text-muted-foreground">Sem Imagem</span>
                           )}
