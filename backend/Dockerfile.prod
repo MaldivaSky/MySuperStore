@@ -13,10 +13,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements/ requirements/
+# Build context é o root do repo (Railway), então prefixamos com backend/
+COPY backend/requirements/ requirements/
 RUN pip install -r requirements/prod.txt
 
-COPY . .
+COPY backend/ .
 
 RUN python manage.py collectstatic --noinput || true
 
