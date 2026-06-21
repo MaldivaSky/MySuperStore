@@ -169,9 +169,9 @@ export default function CartPage() {
                         {item.variant.attributes.map(a => a.value).join(" • ")}
                       </p>
                     )}
-                    {item.variant.product_base_price > item.variant.effective_price ? (
+                    {item.variant.product_base_price && Number(item.variant.product_base_price) > Number(item.variant.effective_price) ? (
                       <div className="font-semibold text-green-500 mt-2 animate-pulse">
-                        Economizou R$ {(Number(item.variant.product_base_price - item.variant.effective_price) * item.quantity).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        Economizou R$ {((Number(item.variant.product_base_price) - Number(item.variant.effective_price)) * item.quantity).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </div>
                     ) : null}
                   </div>
