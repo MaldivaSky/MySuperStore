@@ -153,11 +153,7 @@ def run_master_seed():
             "seller": seller_profile,
             "cat": cat_casual,
             "image": "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&q=80&w=1000",
-            "variants": [
-                (val_39, val_branco), 
-                (val_40, val_branco), 
-                (val_41, val_preto)
-            ]
+            "variants": [(val_39, val_branco), (val_40, val_branco), (val_41, val_preto)]
         },
         {
             "name": "Nike Air Max 270",
@@ -167,9 +163,44 @@ def run_master_seed():
             "seller": seller_profile,
             "cat": cat_esportes,
             "image": "https://images.unsplash.com/photo-1605348532760-6753d2c43329?auto=format&fit=crop&q=80&w=1000",
-            "variants": [
-                (val_40, val_vermelho)
-            ]
+            "variants": [(val_40, val_vermelho)]
+        },
+        {
+            "name": "Nike Dunk Low Retro",
+            "desc": "Criado para as quadras, mas levado para as ruas, o ícone do basquete dos anos 80 retorna com sobreposições perfeitamente brilhantes.",
+            "price": "1099.99",
+            "seller": seller_profile,
+            "cat": cat_casual,
+            "image": "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&q=80&w=1000",
+            "variants": [(val_39, val_preto), (val_41, val_branco)]
+        },
+        {
+            "name": "Nike ZoomX Vaporfly",
+            "desc": "O próximo passo na evolução da velocidade.",
+            "price": "1999.99",
+            "seller": seller_profile,
+            "cat": cat_esportes,
+            "image": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=1000",
+            "variants": [(val_40, val_vermelho), (val_41, val_branco)]
+        },
+        {
+            "name": "Nike Pegasus 40",
+            "desc": "A corrida do dia a dia ganhou um novo visual.",
+            "price": "899.99",
+            "promo_price": "750.00",
+            "seller": seller_profile,
+            "cat": cat_esportes,
+            "image": "https://images.unsplash.com/photo-1539185441755-769473a23570?auto=format&fit=crop&q=80&w=1000",
+            "variants": [(val_39, val_preto)]
+        },
+        {
+            "name": "Nike SB Dunk Low Pro",
+            "desc": "Estilo clássico para andar de skate com máximo desempenho.",
+            "price": "1199.99",
+            "seller": seller_profile,
+            "cat": cat_casual,
+            "image": "https://images.unsplash.com/photo-1514989940723-e8e51635b782?auto=format&fit=crop&q=80&w=1000",
+            "variants": [(val_40, val_branco)]
         },
         {
             "name": "Smart TV Samsung Neo QLED 4K 55\"",
@@ -178,9 +209,82 @@ def run_master_seed():
             "seller": seller_profile_2,
             "cat": cat_eletronicos,
             "image": "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&q=80&w=1000",
-            "variants": [
-                (None, val_prata)
-            ]
+            "variants": [(None, val_prata)]
+        },
+        {
+            "name": "Samsung Galaxy S24 Ultra",
+            "desc": "O poder do Galaxy AI agora no seu bolso.",
+            "price": "8999.00",
+            "promo_price": "8499.00",
+            "seller": seller_profile_2,
+            "cat": cat_eletronicos,
+            "image": "https://images.unsplash.com/photo-1707343843437-caacff5cfa74?auto=format&fit=crop&q=80&w=1000",
+            "variants": [(None, val_preto), (None, val_prata)]
+        },
+        {
+            "name": "Samsung Galaxy Watch 6",
+            "desc": "O smartwatch perfeito para monitorar sua saúde e exercícios.",
+            "price": "1999.00",
+            "seller": seller_profile_2,
+            "cat": cat_eletronicos,
+            "image": "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?auto=format&fit=crop&q=80&w=1000",
+            "variants": [(None, val_preto)]
+        },
+        {
+            "name": "Samsung Galaxy Buds2 Pro",
+            "desc": "Som imersivo de alta qualidade com cancelamento de ruído ativo.",
+            "price": "1299.00",
+            "promo_price": "999.00",
+            "seller": seller_profile_2,
+            "cat": cat_eletronicos,
+            "image": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&q=80&w=1000",
+            "variants": [(None, val_branco), (None, val_preto)]
+        },
+        {
+            "name": "Monitor Samsung Odyssey G9",
+            "desc": "Monitor ultrawide curvo para uma imersão total nos games.",
+            "price": "11999.00",
+            "seller": seller_profile_2,
+            "cat": cat_eletronicos,
+            "image": "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&q=80&w=1000",
+            "variants": [(None, val_preto)]
+        },
+        {
+            "name": "Notebook Samsung Galaxy Book3 Pro",
+            "desc": "Desempenho ultrafino com tela AMOLED dinâmica.",
+            "price": "7999.00",
+            "seller": seller_profile_2,
+            "cat": cat_eletronicos,
+            "image": "https://images.unsplash.com/photo-1531297172867-4f50414a1fa3?auto=format&fit=crop&q=80&w=1000",
+            "variants": [(None, val_prata)]
+        },
+        {
+            "name": "Nike Sportswear Club Fleece",
+            "desc": "Moletom com capuz macio e confortável para o dia a dia.",
+            "price": "349.99",
+            "seller": seller_profile,
+            "cat": cat_casual,
+            "image": "https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=1000",
+            "variants": [(val_39, val_preto), (val_40, val_branco)]
+        },
+        {
+            "name": "Mochila Nike Brasilia",
+            "desc": "Espaçosa e durável para carregar seus itens com segurança.",
+            "price": "249.99",
+            "seller": seller_profile,
+            "cat": cat_esportes,
+            "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=1000",
+            "variants": [(None, val_preto)]
+        },
+        {
+            "name": "Soundbar Samsung Q-Series",
+            "desc": "Áudio de cinema na sua sala com Dolby Atmos.",
+            "price": "2999.00",
+            "promo_price": "2599.00",
+            "seller": seller_profile_2,
+            "cat": cat_eletronicos,
+            "image": "https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&q=80&w=1000",
+            "variants": [(None, val_preto)]
         }
     ]
 
