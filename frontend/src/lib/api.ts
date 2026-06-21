@@ -182,6 +182,11 @@ export const sellerDashboardApi = {
   getMentor: () => api.get("/sellers/me/mentor/"),
   triggerMentorAction: (action: string, productSlug: string) => 
     api.post("/sellers/me/mentor/", { action, product_slug: productSlug }),
+  getAnalytics: () => api.get("/sellers/me/analytics/"),
+  reviewsReceived: () => api.get("/sellers/me/reviews-received/"),
+  reviewsGiven: () => api.get("/sellers/me/reviews-given/"),
+  rateBuyer: (data: { sub_order: string, rating: number, comment: string }) => 
+    api.post("/sellers/me/reviews-given/", data),
   products: {
     list: () => api.get("/sellers/me/products/"),
     create: (data: any) => api.post("/sellers/me/products/", data),

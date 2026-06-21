@@ -514,3 +514,106 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         )
         room.save(update_fields=["updated_at"])
         return Response(ChatMessageSerializer(message).data, status=status.HTTP_201_CREATED)
+
+
+from django.db.models.functions import TruncDate
+from apps.orders.models import SubOrder, OrderItem, OrderStatus
+
+class SellerAnalyticsView(APIView):
+    """
+    GET /api/v1/sellers/me/analytics/
+    Retorna métricas para o Dashboard Lojista: GMV, Conversão, Top Produtos.
+    """
+    permission_classes = [IsApprovedSeller]
+
+    def get(self, request):
+        seller = request.user.seller_profile
+        
+        # 1. KPIs
+        valid_statuses = [OrderStatus.CONFIRMED, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED]
+        sub_orders = SubOrder.objects.filter(seller=seller, status__in=valid_statuses)
+        total_revenue = sub_orders.aggregate(total=Sum("seller_amount"))["total"] or 0
+        total_orders = sub_orders.count()
+        avg_ticket = (total_revenue / total_orders) if total_orders > 0 else 0
+        
+        # 2. Sales Over Time (Last 30 days)
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        sales_over_time = sub_orders.filter(created_at__gte=thirty_days_ago) \
+            .annotate(date=TruncDate("created_at")) \
+            .values("date") \
+            .annotate(revenue=Sum("seller_amount"), orders=Count("id")) \
+            .order_by("date")
+            
+        # 3. Top Products
+        top_items = OrderItem.objects.filter(sub_order__seller=seller, sub_order__status__in=valid_statuses) \
+            .values("product_name") \
+            .annotate(revenue=Sum("total"), quantity=Sum("quantity")) \
+            .order_by("-revenue")[:5]
+
+        # 4. Reputation
+        from .models import SellerReview
+        reviews = SellerReview.objects.filter(seller=seller)
+        avg_rating = reviews.aggregate(avg=Avg("rating"))["avg"] or 0
+        review_count = reviews.count()
+
+        return Response({
+            "kpis": {
+                "total_revenue": total_revenue,
+                "total_orders": total_orders,
+                "avg_ticket": avg_ticket,
+            },
+            "sales_over_time": list(sales_over_time),
+            "top_products": list(top_items),
+            "reputation": {
+                "avg_rating": round(avg_rating, 1),
+                "review_count": review_count
+            }
+        })
+
+
+from .serializers import SellerReviewSerializer, BuyerReviewSerializer
+from .models import SellerReview, BuyerReview
+
+class SellerReviewViewSet(viewsets.ModelViewSet):
+    """
+    Cliente avaliando Lojista ou Lojista lendo suas avaliações.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = SellerReviewSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if hasattr(user, "seller_profile"):
+            return SellerReview.objects.filter(seller=user.seller_profile)
+        return SellerReview.objects.filter(customer=user)
+
+    def perform_create(self, serializer):
+        from rest_framework.exceptions import ValidationError
+        sub_order = serializer.validated_data.get("sub_order")
+        if sub_order.order.user != self.request.user:
+            raise ValidationError("Você só pode avaliar lojistas de seus próprios pedidos.")
+        serializer.save(customer=self.request.user, seller=sub_order.seller)
+
+
+class BuyerReviewViewSet(viewsets.ModelViewSet):
+    """
+    Lojista avaliando Cliente ou Cliente lendo suas avaliações.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = BuyerReviewSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if hasattr(user, "seller_profile"):
+            return BuyerReview.objects.filter(seller=user.seller_profile)
+        return BuyerReview.objects.filter(customer=user)
+
+    def perform_create(self, serializer):
+        from rest_framework.exceptions import ValidationError
+        if not hasattr(self.request.user, "seller_profile"):
+            raise ValidationError("Apenas lojistas podem avaliar compradores.")
+        sub_order = serializer.validated_data.get("sub_order")
+        if sub_order.seller != self.request.user.seller_profile:
+            raise ValidationError("Você só pode avaliar compradores de seus próprios pedidos.")
+        serializer.save(seller=self.request.user.seller_profile, customer=sub_order.order.user)
+

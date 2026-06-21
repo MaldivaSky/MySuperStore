@@ -178,3 +178,24 @@ class ChatLeadSerializer(serializers.Serializer):
     product_slug = serializers.CharField()
     source = serializers.CharField()
 
+
+from .models import SellerReview, BuyerReview
+
+class SellerReviewSerializer(serializers.ModelSerializer):
+    customer_name = serializers.CharField(source="customer.first_name", read_only=True)
+    
+    class Meta:
+        model = SellerReview
+        fields = ["id", "sub_order", "seller", "customer", "customer_name", "rating", "comment", "created_at"]
+        read_only_fields = ["id", "seller", "customer", "created_at"]
+
+
+class BuyerReviewSerializer(serializers.ModelSerializer):
+    seller_name = serializers.CharField(source="seller.store_name", read_only=True)
+    
+    class Meta:
+        model = BuyerReview
+        fields = ["id", "sub_order", "seller", "seller_name", "customer", "rating", "comment", "created_at"]
+        read_only_fields = ["id", "seller", "customer", "created_at"]
+
+

@@ -17,9 +17,9 @@ import {
   ShoppingBag, 
   DollarSign, 
   Loader2, 
-  CheckCircle2, 
-  AlertTriangle, 
-  Send 
+  Send,
+  Activity,
+  Star
 } from "lucide-react";
 
 function DashboardContent() {
@@ -271,6 +271,22 @@ function DashboardContent() {
               }`}>
                 Stripe: {store.stripe_authorized ? "Vinculado" : "Não Vinculado"}
               </span>
+
+              <button 
+                onClick={() => router.push("/seller/dashboard/analytics")}
+                className="px-4 py-2 ml-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 font-bold flex items-center gap-2 transition-colors text-sm"
+              >
+                <Activity className="h-4 w-4" />
+                Analytics & KPIs
+              </button>
+
+              <button 
+                onClick={() => router.push("/seller/dashboard/reviews")}
+                className="px-4 py-2 ml-2 rounded-xl bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 font-bold flex items-center gap-2 transition-colors text-sm"
+              >
+                <Star className="h-4 w-4" />
+                Reputação
+              </button>
             </div>
           </div>
 

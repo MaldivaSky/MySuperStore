@@ -101,3 +101,41 @@ class ChatMessage(models.Model):
     def __str__(self):
         return f"De: {self.sender.email} em {self.created_at}"
 
+
+class SellerReview(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    sub_order = models.OneToOneField("orders.SubOrder", on_delete=models.CASCADE, related_name="seller_review")
+    seller = models.ForeignKey(Seller, on_delete=models.CASCADE, related_name="received_reviews")
+    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="given_seller_reviews")
+    rating = models.DecimalField(max_digits=3, decimal_places=1)
+    comment = models.TextField(max_length=1000, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "avaliação do lojista"
+        verbose_name_plural = "avaliações dos lojistas"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.rating}★ para {self.seller.store_name} por {self.customer.email}"
+
+
+class BuyerReview(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    sub_order = models.OneToOneField("orders.SubOrder", on_delete=models.CASCADE, related_name="buyer_review")
+    seller = models.ForeignKey(Seller, on_delete=models.CASCADE, related_name="given_buyer_reviews")
+    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="received_reviews")
+    rating = models.DecimalField(max_digits=3, decimal_places=1)
+    comment = models.TextField(max_length=1000, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "avaliação do comprador"
+        verbose_name_plural = "avaliações dos compradores"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.rating}★ para {self.customer.email} por {self.seller.store_name}"
+

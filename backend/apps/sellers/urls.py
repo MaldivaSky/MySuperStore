@@ -11,10 +11,15 @@ from .views import (
     SellerMentorView,
     SellerLeadsView,
     ChatRoomViewSet,
+    SellerAnalyticsView,
+    SellerReviewViewSet,
+    BuyerReviewViewSet,
 )
 
 router = DefaultRouter()
 router.register("me/chats", ChatRoomViewSet, basename="seller-chats")
+router.register("me/reviews-received", SellerReviewViewSet, basename="seller-reviews")
+router.register("me/reviews-given", BuyerReviewViewSet, basename="buyer-reviews")
 router.register("", SellerPublicViewSet, basename="seller")
 
 # ViewSet instanciado uma vez para as rotas manuais aninhadas
@@ -26,6 +31,9 @@ urlpatterns = [
 
     # Painel do vendedor
     path("me/", SellerMeView.as_view(), name="seller-me"),
+
+    # Analytics Dashboard
+    path("me/analytics/", SellerAnalyticsView.as_view(), name="seller-analytics"),
 
     # Mentor & Leads
     path("me/mentor/", SellerMentorView.as_view(), name="seller-mentor"),
