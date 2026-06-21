@@ -6,7 +6,10 @@ import environ
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 env = environ.Env()
-environ.Env.read_env(BASE_DIR.parent / ".env")
+# Lê .env em desenvolvimento; em produção (Railway/Vercel) as vars vêm do ambiente
+_env_file = BASE_DIR.parent / ".env"
+if _env_file.exists():
+    environ.Env.read_env(_env_file)
 
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
@@ -205,5 +208,4 @@ STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
 MEILI_HOST = env("MEILI_HOST", default="http://localhost:7700")
 MEILI_MASTER_KEY = env("MEILI_MASTER_KEY", default="devmasterkey")
 
-# ── Google OAuth ─────────────────────────────────────────────────────────────
-GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID", default="1019190620170-a86680qpdbrjgu1vk31st0lts4ju3cm5.apps.googleusercontent.com")
+# ── Google OAuth ──────────────────────────────────────────────────────────�

@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
       { protocol: "http", hostname: "localhost", port: "8000" },
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "loremflickr.com" },
+      // Railway backend (produção)
+      { protocol: "https", hostname: "*.railway.app" },
       // Adicione o domínio R2/S3 em produção:
       // { protocol: "https", hostname: "*.r2.cloudflarestorage.com" },
     ],
@@ -19,12 +21,4 @@ const nextConfig: NextConfig = {
     ];
   },
   webpack: (config) => {
-    config.watchOptions = {
-      poll: 1000,
-      aggregateTimeout: 300,
-    };
-    return config;
-  },
-};
-
-export default nextConfig;
+    // Remove watchOptions em produção (n
