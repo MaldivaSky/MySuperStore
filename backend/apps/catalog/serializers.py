@@ -71,17 +71,18 @@ class ProductVariantSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source="product.name", read_only=True)
     product_description = serializers.CharField(source="product.description", read_only=True)
     product_image = serializers.SerializerMethodField()
+    product_base_price = serializers.DecimalField(source="product.base_price", read_only=True, max_digits=10, decimal_places=2)
 
     class Meta:
         model = ProductVariant
         fields = [
             "id", "sku", "attributes", "price", "effective_price", 
-            "stock", "is_active", "product_name", "product_description", "product_image"
+            "stock", "is_active", "product_name", "product_description", "product_image", "product_base_price"
         ]
 
     def get_effective_price(self, obj):
-        product = self.context.get("product")
-        if product and product.is_on_sale:
+        product = self.context.get("product", obj.product)
+        if product and getattr(product, "is_on_sale", False):
             return product.promotional_price
         if obj.price is not None:
             return obj.price
