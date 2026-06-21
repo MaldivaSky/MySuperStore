@@ -13,10 +13,9 @@ services:
     env_file:
       - .env
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_started
+      # postgres removido — usando Neon (DATABASE_URL no .env)
 
   frontend:
     build: ./frontend
@@ -53,21 +52,22 @@ services:
     depends_on:
       - api
 
-  postgres:
-    image: postgres:16-alpine
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-mysuperstore}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-    ports:
-      - "5433:5432"  # 5433 externo para não conflitar com outras instâncias
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+  # postgres comentado — usando Neon via DATABASE_URL no .env
+  # postgres:
+  #   image: postgres:16-alpine
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   environment:
+  #     POSTGRES_DB: ${POSTGRES_DB:-mysuperstore}
+  #     POSTGRES_USER: ${POSTGRES_USER:-postgres}
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+  #   ports:
+  #     - "5433:5432"  # 5433 externo para não conflitar com outras instâncias
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 5
 
   redis:
     image: redis:7-alpine
@@ -85,5 +85,5 @@ services:
       MEILI_ENV: development
 
 volumes:
-  postgres_data:
+  # postgres_data: # comentado — usando Neon
   meilisearch_data:
