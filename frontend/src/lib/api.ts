@@ -96,6 +96,8 @@ export const cartApi = {
   removeItem: (itemId: string) => api.delete(`/cart/items/${itemId}/`),
   applyCoupon: (code: string) => api.post("/cart/apply_coupon/", { code }),
   triggerAbandonedEmails: () => api.post("/cart/trigger-abandoned-emails/"),
+  shippingQuote: (destination_cep: string) => api.post("/cart/shipping/quote/", { destination_cep }),
+  shippingSelect: (selected_shipping: any) => api.post("/cart/shipping/select/", { selected_shipping }),
 };
 
 export const sellerApi = {

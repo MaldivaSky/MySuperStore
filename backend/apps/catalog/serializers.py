@@ -79,7 +79,9 @@ class ProductVariantSerializer(serializers.ModelSerializer):
         model = ProductVariant
         fields = [
             "id", "sku", "attributes", "price", "effective_price", 
-            "stock", "is_active", "product_name", "product_description", "product_image", "product_base_price", "product_slug", "seller_max_installments"
+            "stock", "is_active", "product_name", "product_description", 
+            "product_image", "product_base_price", "product_slug", "seller_max_installments",
+            "weight", "length", "width", "height"
         ]
 
     def get_effective_price(self, obj):
@@ -120,7 +122,7 @@ class ProductVariantWriteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductVariant
-        fields = ["sku", "attributes", "price", "stock", "is_active"]
+        fields = ["sku", "attributes", "price", "stock", "is_active", "weight", "length", "width", "height"]
 
     def validate_sku(self, value):
         qs = ProductVariant.objects.filter(sku=value)
@@ -134,7 +136,7 @@ class ProductVariantWriteSerializer(serializers.ModelSerializer):
 class ProductVariantUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductVariant
-        fields = ["price", "stock", "is_active"]
+        fields = ["price", "stock", "is_active", "weight", "length", "width", "height"]
 
 
 # -- Categorias ----------------------------------------------------------------
@@ -256,6 +258,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             "avg_rating", "review_count",
             "is_available", "views_count", "clicks_count", "created_at",
             "variants", "is_free_shipping", "estimated_delivery_days",
+            "weight", "length", "width", "height"
         ]
 
     def get_primary_image(self, obj):
@@ -338,6 +341,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             "name", "slug", "category", "brand", "description",
             "base_price", "is_available",
             "is_free_shipping", "estimated_delivery_days",
+            "weight", "length", "width", "height",
             "meta_title", "meta_description",
         ]
 
@@ -368,6 +372,7 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             "name", "category", "brand", "description",
             "base_price", "is_available",
             "is_free_shipping", "estimated_delivery_days",
+            "weight", "length", "width", "height",
             "meta_title", "meta_description",
         ]
 

@@ -16,6 +16,7 @@ class CartItemSerializer(serializers.ModelSerializer):
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
     subtotal = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    shipping_total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     item_count = serializers.IntegerField(read_only=True)
     coupon_code = serializers.CharField(source="coupon.code", read_only=True, default=None)
@@ -28,7 +29,11 @@ class CartSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Cart
-        fields = ["id", "items", "subtotal", "total", "item_count", "coupon_code", "coupon_discount_percentage", "coupon_discount_amount"]
+        fields = [
+            "id", "items", "subtotal", "shipping_total", "total", "item_count", 
+            "coupon_code", "coupon_discount_percentage", "coupon_discount_amount",
+            "destination_cep", "selected_shipping"
+        ]
 
 class ApplyCouponSerializer(serializers.Serializer):
     code = serializers.CharField(max_length=50)
@@ -53,3 +58,10 @@ class AddToCartSerializer(serializers.Serializer):
                 f"Estoque insuficiente. Apenas {variant.stock} unidades disponíveis."
             )
         return data
+
+class ShippingQuoteSerializer(serializers.Serializer):
+    destination_cep = serializers.CharField(max_length=9)
+
+class ShippingSelectSerializer(serializers.Serializer):
+    # Formato esperado: {"seller_id": {"id": 1, "company": "Correios", "name": "PAC", "price": "18.50", "delivery_time": 5}}
+    selected_shipping = serializers.JSONField()

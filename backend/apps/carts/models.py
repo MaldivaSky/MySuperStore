@@ -12,6 +12,12 @@ class Cart(models.Model):
     )
     session_key = models.CharField(max_length=40, blank=True)
     coupon = models.ForeignKey("orders.Coupon", on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # Logística
+    destination_cep = models.CharField(max_length=9, blank=True)
+    # Formato: {"seller_id": {"id": 1, "company": "Correios", "name": "PAC", "price": "18.50", "delivery_time": 5}}
+    selected_shipping = models.JSONField(default=dict, blank=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -47,7 +53,17 @@ class Cart(models.Model):
             elif self.coupon.discount_amount:
                 discount = min(self.coupon.discount_amount, base_total)
                 
-        return max(base_total - discount, 0)
+        total_after_discount = max(base_total - discount, 0)
+        return total_after_discount + self.shipping_total
+
+    @property
+    def shipping_total(self):
+        from decimal import Decimal
+        total = Decimal("0.00")
+        for seller_data in self.selected_shipping.values():
+            if "price" in seller_data:
+                total += Decimal(str(seller_data["price"]))
+        return total
 
     @property
     def item_count(self):

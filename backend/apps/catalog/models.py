@@ -84,6 +84,12 @@ class Product(models.Model):
     is_free_shipping = models.BooleanField(default=False)
     estimated_delivery_days = models.PositiveIntegerField(default=5)
     
+    # Medidas Físicas (necessárias para Melhor Envio)
+    weight = models.DecimalField(max_digits=6, decimal_places=3, null=True, blank=True, help_text="Peso em KG. Ex: 1.500 = 1.5kg")
+    length = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True, help_text="Comprimento em CM")
+    width = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True, help_text="Largura em CM")
+    height = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True, help_text="Altura em CM")
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -160,6 +166,12 @@ class ProductVariant(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     stock = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
+    
+    # Medidas Físicas da Variante (se nulo, herda do Product pai)
+    weight = models.DecimalField(max_digits=6, decimal_places=3, null=True, blank=True, help_text="Peso em KG. Ex: 1.500 = 1.5kg")
+    length = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True, help_text="Comprimento em CM")
+    width = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True, help_text="Largura em CM")
+    height = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True, help_text="Altura em CM")
 
     class Meta:
         verbose_name = "variante"
@@ -174,6 +186,22 @@ class ProductVariant(models.Model):
         if self.product.is_on_sale:
             return self.product.promotional_price
         return self.price if self.price is not None else self.product.base_price
+
+    @property
+    def effective_weight(self):
+        return self.weight if self.weight is not None else self.product.weight
+
+    @property
+    def effective_length(self):
+        return self.length if self.length is not None else self.product.length
+
+    @property
+    def effective_width(self):
+        return self.width if self.width is not None else self.product.width
+
+    @property
+    def effective_height(self):
+        return self.height if self.height is not None else self.product.height
 
 
 class Wishlist(models.Model):

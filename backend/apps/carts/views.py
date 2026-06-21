@@ -173,3 +173,81 @@ class TriggerAbandonedEmailsView(APIView):
         return Response({"status": "success", "result": result})
 
 
+from apps.orders.services.melhor_envio import MelhorEnvioService
+from .serializers import ShippingQuoteSerializer, ShippingSelectSerializer
+
+class CartShippingQuoteView(BaseCartView, generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ShippingQuoteSerializer
+
+    def post(self, request):
+        """POST /api/v1/cart/shipping/quote/"""
+        cart = self.get_cart(request)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        dest_cep = serializer.validated_data["destination_cep"]
+
+        # Agrupar itens por lojista
+        sellers_items = {}
+        for item in cart.items.all():
+            seller = item.variant.product.seller
+            if seller not in sellers_items:
+                sellers_items[seller] = []
+            
+            # Preparar payload pro Melhor Envio
+            sellers_items[seller].append({
+                "id": str(item.variant.id),
+                "weight": float(item.variant.effective_weight or 0.5),
+                "width": float(item.variant.effective_width or 11.0),
+                "height": float(item.variant.effective_height or 2.0),
+                "length": float(item.variant.effective_length or 16.0),
+                "quantity": item.quantity,
+                "insurance_value": float(item.variant.effective_price * item.quantity)
+            })
+
+        me_service = MelhorEnvioService()
+        quotes = {}
+
+        for seller, items in sellers_items.items():
+            # Busca o CEP de origem do Lojista
+            origin_address = seller.user.addresses.filter(is_default=True).first()
+            origin_cep = origin_address.cep if origin_address else "01001000" # Fallback pra nao quebrar checkout
+            
+            try:
+                seller_quotes = me_service.calculate_shipping(origin_cep, dest_cep, items)
+                quotes[str(seller.id)] = {
+                    "store_name": seller.store_name,
+                    "options": seller_quotes
+                }
+            except Exception as e:
+                quotes[str(seller.id)] = {
+                    "store_name": seller.store_name,
+                    "error": str(e)
+                }
+
+        # Atualiza o destino no banco
+        cart.destination_cep = dest_cep
+        cart.save(update_fields=["destination_cep"])
+
+        return Response(quotes)
+
+class CartShippingSelectView(BaseCartView, generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ShippingSelectSerializer
+
+    def post(self, request):
+        """POST /api/v1/cart/shipping/select/"""
+        cart = self.get_cart(request)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        selected = serializer.validated_data["selected_shipping"]
+        
+        # Validar basico
+        if not isinstance(selected, dict):
+            return Response({"detail": "Formato inválido. Esperado um dicionário."}, status=status.HTTP_400_BAD_REQUEST)
+
+        cart.selected_shipping = selected
+        cart.save(update_fields=["selected_shipping"])
+
+        return Response(CartSerializer(cart, context={"request": request}).data)

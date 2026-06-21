@@ -62,6 +62,11 @@ function CheckoutInner() {
   const [selectedInstallments, setSelectedInstallments] = useState(1);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+  // Shipping state
+  const [shippingQuotes, setShippingQuotes] = useState<Record<string, any>>({});
+  const [selectedShipping, setSelectedShipping] = useState<Record<string, any>>({});
+  const [quotingShipping, setQuotingShipping] = useState(false);
+
   // Interest calculation helper
   const calculateInstallment = (n: number) => {
     const total = Number(cart?.total || 0);
@@ -126,6 +131,33 @@ function CheckoutInner() {
 
   const onAddr = (k: keyof typeof addr) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setAddr((a) => ({ ...a, [k]: e.target.value }));
+
+  useEffect(() => {
+    const cep = addr.address_cep.replace(/\D/g, "");
+    if (cep.length === 8) {
+      setQuotingShipping(true);
+      cartApi.shippingQuote(cep).then(res => {
+        setShippingQuotes(res.data);
+        // Reseta as seleções antigas quando muda o CEP
+        setSelectedShipping({});
+      }).catch(err => {
+        console.error("Erro ao cotar frete", err);
+      }).finally(() => {
+        setQuotingShipping(false);
+      });
+    }
+  }, [addr.address_cep]);
+
+  const handleSelectShipping = async (sellerId: string, option: any) => {
+    const newSelected = { ...selectedShipping, [sellerId]: option };
+    setSelectedShipping(newSelected);
+    try {
+      const res = await cartApi.shippingSelect(newSelected);
+      setCart(res.data);
+    } catch(err) {
+      console.error(err);
+    }
+  };
 
   async function createOrderAndIntent(): Promise<{ paymentId: string; clientSecret?: string; pixData?: any } | null> {
     const payload = { ...addr };
@@ -427,6 +459,61 @@ function CheckoutInner() {
               </AnimatePresence>
             </section>
 
+            {/* Shipping Selection */}
+            {Object.keys(shippingQuotes).length > 0 && (
+              <section className="p-8 rounded-3xl border border-border/40 bg-card/40 shadow-sm relative z-10">
+                <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
+                <h3 className="font-display font-bold text-xl flex items-center gap-3 mb-6">
+                  <ShoppingBag className="h-6 w-6 text-primary" /> Frete e Logística
+                </h3>
+                
+                {quotingShipping ? (
+                  <div className="flex items-center gap-3 text-muted-foreground">
+                    <Loader2 className="w-5 h-5 animate-spin" /> Cotando os melhores fretes para o seu CEP...
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {Object.entries(shippingQuotes).map(([sellerId, data]: [string, any]) => (
+                      <div key={sellerId} className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                        <p className="font-bold mb-3 flex items-center justify-between">
+                          <span>Pacote: <span className="text-primary">{data.store_name}</span></span>
+                        </p>
+                        
+                        {data.error ? (
+                          <p className="text-red-500 text-sm">Não foi possível calcular frete para esta loja: {data.error}</p>
+                        ) : data.options?.length > 0 ? (
+                          <div className="space-y-3">
+                            {data.options.map((opt: any) => (
+                              <label key={opt.id} className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${selectedShipping[sellerId]?.id === opt.id ? 'border-primary bg-primary/10' : 'border-white/10 hover:border-white/30'}`}>
+                                <div className="flex items-center gap-3">
+                                  <input 
+                                    type="radio" 
+                                    name={`shipping_${sellerId}`} 
+                                    className="accent-primary w-4 h-4"
+                                    checked={selectedShipping[sellerId]?.id === opt.id}
+                                    onChange={() => handleSelectShipping(sellerId, opt)}
+                                  />
+                                  <div>
+                                    <p className="font-bold text-sm">{opt.name} <span className="text-xs text-muted-foreground font-normal">({opt.company?.name})</span></p>
+                                    <p className="text-xs text-muted-foreground">Entrega em até {opt.delivery_time} dia(s)</p>
+                                  </div>
+                                </div>
+                                <div className="font-bold text-primary">
+                                  R$ {brl(opt.price)}
+                                </div>
+                              </label>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground text-sm">Nenhum frete disponível para este CEP.</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+
             {/* Payment Method */}
             <section className="p-8 rounded-3xl border border-border/40 bg-card/40 shadow-sm relative z-10">
               <div className="absolute top-0 left-0 w-1 h-full bg-primary rounded-l-3xl" />
@@ -564,7 +651,9 @@ function CheckoutInner() {
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Frete</span>
-                  <span className="text-green-500 font-semibold drop-shadow-[0_0_8px_rgba(34,197,94,0.4)]">Grátis</span>
+                  <span className="font-semibold text-primary">
+                    {Number((cart as any)?.shipping_total || 0) > 0 ? `+ R$ ${brl((cart as any).shipping_total)}` : "Grátis"}
+                  </span>
                 </div>
 
                 {(Number(cart?.subtotal || 0) > Number(cart?.total || 0) || method === "pix" || cart?.items?.some(i => Number(i.variant.price || i.variant.product_base_price) > Number(i.variant.effective_price))) && (

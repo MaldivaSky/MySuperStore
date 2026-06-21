@@ -213,3 +213,7 @@ GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID", default="1019190620170-a86680qpdbrjgu
 
 # ── Frontend URL (para links nos e-mails) ─────────────────────────────────────
 FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000")
+
+# ── Melhor Envio ─────────────────────────────────────────────────────────────
+MELHOR_ENVIO_TOKEN = env("MELHOR_ENVIO_TOKEN", default="")
+MELHOR_ENVIO_ENVIRONMENT = env("MELHOR_ENVIO_ENVIRONMENT", default="sandbox")  # sandbox ou production
