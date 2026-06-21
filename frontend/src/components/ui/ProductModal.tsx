@@ -193,10 +193,13 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
             </div>
           ) : (
             <>
-              {/* LEFT: Image Gallery with Zoom */}
-              <div className="w-full md:w-1/2 bg-black/5 flex flex-col p-4 md:p-6 gap-4 border-b md:border-b-0 md:border-r border-border/20 overflow-y-auto max-h-[45vh] md:max-h-none">
-                <div 
-                  className="relative aspect-square w-full rounded-xl overflow-hidden border border-border/30 bg-background/50 cursor-crosshair group"
+              {/* LEFT: Image Gallery
+                  Mobile: altura fixa 55vh, imagem preenche em retrato com object-contain
+                  Desktop: metade da largura, scroll próprio */}
+              <div className="shrink-0 w-full h-[55vh] md:h-auto md:shrink md:flex-1 md:w-1/2 bg-black/5 flex flex-col p-3 md:p-6 gap-3 border-b md:border-b-0 md:border-r border-border/20 md:overflow-y-auto">
+                {/* Imagem principal — flex-1 preenche a altura disponível (retrato no mobile) */}
+                <div
+                  className="relative flex-1 min-h-0 rounded-xl overflow-hidden border border-border/30 bg-background/50 cursor-crosshair group"
                   onMouseEnter={() => setIsZooming(true)}
                   onMouseLeave={() => { setIsZooming(false); setZoomStyle({}); }}
                   onMouseMove={handleMouseMove}
@@ -205,7 +208,7 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
                     <img
                       src={selectedImage}
                       alt={product.name}
-                      className={`absolute inset-0 w-full h-full object-contain transition-transform duration-200 ${isZooming ? "" : "p-4"}`}
+                      className={`absolute inset-0 w-full h-full object-contain transition-transform duration-200 ${isZooming ? "" : "p-3 md:p-4"}`}
                       style={isZooming ? zoomStyle : {}}
                     />
                   ) : (
@@ -214,7 +217,7 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
                     </div>
                   )}
                   {!isZooming && (
-                    <div className="absolute bottom-4 left-0 right-0 flex justify-center opacity-50 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    <div className="absolute bottom-3 left-0 right-0 hidden md:flex justify-center opacity-50 group-hover:opacity-100 transition-opacity pointer-events-none">
                       <span className="bg-black/80 text-white text-xs px-3 py-1.5 rounded-full flex items-center gap-2 backdrop-blur-md">
                         <Info className="h-3.5 w-3.5" /> Passe o mouse para dar zoom
                       </span>
@@ -224,12 +227,12 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
 
                 {/* Thumbnails */}
                 {product.images && product.images.length > 1 && (
-                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                  <div className="shrink-0 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                     {product.images.map((img: any) => (
                       <button
                         key={img.id}
                         onClick={() => setSelectedImage(img.image)}
-                        className={`relative w-20 h-20 rounded-lg overflow-hidden border-2 shrink-0 transition-all ${
+                        className={`relative w-14 h-14 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 shrink-0 transition-all ${
                           selectedImage === img.image ? "border-primary" : "border-transparent hover:border-primary/50"
                         }`}
                       >
@@ -241,7 +244,7 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
               </div>
 
               {/* RIGHT: Product Details & Reviews */}
-              <div className="w-full md:w-1/2 flex flex-col overflow-y-auto">
+              <div className="flex-1 min-h-0 w-full md:w-1/2 flex flex-col overflow-y-auto">
                 <div className="flex-grow p-6 md:p-8 space-y-6">
                   
                   {/* Header */}
