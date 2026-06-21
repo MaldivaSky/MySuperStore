@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { Suspense } from "react";
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -7,9 +7,9 @@ import { useAuthStore } from "@/store/authStore";
 import { useCartStore } from "@/store/cartStore";
 import { ThemeToggle } from "./ThemeToggle";
 import { BrandLogo, SaturnMark, OfficialLogo } from "./Brand";
-import { 
-  Store, 
-  LayoutDashboard, 
+import {
+  Store,
+  LayoutDashboard,
   BookOpen,
   ShoppingCart,
   Menu,
@@ -23,7 +23,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 
-export function Header() {
+function HeaderInner() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout, isAuthenticated } = useAuthStore();
@@ -239,5 +239,13 @@ export function Header() {
         )}
       </AnimatePresence>
     </header>
+  );
+}
+
+export function Header() {
+  return (
+    <Suspense fallback={null}>
+      <HeaderInner />
+    </Suspense>
   );
 }
