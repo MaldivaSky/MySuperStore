@@ -91,7 +91,14 @@ function StorePageContent() {
   const [activeBanner, setActiveBanner] = useState(0);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isFilterOpen, setIsFilterOpen] = useState(false); // Mobile filter toggle
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // Lista de marcas destaque — edite aqui para promover marcas no marketplace
+  const FEATURED_BRAND_NAMES = [
+    "Apple", "Samsung", "Nike", "Rolex", "Brastemp", "Sony",
+    "Adidas", "LG", "Motorola", "Dell", "HP", "Xiaomi",
+  ];
+  const [featuredBrands, setFeaturedBrands] = useState<{ id: string; name: string; slug: string }[]>([]);
 
   // Onboarding Survey State
   const [showSurveyModal, setShowSurveyModal] = useState(false);
@@ -131,7 +138,22 @@ function StorePageContent() {
 
   useEffect(() => {
     fetchCategories();
+    fetchFeaturedBrands();
   }, []);
+
+  const fetchFeaturedBrands = async () => {
+    try {
+      const res = await api.get("/catalog/brands/?limit=200");
+      const allBrands: { id: string; name: string; slug: string }[] = res.data?.results ?? res.data;
+      const normalizedList = FEATURED_BRAND_NAMES.map((n) => n.toLowerCase());
+      const matched = allBrands.filter((b) =>
+        normalizedList.includes(b.name.toLowerCase())
+      );
+      setFeaturedBrands(matched);
+    } catch {
+      // silencia — seção some se API falhar
+    }
+  };
 
   useEffect(() => {
     setPage(1);
@@ -373,27 +395,29 @@ function StorePageContent() {
 
               <div className="h-px w-full bg-gradient-to-r from-transparent via-white/[0.1] to-transparent my-8 relative z-10"></div>
 
-              {/* Marcas Ultra Premium */}
-              <div className="mb-8 relative z-10">
-                <h4 className="font-semibold text-xs uppercase tracking-widest text-neutral-500 mb-4 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-blue-500/50"></span> Marcas Populares
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {['nike', 'apple', 'samsung', 'brastemp'].map((b) => (
-                    <button
-                      key={b}
-                      className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 capitalize border ${
-                        brand === b 
-                          ? 'bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)] scale-105' 
-                          : 'bg-transparent border-white/[0.1] text-neutral-400 hover:text-white hover:border-white/[0.3] hover:bg-white/[0.02]'
-                      }`}
-                      onClick={() => setBrand(brand === b ? null : b)}
-                    >
-                      {b}
-                    </button>
-                  ))}
+              {/* Marcas em destaque — só renderiza se houver marcas cadastradas */}
+              {featuredBrands.length > 0 && (
+                <div className="mb-8 relative z-10">
+                  <h4 className="font-semibold text-xs uppercase tracking-widest text-neutral-500 mb-4 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-blue-500/50"></span> Marcas em Destaque
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {featuredBrands.map((b) => (
+                      <button
+                        key={b.id}
+                        className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 border ${
+                          brand === b.slug
+                            ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)] scale-105"
+                            : "bg-transparent border-white/[0.1] text-neutral-400 hover:text-white hover:border-white/[0.3] hover:bg-white/[0.02]"
+                        }`}
+                        onClick={() => setBrand(brand === b.slug ? null : b.slug)}
+                      >
+                        {b.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Filtro de Promoções */}
               <div className="relative z-10 mb-8">
