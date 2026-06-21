@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { authApi, usersApi } from "@/lib/api";
 import {
-  User, MapPin, Save, Plus, Trash2, Edit2, Camera, Lock,
+  User, MapPin, Save, Plus, Trash2, Edit2, Camera, Lock, X,
   Check, ShieldCheck, Home, Briefcase, Building2,
   Eye, EyeOff, AlertTriangle, CreditCard, Mail, Heart, Loader2
 } from "lucide-react";
