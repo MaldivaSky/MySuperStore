@@ -24,6 +24,7 @@ import { OfficialLogo } from "@/components/Brand";
 import { WelcomeModal } from "@/components/ui/WelcomeModal";
 
 // Mock para o banner rotativo principal (Hero)
+const heroBanners = [
   {
     id: 1,
     title: "Apple Revolution",
