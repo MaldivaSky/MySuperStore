@@ -95,14 +95,19 @@ def dispatch_post_payment_tasks(order: Order) -> None:
     from apps.orders.tasks import send_order_confirmation_email_task, send_seller_sale_notification_email_task
     from .tasks import dispatch_webhook_task
 
-    send_order_confirmation_email_task.delay(str(order.id))
-    send_seller_sale_notification_email_task.delay(str(order.id))
-    dispatch_webhook_task.delay({
-        "event": "order.confirmed",
-        "order_number": order.order_number,
-        "amount": float(order.total),
-        "timestamp": timezone.now().isoformat(),
-    })
+    import logging
+    logger = logging.getLogger(__name__)
+    try:
+        send_order_confirmation_email_task.delay(str(order.id))
+        send_seller_sale_notification_email_task.delay(str(order.id))
+        dispatch_webhook_task.delay({
+            "event": "order.confirmed",
+            "order_number": order.order_number,
+            "amount": float(order.total),
+            "timestamp": timezone.now().isoformat(),
+        })
+    except Exception as e:
+        logger.error(f"Failed to dispatch post-payment tasks for order {order.id}: {e}")
 
 
 @transaction.atomic

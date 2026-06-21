@@ -218,7 +218,7 @@ function StorePageContent() {
   useEffect(() => {
     const timer = setInterval(() => {
       setActiveBanner((prev) => (prev + 1) % heroBanners.length);
-    }, 5000);
+    }, 6000);
     return () => clearInterval(timer);
   }, []);
 
@@ -384,15 +384,22 @@ function StorePageContent() {
           </AnimatePresence>
           
           {/* Banner Indicators */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex gap-3">
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex gap-4">
             {heroBanners.map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => setActiveBanner(idx)}
-                className={`w-12 h-1.5 rounded-full transition-all ${
-                  idx === activeBanner ? "bg-primary" : "bg-white/30 hover:bg-white/50"
-                }`}
-              />
+                className="relative overflow-hidden w-16 h-2 rounded-full bg-white/30 hover:bg-white/50 transition-all shadow-[0_0_10px_rgba(0,0,0,0.5)]"
+              >
+                {idx === activeBanner && (
+                  <motion.div
+                    initial={{ width: "0%" }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 6, ease: "linear" }}
+                    className="absolute top-0 left-0 h-full bg-primary shadow-[0_0_10px_rgba(var(--primary),0.8)]"
+                  />
+                )}
+              </button>
             ))}
           </div>
         </section>
