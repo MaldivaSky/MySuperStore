@@ -151,8 +151,16 @@ function HeaderInner() {
                   </Link>
                 )}
 
-                <Link href="/dashboard/account" className="p-2 rounded-full hover:bg-white/10 text-neutral-300 hover:text-white transition-colors relative group">
-                  <User className="h-5 w-5" />
+                <Link href="/dashboard/account" className="p-1.5 rounded-full hover:bg-white/10 text-neutral-300 hover:text-white transition-colors relative group">
+                  {user?.avatar_url ? (
+                    <img src={user.avatar_url} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-white/20" />
+                  ) : user?.first_name && user?.last_name ? (
+                    <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-[11px] font-bold text-primary border border-primary/30">
+                      {user.first_name.charAt(0).toUpperCase()}{user.last_name.charAt(0).toUpperCase()}
+                    </div>
+                  ) : (
+                    <User className="h-5 w-5" />
+                  )}
                   <span className="absolute top-14 right-0 scale-0 group-hover:scale-100 transition-all bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap z-50">Minha Conta</span>
                 </Link>
               </>
