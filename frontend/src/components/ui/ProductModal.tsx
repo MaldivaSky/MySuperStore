@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
 import { X, Star, ShoppingCart, Loader2, Info, ArrowRight, Heart, MessageSquare, Share2, Clock, Zap, MessageCircle, Truck, Flame } from "lucide-react";
 import { catalogApi, cartApi, wishlistApi, reviewApi, chatApi } from "@/lib/api";
 import { Product, ProductVariant } from "@/types";
@@ -340,7 +341,7 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
                     </div>
                   
                     <p className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
-                      Vendido por <span className="font-semibold text-foreground underline decoration-primary/30 underline-offset-4">{product.seller_name}</span>
+                      Vendido por <Link href={`/s/${product.seller_slug}`} onClick={onClose} className="font-semibold text-foreground underline decoration-primary/30 underline-offset-4 hover:text-primary transition-colors">{product.seller_name}</Link>
                     </p>
                   </div>
 

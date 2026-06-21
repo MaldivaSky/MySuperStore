@@ -61,7 +61,6 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_class = ProductFilter
     search_fields = ["name", "description"]
     ordering_fields = ["base_price", "created_at", "avg_rating", "review_count"]
-    ordering = ["-created_at"]
     lookup_field = "slug"
 
     def get_queryset(self):
@@ -100,6 +99,10 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
                 qs = qs.annotate(
                     relevance=Case(*conditions, default=Value(0), output_field=IntegerField())
                 ).order_by("-relevance", "-created_at")
+            else:
+                qs = qs.order_by("-created_at")
+        else:
+            qs = qs.order_by("-created_at")
         return qs
 
     def get_serializer_class(self):
