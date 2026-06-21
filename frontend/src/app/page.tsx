@@ -220,7 +220,10 @@ function StorePageContent() {
       if (brand) params.append("brand", brand);
       if (rating) params.append("rating", rating.toString());
       if (ordering) params.append("ordering", ordering);
-      if (discountMin) params.append("discount_min", discountMin.toString());
+      if (discountMin) {
+        params.append("discount_min", discountMin.toString());
+        params.append("flash_sale_only", "true");
+      }
       if (search) params.append("search", search);
       params.append("page", pageNum.toString());
 
@@ -624,9 +627,15 @@ function StorePageContent() {
                         <div className="space-y-0.5">
                           {product.is_flash_sale ? (
                             <>
-                              <p className="text-xs text-muted-foreground line-through font-medium">
-                                R$ {Number(product.base_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                              </p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-xs text-muted-foreground line-through font-medium">
+                                  R$ {Number(product.base_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                </p>
+                                <span className="text-[10px] font-black text-black bg-yellow-400 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                                  <Zap className="w-2.5 h-2.5 fill-current" />
+                                  -{product.discount_percentage}%
+                                </span>
+                              </div>
                               <p className="font-display font-bold text-xl text-yellow-500">
                                 R$ {Number(product.promotional_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                               </p>
