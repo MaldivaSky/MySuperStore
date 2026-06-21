@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { catalogApi } from "@/lib/api";
 import { Star, Store, MapPin, ExternalLink, Search, Package, ShoppingBag, ArrowLeft } from "lucide-react";
@@ -15,6 +15,7 @@ import { ProductModal } from "@/components/ui/ProductModal";
 export default function PremiumGlassdoorPage() {
   const { slug } = useParams() as { slug: string };
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuthStore();
   
   const [seller, setSeller] = useState<any>(null);
@@ -51,6 +52,18 @@ export default function PremiumGlassdoorPage() {
     }
     fetchData();
   }, [slug]);
+
+  // Handle ?product=slug in URL to open modal on load
+  useEffect(() => {
+    const productSlug = searchParams.get("product");
+    if (productSlug && products.length > 0 && !isModalOpen) {
+      const p = products.find(prod => prod.slug === productSlug);
+      if (p) {
+        setSelectedProduct(p);
+        setIsModalOpen(true);
+      }
+    }
+  }, [searchParams, products, isModalOpen]);
 
   // Carousel auto-rotate
   useEffect(() => {

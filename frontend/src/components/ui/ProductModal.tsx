@@ -305,7 +305,7 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
                       </button>
                       <button
                         onClick={async () => {
-                          const url = `${window.location.origin}/store?product=${product.slug}`;
+                          const url = `${window.location.origin}/s/${product.seller_slug}?product=${product.slug}`;
                           try {
                             if (navigator.clipboard && window.isSecureContext) {
                               await navigator.clipboard.writeText(url);
@@ -609,7 +609,7 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
                         key={item.id} 
                         onClick={() => {
                           catalogApi.track(item.slug, "click").catch(() => {});
-                          setActiveSlug(item.slug);
+                          window.open(`/s/${item.seller_slug}?product=${item.slug}`, "_blank");
                         }}
                         className="shrink-0 w-[200px] snap-start bg-card border border-border/50 rounded-xl p-3 hover:border-primary/50 cursor-pointer transition-all hover:scale-[1.02] group"
                       >
