@@ -158,6 +158,16 @@ function StorePageContent() {
   };
 
   useEffect(() => {
+    if (search) {
+      try {
+        const stored = JSON.parse(localStorage.getItem('recent_searches') || '[]');
+        if (!stored.includes(search)) {
+          const updated = [search, ...stored].slice(0, 5); // Max 5 recent searches
+          localStorage.setItem('recent_searches', JSON.stringify(updated));
+        }
+      } catch (e) {}
+    }
+
     setPage(1);
     setHasMore(true);
     fetchProducts(1);
@@ -224,7 +234,17 @@ function StorePageContent() {
         params.append("discount_min", discountMin.toString());
         params.append("flash_sale_only", "true");
       }
-      if (search) params.append("search", search);
+      if (search) {
+        params.append("search", search);
+      } else if (!selectedCategory && !brand) {
+        // Enviar histórico apenas se não houver busca/filtro forte ativo
+        try {
+          const recentSearches = JSON.parse(localStorage.getItem('recent_searches') || '[]').join(',');
+          const recentCategories = JSON.parse(localStorage.getItem('recent_categories') || '[]').join(',');
+          if (recentSearches) params.append("recent_searches", recentSearches);
+          if (recentCategories) params.append("recent_categories", recentCategories);
+        } catch (e) {}
+      }
       params.append("page", pageNum.toString());
 
       const res = await api.get(`/catalog/products/?${params.toString()}`);
@@ -248,6 +268,15 @@ function StorePageContent() {
   };
 
   const handleProductClick = (product: any) => {
+    if (product.category_name) {
+      try {
+        const stored = JSON.parse(localStorage.getItem('recent_categories') || '[]');
+        if (!stored.includes(product.category_name)) {
+          const updated = [product.category_name, ...stored].slice(0, 5); // Max 5 recent categories
+          localStorage.setItem('recent_categories', JSON.stringify(updated));
+        }
+      } catch (e) {}
+    }
     setSelectedProduct(product);
     setIsModalOpen(true);
   };

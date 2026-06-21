@@ -87,22 +87,42 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             )
         )
         user = self.request.user
+        
+        # Obter recentes via query params (enviados pelo frontend)
+        recent_categories = self.request.query_params.get("recent_categories", "")
+        recent_searches = self.request.query_params.get("recent_searches", "")
+
+        from django.db.models import Case, When, Value, IntegerField
+        conditions = []
+
         if user and user.is_authenticated and hasattr(user, "survey"):
-            from django.db.models import Case, When, Value, IntegerField
             survey = user.survey
-            conditions = []
             if getattr(survey, "preferred_category", None):
                 conditions.append(When(category__name__icontains=survey.preferred_category, then=Value(10)))
             if getattr(survey, "preferred_brand", None):
                 conditions.append(When(brand__name__icontains=survey.preferred_brand, then=Value(8)))
-            if conditions:
-                qs = qs.annotate(
-                    relevance=Case(*conditions, default=Value(0), output_field=IntegerField())
-                ).order_by("-relevance", "-created_at")
-            else:
-                qs = qs.order_by("-created_at")
+        
+        # Histórico recente pesa, mas um pouco menos que a preferência declarada
+        if recent_categories:
+            for cat in recent_categories.split(","):
+                cat = cat.strip()
+                if cat:
+                    conditions.append(When(category__name__icontains=cat, then=Value(6)))
+        
+        if recent_searches:
+            for search in recent_searches.split(","):
+                search = search.strip()
+                if search:
+                    conditions.append(When(name__icontains=search, then=Value(7)))
+                    conditions.append(When(description__icontains=search, then=Value(4)))
+
+        if conditions:
+            qs = qs.annotate(
+                relevance=Case(*conditions, default=Value(0), output_field=IntegerField())
+            ).order_by("-relevance", "-created_at")
         else:
             qs = qs.order_by("-created_at")
+            
         return qs
 
     def get_serializer_class(self):
