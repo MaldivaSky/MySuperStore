@@ -109,9 +109,29 @@ class SellerStripeCallbackView(generics.GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         seller = request.user.seller_profile
-        seller.stripe_onboarding_complete = True
-        seller.save(update_fields=["stripe_onboarding_complete"])
-        return Response({"detail": "Onboarding do Stripe concluido com sucesso!"})
+        if not seller.stripe_account_id:
+            return Response(
+                {"detail": "Conta Stripe não vinculada a este lojista."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        import stripe
+        from django.conf import settings
+        stripe.api_key = settings.STRIPE_SECRET_KEY
+
+        try:
+            account = stripe.Account.retrieve(seller.stripe_account_id)
+            if account.details_submitted:
+                seller.stripe_onboarding_complete = True
+                seller.save(update_fields=["stripe_onboarding_complete"])
+                return Response({"detail": "Onboarding do Stripe concluido com sucesso!"})
+            else:
+                return Response(
+                    {"detail": "Onboarding pendente. Você não concluiu o cadastro no Stripe."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except Exception as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # -- CRUD de produtos do vendedor (Fase 3) ------------------------------------

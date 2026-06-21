@@ -75,17 +75,22 @@ class UserProfileSerializer(serializers.ModelSerializer):
     # Flags de perfil — usados pelo frontend para liberar o Painel do Lojista
     has_store = serializers.SerializerMethodField()
     has_products = serializers.SerializerMethodField()
+    is_seller = serializers.SerializerMethodField()
+    stripe_account_id = serializers.SerializerMethodField()
+    stripe_onboarding_complete = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             "id", "email", "person_type", "cpf_cnpj", "first_name", "last_name",
             "phone", "role", "full_name", "avatar_url", "has_store", "has_products",
+            "is_seller", "stripe_account_id", "stripe_onboarding_complete",
             "is_active", "date_joined",
         ]
         read_only_fields = [
             "id", "email", "person_type", "cpf_cnpj", "role",
-            "has_store", "has_products", "is_active", "date_joined",
+            "has_store", "has_products", "is_seller", "stripe_account_id",
+            "stripe_onboarding_complete", "is_active", "date_joined",
         ]
 
     def get_avatar_url(self, obj):
@@ -103,6 +108,17 @@ class UserProfileSerializer(serializers.ModelSerializer):
         """True se a loja do vendedor já possui ao menos um produto."""
         seller = getattr(obj, "seller_profile", None)
         return bool(seller and seller.products.exists())
+
+    def get_is_seller(self, obj):
+        return obj.role == "seller"
+
+    def get_stripe_account_id(self, obj):
+        seller = getattr(obj, "seller_profile", None)
+        return seller.stripe_account_id if seller else None
+
+    def get_stripe_onboarding_complete(self, obj):
+        seller = getattr(obj, "seller_profile", None)
+        return seller.stripe_onboarding_complete if seller else False
 
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
