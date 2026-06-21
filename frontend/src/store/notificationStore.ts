@@ -35,7 +35,11 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     try {
       // Usando uma chamada de API normal para pegar as iniciais
       const response = await userApi.getNotifications();
-      const notifications = response.data;
+      // O backend pode retornar uma lista direta ou um objeto paginado (ex: { count, results: [...] })
+      const notifications = Array.isArray(response.data) 
+        ? response.data 
+        : (response.data?.results || []);
+        
       const unreadCount = notifications.filter((n: Notification) => !n.is_read).length;
       
       set({ notifications, unreadCount, loading: false });
@@ -92,17 +96,12 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     };
 
     socket.onclose = () => {
-      console.log("Notification WebSocket disconnected");
+      console.warn("Notification WebSocket disconnected");
       set({ wsConnected: false, wsSocket: null });
-      // Tenta reconectar em 5 segundos
-      setTimeout(() => {
-        const currentToken = localStorage.getItem("token"); // or from authStore
-        if (currentToken) get().connectWebSocket(currentToken);
-      }, 5000);
     };
 
-    socket.onerror = (err) => {
-      console.error("Notification WebSocket error:", err);
+    socket.onerror = () => {
+      console.warn("Notification WebSocket: connection failed (server may be offline)");
     };
   },
 

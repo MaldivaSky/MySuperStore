@@ -6,9 +6,9 @@ import { useState, useEffect, useRef } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { authApi, usersApi } from "@/lib/api";
 import {
-  User, MapPin, Loader2, Save, Plus, Trash2, Edit2, Camera, Lock,
-  Star, X, Check, ShieldCheck, Home, Briefcase, Building2, Search,
-  Eye, EyeOff, ChevronRight, AlertTriangle,
+  User, MapPin, Save, Plus, Trash2, Edit2, Camera, Lock,
+  Check, ShieldCheck, Home, Briefcase, Building2,
+  Eye, EyeOff, AlertTriangle, CreditCard, Mail, Heart, Loader2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/components/ui/Toast";
@@ -34,19 +34,30 @@ const LABEL_OPTIONS = [
   { id: "Outro", icon: Building2 },
 ];
 
-type Tab = "perfil" | "enderecos" | "seguranca";
+type Tab = "perfil" | "preferencias" | "enderecos" | "pagamentos" | "seguranca";
 
-export default function AccountPage() {
+export default function AccountDashboardPage() {
   const { user, updateUser } = useAuthStore();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<Tab>("perfil");
 
-  // ── Perfil ────────────────────────────────────────────────────────────────
-  const [profile, setProfile] = useState({ first_name: "", last_name: "", phone: "" });
+  // ── Perfil Principal ────────────────────────────────────────────────────────
+  const [profile, setProfile] = useState({ first_name: "", last_name: "", phone: "", cpf_cnpj: "", person_type: "PF" });
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // ── Preferências (Survey/Bio) ────────────────────────────────────────────────
+  const [survey, setSurvey] = useState({
+    bio: "",
+    date_of_birth: "",
+    gender: "",
+    profession: "",
+    marital_status: "",
+    preferred_category: "",
+  });
+  const [savingSurvey, setSavingSurvey] = useState(false);
 
   // ── Endereços ─────────────────────────────────────────────────────────────
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -67,10 +78,17 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (user) {
-      setProfile({ first_name: user.first_name || "", last_name: user.last_name || "", phone: user.phone || "" });
+      setProfile({ 
+        first_name: user.first_name || "", 
+        last_name: user.last_name || "", 
+        phone: user.phone || "",
+        cpf_cnpj: user.cpf_cnpj || "",
+        person_type: user.person_type || "PF"
+      });
       setAvatarPreview(user.avatar_url || (user as any)?.avatar || null);
     }
     loadAddresses();
+    loadSurvey();
   }, [user]);
 
   const loadAddresses = async () => {
@@ -83,36 +101,80 @@ export default function AccountPage() {
     }
   };
 
-  // ── Perfil handlers ───────────────────────────────────────────────────────
-  const onPickAvatar = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const loadSurvey = async () => {
+    try {
+      const res = await usersApi.survey();
+      if (res.data) {
+        setSurvey({
+          bio: res.data.bio || "",
+          date_of_birth: res.data.date_of_birth || "",
+          gender: res.data.gender || "",
+          profession: res.data.profession || "",
+          marital_status: res.data.marital_status || "",
+          preferred_category: res.data.preferred_category || "",
+        });
+      }
+    } catch { /* ignora */ }
+  };
+
+  // ── Avatar Handler (Instant Upload) ───────────────────────────────────────
+  const onPickAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    setAvatarFile(f);
+    
+    // Preview local imediato
     setAvatarPreview(URL.createObjectURL(f));
+    setUploadingAvatar(true);
+    
+    try {
+      const payload = new FormData();
+      payload.append("first_name", profile.first_name);
+      payload.append("last_name", profile.last_name);
+      payload.append("avatar", f);
+      
+      const res = await authApi.updateProfile(payload);
+      updateUser(res.data);
+      toast("Foto de perfil atualizada com sucesso!", "success");
+    } catch (err) {
+      toast("Erro ao enviar a foto de perfil.", "error");
+      // Reverte preview
+      setAvatarPreview(user?.avatar_url || (user as any)?.avatar || null);
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const saveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingProfile(true);
     try {
-      let payload: any;
-      if (avatarFile) {
-        payload = new FormData();
-        payload.append("first_name", profile.first_name);
-        payload.append("last_name", profile.last_name);
-        if (profile.phone) payload.append("phone", profile.phone);
-        payload.append("avatar", avatarFile);
-      } else {
-        payload = { first_name: profile.first_name, last_name: profile.last_name, phone: profile.phone || null };
-      }
+      const payload = { 
+        first_name: profile.first_name, 
+        last_name: profile.last_name, 
+        phone: profile.phone || null,
+        cpf_cnpj: profile.cpf_cnpj || null,
+        person_type: profile.person_type
+      };
       const res = await authApi.updateProfile(payload);
       updateUser(res.data);
-      setAvatarFile(null);
       toast("Perfil atualizado com sucesso!", "success");
     } catch (err: any) {
       toast(err?.response?.data?.phone?.[0] || err?.response?.data?.detail || "Erro ao salvar o perfil.", "error");
     } finally {
       setSavingProfile(false);
+    }
+  };
+
+  const saveSurveyForm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingSurvey(true);
+    try {
+      await usersApi.saveSurvey(survey);
+      toast("Preferências atualizadas!", "success");
+    } catch (err) {
+      toast("Erro ao salvar preferências.", "error");
+    } finally {
+      setSavingSurvey(false);
     }
   };
 
@@ -199,24 +261,24 @@ export default function AccountPage() {
     try {
       await usersApi.updateAddress(addr.id, { is_default: true });
       await loadAddresses();
-      toast(`"${addr.label}" definido como padrão.`, "success");
-    } catch { /* silencioso */ }
+      toast("Endereço padrão atualizado.", "success");
+    } catch {
+      toast("Erro ao definir padrão.", "error");
+    }
   };
 
-  // ── Senha handlers ───────────────────────────────────────────────────────
-  const savePassword = async (e: React.FormEvent) => {
+  const changePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (pwd.new_password !== pwd.new_password_confirm) {
-      toast("As senhas não conferem.", "error");
-      return;
+      return toast("As senhas não coincidem.", "error");
     }
     setSavingPwd(true);
     try {
       await authApi.changePassword(pwd);
-      setPwd({ old_password: "", new_password: "", new_password_confirm: "" });
       toast("Senha alterada com sucesso!", "success");
+      setPwd({ old_password: "", new_password: "", new_password_confirm: "" });
     } catch (err: any) {
-      const d = err?.response?.data;
+      const d = err.response?.data;
       const text = d?.old_password?.[0] || d?.new_password?.[0] || d?.non_field_errors?.[0] || "Erro ao alterar senha.";
       toast(text, "error");
     } finally {
@@ -227,35 +289,47 @@ export default function AccountPage() {
   const initials = `${profile.first_name?.[0] || ""}${profile.last_name?.[0] || ""}`.toUpperCase();
 
   const TABS: { id: Tab; label: string; icon: any }[] = [
-    { id: "perfil", label: "Perfil", icon: User },
+    { id: "perfil", label: "Dados Pessoais", icon: User },
+    { id: "preferencias", label: "Bio & Preferências", icon: Heart },
     { id: "enderecos", label: "Endereços", icon: MapPin },
+    { id: "pagamentos", label: "Cartões", icon: CreditCard },
     { id: "seguranca", label: "Segurança", icon: ShieldCheck },
   ];
 
   return (
-    <div className="space-y-6 pb-10">
-      {/* ── Overview card ── */}
-      <div className="flex items-center gap-4 p-5 rounded-2xl border border-border/40 bg-card/40">
-        <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-primary/40 bg-secondary/40 flex items-center justify-center shrink-0">
-          {avatarPreview
-            ? <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
-            : <span className="text-xl font-display font-bold text-primary">{initials || <User className="h-7 w-7" />}</span>
-          }
+    <div className="space-y-6">
+      
+      {/* ── HEADER DA CONTA ── */}
+      <div className="flex flex-col md:flex-row items-center md:items-start gap-6 p-6 md:p-8 rounded-3xl border border-border/50 bg-card/40 backdrop-blur-md shadow-lg">
+        <div className="relative group cursor-pointer shrink-0" onClick={() => fileRef.current?.click()}>
+          <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-background shadow-lg bg-secondary flex items-center justify-center relative">
+            {avatarPreview ? (
+              <img src={avatarPreview} alt="Avatar" className={`w-full h-full object-cover transition-opacity ${uploadingAvatar ? 'opacity-50' : ''}`} />
+            ) : (
+              <span className="text-3xl font-display font-bold text-primary">{initials || <User className="h-10 w-10" />}</span>
+            )}
+            {uploadingAvatar && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                <Loader2 className="w-8 h-8 animate-spin text-white" />
+              </div>
+            )}
+          </div>
+          <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <Camera className="w-6 h-6 md:w-8 md:h-8 text-white" />
+          </div>
+          <input type="file" ref={fileRef} className="hidden" accept="image/*" onChange={onPickAvatar} disabled={uploadingAvatar} />
         </div>
-        <div className="min-w-0">
-          <h1 className="text-xl font-display font-bold truncate">{user?.first_name} {user?.last_name}</h1>
-          <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {addresses.find(a => a.is_default)
-              ? `📍 ${addresses.find(a => a.is_default)?.cidade}/${addresses.find(a => a.is_default)?.uf}`
-              : "📍 Sem endereço padrão"
-            }
+        
+        <div className="text-center md:text-left pt-2 md:pt-4">
+          <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight">{profile.first_name} {profile.last_name}</h1>
+          <p className="text-muted-foreground flex items-center justify-center md:justify-start gap-2 mt-2">
+            <Mail className="w-4 h-4" /> {user?.email}
           </p>
         </div>
       </div>
 
-      {/* ── Sub-tabs ── */}
-      <div className="flex gap-1 bg-card/40 border border-border/40 rounded-2xl p-1">
+      {/* ── TABS HORIZONTAIS ── */}
+      <div className="flex overflow-x-auto scrollbar-hide gap-2 p-1 bg-secondary/30 rounded-2xl border border-border/40">
         {TABS.map(tab => {
           const Icon = tab.icon;
           const active = activeTab === tab.id;
@@ -263,440 +337,442 @@ export default function AccountPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-sm font-semibold transition-all ${
+              className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold whitespace-nowrap transition-all flex-1 justify-center ${
                 active
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
               }`}
             >
-              <Icon className="h-4 w-4 shrink-0" />
-              <span className="hidden sm:inline">{tab.label}</span>
+              <Icon className="h-4 w-4" />
+              {tab.label}
             </button>
           );
         })}
       </div>
 
-      {/* ── Tab content ── */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.18 }}
-        >
+      {/* ── CONTEÚDO ── */}
+      <div className="w-full">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
 
-          {/* ═══════════ PERFIL ═══════════ */}
-          {activeTab === "perfil" && (
-            <div className="p-6 rounded-2xl border border-border/40 bg-card/40 space-y-6">
-              <h2 className="text-lg font-bold">Dados Pessoais</h2>
-
-              <div className="flex flex-col sm:flex-row gap-6">
-                {/* Avatar picker */}
-                <div className="flex flex-col items-center gap-3 shrink-0">
-                  <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-primary/30 bg-secondary/40 flex items-center justify-center">
-                    {avatarPreview
-                      ? <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
-                      : <span className="text-2xl font-display font-bold text-primary">{initials || <User className="h-8 w-8" />}</span>
-                    }
-                    <button
-                      type="button"
-                      onClick={() => fileRef.current?.click()}
-                      className="absolute bottom-0 inset-x-0 bg-black/65 text-white py-1.5 flex items-center justify-center gap-1 text-[10px] font-semibold hover:bg-black/80 transition-colors"
-                    >
-                      <Camera className="h-3 w-3" /> Trocar
-                    </button>
-                  </div>
-                  <input ref={fileRef} type="file" accept="image/*" onChange={onPickAvatar} className="hidden" />
+            {/* ═══════════ PERFIL ═══════════ */}
+            {activeTab === "perfil" && (
+              <form onSubmit={saveProfile} className="p-6 md:p-8 rounded-3xl border border-border/50 bg-card/40 backdrop-blur-sm shadow-xl space-y-8">
+                <div>
+                  <h2 className="text-2xl font-display font-bold mb-1">Dados Pessoais</h2>
+                  <p className="text-muted-foreground text-sm">Atualize suas informações básicas de identificação e contato.</p>
                 </div>
 
-                {/* Form */}
-                <form onSubmit={saveProfile} className="flex-grow space-y-4">
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase mb-1 block">E-mail</label>
-                    <input
-                      type="email"
-                      value={user?.email || ""}
-                      disabled
-                      className="w-full px-4 py-2.5 rounded-lg border border-border/60 bg-muted/30 text-muted-foreground cursor-not-allowed text-sm"
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <AccountField label="Nome" value={profile.first_name} onChange={v => setProfile({ ...profile, first_name: v })} required />
+                  <AccountField label="Sobrenome" value={profile.last_name} onChange={v => setProfile({ ...profile, last_name: v })} required />
+                  <AccountField label="E-mail (Login)" value={user?.email || ""} onChange={() => {}} disabled title="O e-mail não pode ser alterado" className="opacity-60 cursor-not-allowed bg-secondary/50" />
+                  <AccountField label="Telefone / Celular" value={profile.phone} onChange={v => setProfile({ ...profile, phone: v })} placeholder="(11) 99999-9999" />
+                  <AccountField label="CPF / CNPJ" value={profile.cpf_cnpj} onChange={v => setProfile({ ...profile, cpf_cnpj: v })} placeholder="000.000.000-00" />
+                  
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase">Tipo de Pessoa</label>
+                    <select 
+                      value={profile.person_type} 
+                      onChange={e => setProfile({ ...profile, person_type: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl border border-border/60 bg-background focus:border-primary outline-none transition-colors text-sm font-medium"
+                    >
+                      <option value="PF">Pessoa Física (PF)</option>
+                      <option value="PJ">Pessoa Jurídica (PJ)</option>
+                    </select>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <AccountField label="Nome" value={profile.first_name} onChange={v => setProfile({ ...profile, first_name: v })} required />
-                    <AccountField label="Sobrenome" value={profile.last_name} onChange={v => setProfile({ ...profile, last_name: v })} required />
-                  </div>
-                  <AccountField label="Telefone" value={profile.phone} onChange={v => setProfile({ ...profile, phone: v })} placeholder="(11) 90000-0000" />
+                </div>
+
+                <div className="pt-4 border-t border-border/30 flex justify-end">
                   <button
                     type="submit"
                     disabled={savingProfile}
-                    className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/95 transition-all shadow-md disabled:opacity-50"
+                    className="px-8 py-3 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-primary/20"
                   >
-                    {savingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    {savingProfile ? "Salvando..." : "Salvar Perfil"}
+                    {savingProfile ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                    Salvar Alterações
                   </button>
-                </form>
-              </div>
-            </div>
-          )}
+                </div>
+              </form>
+            )}
 
-          {/* ═══════════ ENDEREÇOS ═══════════ */}
-          {activeTab === "enderecos" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-primary" /> Meus Endereços
-                </h2>
-                <button
-                  onClick={openNewAddress}
-                  className="flex items-center gap-1.5 text-sm font-bold text-primary hover:text-primary/80 transition-colors bg-primary/10 px-3 py-1.5 rounded-xl"
-                >
-                  <Plus className="h-4 w-4" /> Novo
-                </button>
-              </div>
+            {/* ═══════════ PREFERÊNCIAS & BIO ═══════════ */}
+            {activeTab === "preferencias" && (
+              <form onSubmit={saveSurveyForm} className="p-6 md:p-8 rounded-3xl border border-border/50 bg-card/40 backdrop-blur-sm shadow-xl space-y-8">
+                <div>
+                  <h2 className="text-2xl font-display font-bold mb-1">Bio e Preferências</h2>
+                  <p className="text-muted-foreground text-sm">Conte um pouco mais sobre você para personalizarmos sua experiência.</p>
+                </div>
 
-              {loadingAddr ? (
-                <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-              ) : addresses.length === 0 ? (
-                <button
-                  onClick={openNewAddress}
-                  className="w-full flex flex-col items-center gap-3 py-12 rounded-2xl border-2 border-dashed border-border/50 hover:border-primary/40 hover:bg-primary/5 transition-all text-muted-foreground hover:text-primary"
-                >
-                  <MapPin className="h-10 w-10 opacity-30" />
-                  <span className="font-semibold text-sm">Adicione seu primeiro endereço</span>
-                </button>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {addresses.map(addr => (
-                    <div
-                      key={addr.id}
-                      className={`p-4 rounded-2xl border transition-all ${
-                        addr.is_default
-                          ? "border-primary/50 bg-primary/5 shadow-[0_0_12px_rgba(var(--primary),0.1)]"
-                          : "border-border/40 bg-card/40 hover:border-border/70"
-                      }`}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* CAMPO BIO ADICIONADO */}
+                  <div className="md:col-span-2 space-y-1">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase">Minha Bio (Sobre Mim)</label>
+                    <textarea 
+                      value={survey.bio}
+                      onChange={e => setSurvey({ ...survey, bio: e.target.value })}
+                      placeholder="Conte um pouco sobre você..."
+                      rows={4}
+                      className="w-full px-4 py-3 rounded-xl border border-border/60 bg-background focus:border-primary outline-none transition-colors text-sm font-medium resize-none"
+                    />
+                  </div>
+
+                  <AccountField label="Profissão" value={survey.profession} onChange={v => setSurvey({ ...survey, profession: v })} placeholder="Ex: Designer, Engenheiro" />
+                  <AccountField label="Data de Nascimento" type="date" value={survey.date_of_birth} onChange={v => setSurvey({ ...survey, date_of_birth: v })} />
+                  
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase">Gênero</label>
+                    <select 
+                      value={survey.gender} 
+                      onChange={e => setSurvey({ ...survey, gender: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl border border-border/60 bg-background focus:border-primary outline-none transition-colors text-sm font-medium"
                     >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold">{addr.label}</span>
+                      <option value="">Prefiro não informar</option>
+                      <option value="Masculino">Masculino</option>
+                      <option value="Feminino">Feminino</option>
+                      <option value="Outro">Outro</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase">Estado Civil</label>
+                    <select 
+                      value={survey.marital_status} 
+                      onChange={e => setSurvey({ ...survey, marital_status: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl border border-border/60 bg-background focus:border-primary outline-none transition-colors text-sm font-medium"
+                    >
+                      <option value="">Não informado</option>
+                      <option value="Solteiro(a)">Solteiro(a)</option>
+                      <option value="Casado(a)">Casado(a)</option>
+                      <option value="Divorciado(a)">Divorciado(a)</option>
+                      <option value="Viúvo(a)">Viúvo(a)</option>
+                    </select>
+                  </div>
+
+                  <AccountField label="Categoria Favorita" value={survey.preferred_category} onChange={v => setSurvey({ ...survey, preferred_category: v })} placeholder="Ex: Tecnologia, Moda" className="md:col-span-2" />
+                </div>
+
+                <div className="pt-4 border-t border-border/30 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={savingSurvey}
+                    className="px-8 py-3 rounded-xl bg-purple-600 text-white font-bold hover:bg-purple-700 transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-purple-600/20"
+                  >
+                    {savingSurvey ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                    Salvar Preferências
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* ═══════════ ENDEREÇOS ═══════════ */}
+            {activeTab === "enderecos" && (
+              <div className="p-6 md:p-8 rounded-3xl border border-border/50 bg-card/40 backdrop-blur-sm shadow-xl space-y-8">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-display font-bold mb-1">Meus Endereços</h2>
+                    <p className="text-muted-foreground text-sm">Gerencie seus endereços de entrega.</p>
+                  </div>
+                  <button
+                    onClick={openNewAddress}
+                    className="px-5 py-2.5 rounded-xl bg-primary/10 text-primary font-bold hover:bg-primary hover:text-primary-foreground transition-all flex items-center gap-2"
+                  >
+                    <Plus className="w-5 h-5" /> Novo Endereço
+                  </button>
+                </div>
+
+                {loadingAddr ? (
+                  <div className="py-12 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+                ) : addresses.length === 0 ? (
+                  <div className="py-16 flex flex-col items-center justify-center text-center border-2 border-dashed border-border/50 rounded-2xl bg-secondary/20">
+                    <MapPin className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
+                    <h3 className="text-lg font-bold">Nenhum endereço salvo</h3>
+                    <p className="text-muted-foreground text-sm mt-1 max-w-sm">Adicione um endereço para facilitar suas compras futuras.</p>
+                    <button onClick={openNewAddress} className="mt-6 px-6 py-2 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-colors shadow-md">
+                      Adicionar Agora
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {addresses.map(addr => {
+                      const iconOpt = LABEL_OPTIONS.find(o => o.id === addr.label) || LABEL_OPTIONS[2];
+                      const LIcon = iconOpt.icon;
+                      return (
+                        <div key={addr.id} className={`relative p-6 rounded-2xl border transition-all ${addr.is_default ? "border-primary bg-primary/5 shadow-md" : "border-border/50 bg-background/50 hover:border-border"}`}>
                           {addr.is_default && (
-                            <span className="text-[10px] bg-primary text-primary-foreground px-2 py-0.5 rounded-full font-bold">
-                              Padrão
+                            <span className="absolute top-0 right-0 translate-x-2 -translate-y-2 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 shadow-sm">
+                              <Check className="w-3 h-3" /> Padrão
                             </span>
                           )}
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className={`p-2.5 rounded-xl ${addr.is_default ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground"}`}>
+                              <LIcon className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-lg leading-tight">{addr.label}</h3>
+                              <p className="text-xs text-muted-foreground">{addr.recipient_name}</p>
+                            </div>
+                          </div>
+                          <div className="text-sm text-muted-foreground space-y-1 mb-6">
+                            <p>{addr.logradouro}, {addr.numero} {addr.complemento && `- ${addr.complemento}`}</p>
+                            <p>{addr.bairro} - {addr.cidade}/{addr.uf}</p>
+                            <p className="font-mono text-xs opacity-70 mt-1">CEP: {addr.cep}</p>
+                          </div>
+                          <div className="flex items-center gap-2 pt-4 border-t border-border/40">
+                            {!addr.is_default && (
+                              <button onClick={() => setDefault(addr)} className="text-xs font-semibold text-primary hover:underline">
+                                Tornar Padrão
+                              </button>
+                            )}
+                            <div className="flex-1" />
+                            <button onClick={() => openEditAddress(addr)} className="p-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors" title="Editar">
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => setDeleteConfirm(addr.id)} className="p-2 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors" title="Excluir">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex gap-1.5">
-                          <button
-                            onClick={() => openEditAddress(addr)}
-                            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
-                          >
-                            <Edit2 className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => setDeleteConfirm(addr.id)}
-                            className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                      <p className="text-sm font-medium">{addr.recipient_name}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{addr.logradouro}, {addr.numero}{addr.complemento ? ` — ${addr.complemento}` : ""}</p>
-                      <p className="text-xs text-muted-foreground">{addr.bairro} · {addr.cidade}/{addr.uf}</p>
-                      <p className="text-xs text-muted-foreground/60 mt-0.5">CEP {addr.cep.replace(/(\d{5})(\d{3})/, "$1-$2")}</p>
-                      {!addr.is_default && (
-                        <button
-                          onClick={() => setDefault(addr)}
-                          className="mt-3 text-xs font-semibold text-primary hover:underline flex items-center gap-1"
-                        >
-                          <Star className="h-3 w-3" /> Definir como padrão
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ═══════════ SEGURANÇA ═══════════ */}
-          {activeTab === "seguranca" && (
-            <div className="p-6 rounded-2xl border border-border/40 bg-card/40 space-y-6">
-              <h2 className="text-lg font-bold flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-primary" /> Segurança da Conta
-              </h2>
-
-              <form onSubmit={savePassword} className="space-y-4 max-w-md">
-                <PwdField
-                  label="Senha atual"
-                  value={pwd.old_password}
-                  show={showPwd.old}
-                  onToggle={() => setShowPwd(p => ({ ...p, old: !p.old }))}
-                  onChange={v => setPwd({ ...pwd, old_password: v })}
-                />
-                <PwdField
-                  label="Nova senha"
-                  value={pwd.new_password}
-                  show={showPwd.new}
-                  onToggle={() => setShowPwd(p => ({ ...p, new: !p.new }))}
-                  onChange={v => setPwd({ ...pwd, new_password: v })}
-                />
-                <PwdField
-                  label="Confirmar nova senha"
-                  value={pwd.new_password_confirm}
-                  show={showPwd.confirm}
-                  onToggle={() => setShowPwd(p => ({ ...p, confirm: !p.confirm }))}
-                  onChange={v => setPwd({ ...pwd, new_password_confirm: v })}
-                />
-                <button
-                  type="submit"
-                  disabled={savingPwd || !pwd.old_password || !pwd.new_password || !pwd.new_password_confirm}
-                  className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/95 transition-all shadow-md disabled:opacity-50 w-full sm:w-auto"
-                >
-                  {savingPwd ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
-                  Alterar Senha
-                </button>
-              </form>
-            </div>
-          )}
-
-        </motion.div>
-      </AnimatePresence>
-
-      {/* ── Address Modal ── */}
-      <AnimatePresence>
-        {addrModal && (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setAddrModal(null)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 40 }}
-              className="relative w-full sm:max-w-md bg-[#0e0e1a] border border-white/10 rounded-t-3xl sm:rounded-3xl shadow-2xl z-10 max-h-[95vh] overflow-y-auto"
-            >
-              {/* Modal header */}
-              <div className="flex items-center justify-between p-5 border-b border-white/10 sticky top-0 bg-[#0e0e1a] z-10">
-                <div>
-                  <h3 className="font-bold text-base">{addrModal.id ? "Editar Endereço" : "Novo Endereço"}</h3>
-                  <p className="text-xs text-muted-foreground">Digite o CEP para preenchimento automático</p>
-                </div>
-                <button onClick={() => setAddrModal(null)} className="p-1.5 rounded-full hover:bg-white/10 text-muted-foreground transition-all">
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <form onSubmit={saveAddress} className="p-5 space-y-4">
-                {/* Label chips */}
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Este endereço é...</p>
-                  <div className="flex gap-2">
-                    {LABEL_OPTIONS.map(opt => {
-                      const Icon = opt.icon;
-                      const active = addrModal.label === opt.id;
-                      return (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => setAddrModal(prev => prev ? { ...prev, label: opt.id } : null)}
-                          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${
-                            active ? "border-primary bg-primary/10 text-primary" : "border-white/10 bg-white/5 text-muted-foreground hover:border-white/20"
-                          }`}
-                        >
-                          <Icon className="w-4 h-4" />{opt.id}
-                        </button>
                       );
                     })}
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* ═══════════ PAGAMENTOS (NOVO CRUD FAKE/PREMIUM) ═══════════ */}
+            {activeTab === "pagamentos" && (
+              <div className="p-6 md:p-8 rounded-3xl border border-border/50 bg-card/40 backdrop-blur-sm shadow-xl space-y-8">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-display font-bold mb-1">Meus Cartões</h2>
+                    <p className="text-muted-foreground text-sm">Gerencie suas formas de pagamento de forma segura.</p>
+                  </div>
+                  <button
+                    className="px-5 py-2.5 rounded-xl bg-blue-500/10 text-blue-500 font-bold hover:bg-blue-500 hover:text-white transition-all flex items-center gap-2"
+                    onClick={() => toast("Adicionar cartão em breve!", "info")}
+                  >
+                    <Plus className="w-5 h-5" /> Adicionar Cartão
+                  </button>
                 </div>
 
-                {/* Recipient */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Destinatário</label>
-                  <input
-                    value={addrModal.recipient_name}
-                    onChange={e => setAddrModal(prev => prev ? { ...prev, recipient_name: e.target.value } : null)}
-                    placeholder="Nome de quem vai receber"
-                    required
-                    className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-foreground placeholder-neutral-600 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
-                  />
-                </div>
-
-                {/* CEP */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">CEP</label>
-                  <div className="relative">
-                    <input
-                      value={addrModal.cep}
-                      onChange={handleCepChange}
-                      placeholder="00000-000"
-                      maxLength={9}
-                      required
-                      className={`w-full pl-4 pr-12 py-3.5 rounded-xl border font-mono font-medium text-lg outline-none transition-all ${
-                        cepError
-                          ? "border-red-500/50 bg-red-500/5"
-                          : cepReady
-                          ? "border-emerald-500/50 bg-emerald-500/5"
-                          : "border-white/10 bg-white/5"
-                      } text-foreground placeholder-neutral-600 focus:border-primary focus:ring-1 focus:ring-primary/30`}
-                    />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                      {cepLoading
-                        ? <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                        : cepReady
-                        ? <Check className="w-5 h-5 text-emerald-500" />
-                        : <Search className="w-5 h-5 text-muted-foreground" />
-                      }
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Cartão Fake 1 */}
+                  <div className="relative p-6 rounded-2xl bg-gradient-to-br from-neutral-800 to-black border border-neutral-700 text-white shadow-xl overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-40 transition-opacity">
+                      <CreditCard className="w-32 h-32 rotate-12 translate-x-8 -translate-y-8" />
+                    </div>
+                    <div className="relative z-10">
+                      <div className="flex justify-between items-start mb-8">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/1280px-Mastercard-logo.svg.png" alt="Mastercard" className="h-8 object-contain" />
+                        <span className="bg-white/20 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider backdrop-blur-md">Principal</span>
+                      </div>
+                      <div className="space-y-1 mb-4">
+                        <p className="font-mono text-lg tracking-widest text-white/90">**** **** **** 4821</p>
+                      </div>
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <p className="text-[10px] text-white/60 uppercase tracking-widest">Titular</p>
+                          <p className="font-semibold text-sm uppercase">{profile.first_name || "NOME"} {profile.last_name || "SOBRENOME"}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-white/60 uppercase tracking-widest">Validade</p>
+                          <p className="font-semibold text-sm">12/28</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 z-20 backdrop-blur-sm">
+                      <button className="p-3 bg-white/20 rounded-full hover:bg-white/40 transition-colors text-white" title="Editar">
+                        <Edit2 className="w-5 h-5" />
+                      </button>
+                      <button className="p-3 bg-red-500/80 rounded-full hover:bg-red-500 transition-colors text-white" title="Remover">
+                        <Trash2 className="w-5 h-5" />
+                      </button>
                     </div>
                   </div>
-                  {cepError && <p className="text-xs text-red-400 font-medium">{cepError}</p>}
+
+                  {/* Espaço para novo cartão */}
+                  <button 
+                    onClick={() => toast("Adicionar cartão em breve!", "info")}
+                    className="p-6 flex flex-col items-center justify-center text-center rounded-2xl border-2 border-dashed border-border/60 bg-secondary/10 hover:bg-secondary/30 hover:border-primary/50 transition-all group"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                      <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
+                    <h3 className="font-bold">Adicionar novo cartão</h3>
+                    <p className="text-xs text-muted-foreground mt-1">Cartão de Crédito ou Débito</p>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ═══════════ SEGURANÇA ═══════════ */}
+            {activeTab === "seguranca" && (
+              <div className="p-6 md:p-8 rounded-3xl border border-border/50 bg-card/40 backdrop-blur-sm shadow-xl space-y-8">
+                <div>
+                  <h2 className="text-2xl font-display font-bold mb-1">Segurança</h2>
+                  <p className="text-muted-foreground text-sm">Atualize sua senha e mantenha sua conta segura.</p>
                 </div>
 
-                {/* Auto-filled address display */}
-                {cepReady && addrModal.logradouro && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3"
-                  >
-                    <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1">Endereço encontrado ✓</p>
-                    <p className="text-sm font-semibold">{addrModal.logradouro}</p>
-                    <p className="text-xs text-muted-foreground">{addrModal.bairro} · {addrModal.cidade}/{addrModal.uf}</p>
-                  </motion.div>
-                )}
-
-                {/* Number + Complement */}
-                {cepReady && (
-                  <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Número <span className="text-red-400">*</span></label>
-                      <input
-                        value={addrModal.numero}
-                        onChange={e => setAddrModal(prev => prev ? { ...prev, numero: e.target.value } : null)}
-                        placeholder="123"
-                        required
-                        autoFocus
-                        className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-foreground placeholder-neutral-600 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Complemento</label>
-                      <input
-                        value={addrModal.complemento}
-                        onChange={e => setAddrModal(prev => prev ? { ...prev, complemento: e.target.value } : null)}
-                        placeholder="Apto, Bloco..."
-                        className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-foreground placeholder-neutral-600 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
-                      />
-                    </div>
-                  </motion.div>
-                )}
-
-                {cepReady && (
-                  <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-1.5">
-                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Ponto de Referência</label>
-                    <input
-                      value={addrModal.reference_point || ""}
-                      onChange={e => setAddrModal(prev => prev ? { ...prev, reference_point: e.target.value } : null)}
-                      placeholder="Ex: Em frente à padaria, portão azul..."
-                      className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-foreground placeholder-neutral-600 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
-                    />
-                  </motion.div>
-                )}
-
-                {/* Default checkbox */}
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={addrModal.is_default}
-                    onChange={e => setAddrModal(prev => prev ? { ...prev, is_default: e.target.checked } : null)}
-                    className="w-4 h-4 rounded border-border accent-primary"
+                <form onSubmit={changePassword} className="max-w-md space-y-5">
+                  <PwdField
+                    label="Senha Atual"
+                    value={pwd.old_password}
+                    show={showPwd.old}
+                    onToggle={() => setShowPwd({ ...showPwd, old: !showPwd.old })}
+                    onChange={v => setPwd({ ...pwd, old_password: v })}
                   />
-                  <span className="text-sm text-muted-foreground">Definir como endereço padrão</span>
-                </label>
-
-                <div className="flex gap-3 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setAddrModal(null)}
-                    className="flex-1 py-3 rounded-xl font-semibold text-muted-foreground hover:bg-white/5 border border-white/10 transition-all"
-                  >
-                    Cancelar
-                  </button>
+                  <div className="h-px bg-border/40 my-4" />
+                  <PwdField
+                    label="Nova Senha"
+                    value={pwd.new_password}
+                    show={showPwd.new}
+                    onToggle={() => setShowPwd({ ...showPwd, new: !showPwd.new })}
+                    onChange={v => setPwd({ ...pwd, new_password: v })}
+                  />
+                  <PwdField
+                    label="Confirmar Nova Senha"
+                    value={pwd.new_password_confirm}
+                    show={showPwd.confirm}
+                    onToggle={() => setShowPwd({ ...showPwd, confirm: !showPwd.confirm })}
+                    onChange={v => setPwd({ ...pwd, new_password_confirm: v })}
+                  />
                   <button
                     type="submit"
-                    disabled={savingAddr || !addrModal.recipient_name || (!cepReady && !addrModal.logradouro) || !addrModal.numero}
-                    className="flex-1 py-3 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-lg disabled:opacity-40 flex items-center justify-center gap-2"
+                    disabled={savingPwd}
+                    className="w-full mt-4 py-3 rounded-xl bg-foreground text-background font-bold hover:bg-foreground/90 transition-all disabled:opacity-50 flex justify-center items-center gap-2"
                   >
-                    {savingAddr ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                    Salvar
+                    {savingPwd ? <Loader2 className="w-5 h-5 animate-spin" /> : <Lock className="w-5 h-5" />}
+                    Atualizar Senha
                   </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Delete confirm modal ── */}
-      <AnimatePresence>
-        {deleteConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setDeleteConfirm(null)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative bg-[#0e0e1a] border border-white/10 rounded-2xl p-6 max-w-sm w-full shadow-2xl z-10 text-center"
-            >
-              <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
-                <AlertTriangle className="h-6 w-6 text-destructive" />
+                </form>
               </div>
-              <h3 className="font-bold text-lg mb-2">Remover endereço?</h3>
-              <p className="text-sm text-muted-foreground mb-6">Esta ação não pode ser desfeita.</p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setDeleteConfirm(null)}
-                  className="flex-1 py-2.5 rounded-xl font-semibold border border-white/10 text-muted-foreground hover:bg-white/5 transition-all"
-                >
+            )}
+
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* ── Modal de Endereço ── */}
+      {addrModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-xl bg-background rounded-3xl overflow-hidden shadow-2xl border border-border"
+          >
+            <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-secondary/30">
+              <h2 className="text-lg font-bold">{addrModal.id ? "Editar Endereço" : "Novo Endereço"}</h2>
+              <button onClick={() => setAddrModal(null)} className="p-2 rounded-full hover:bg-secondary transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={saveAddress} className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+              <div className="space-y-3">
+                <label className="text-xs font-semibold text-muted-foreground uppercase">Dar um nome para o endereço</label>
+                <div className="flex flex-wrap gap-2">
+                  {LABEL_OPTIONS.map(opt => (
+                    <button
+                      key={opt.id} type="button"
+                      onClick={() => setAddrModal({ ...addrModal, label: opt.id })}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
+                        addrModal.label === opt.id ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-secondary"
+                      }`}
+                    >
+                      <opt.icon className="h-4 w-4" /> {opt.id}
+                    </button>
+                  ))}
+                  {/* Se for "Outro", mostra um input */}
+                  {!LABEL_OPTIONS.find(o => o.id === addrModal.label) && addrModal.label !== "" && (
+                    <input
+                      autoFocus
+                      value={addrModal.label}
+                      onChange={e => setAddrModal({ ...addrModal, label: e.target.value })}
+                      className="px-3 py-2 rounded-xl border border-primary bg-background text-sm w-32 outline-none"
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <AccountField label="CEP" value={addrModal.cep} onChange={() => {}} 
+                  disabled={cepLoading}
+                  placeholder="00000-000"
+                  onChangeCapture={(e: any) => handleCepChange(e)}
+                />
+                {cepLoading && <div className="flex items-center gap-2 text-sm text-primary mt-6"><Loader2 className="w-4 h-4 animate-spin" /> Buscando...</div>}
+                {cepError && <div className="flex items-center gap-2 text-sm text-destructive mt-6"><AlertTriangle className="w-4 h-4" /> {cepError}</div>}
+                
+                <AccountField className="md:col-span-2" label="Nome do Recebedor" value={addrModal.recipient_name} onChange={v => setAddrModal({ ...addrModal, recipient_name: v })} required />
+
+                {cepReady && (
+                  <>
+                    <AccountField className="md:col-span-2" label="Endereço / Logradouro" value={addrModal.logradouro} onChange={v => setAddrModal({ ...addrModal, logradouro: v })} required />
+                    <AccountField label="Número" value={addrModal.numero} onChange={v => setAddrModal({ ...addrModal, numero: v })} required />
+                    <AccountField label="Complemento (Opcional)" value={addrModal.complemento} onChange={v => setAddrModal({ ...addrModal, complemento: v })} />
+                    <AccountField label="Bairro" value={addrModal.bairro} onChange={v => setAddrModal({ ...addrModal, bairro: v })} required />
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="col-span-2"><AccountField label="Cidade" value={addrModal.cidade} onChange={v => setAddrModal({ ...addrModal, cidade: v })} required /></div>
+                      <AccountField label="UF" value={addrModal.uf} onChange={v => setAddrModal({ ...addrModal, uf: v })} required />
+                    </div>
+                    <AccountField className="md:col-span-2" label="Ponto de Referência (Opcional)" value={addrModal.reference_point || ""} onChange={v => setAddrModal({ ...addrModal, reference_point: v })} />
+                  </>
+                )}
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3 border-t border-border">
+                <button type="button" onClick={() => setAddrModal(null)} className="px-5 py-2.5 rounded-xl font-bold text-muted-foreground hover:bg-secondary transition-colors">
                   Cancelar
                 </button>
-                <button
-                  onClick={() => deleteAddress(deleteConfirm)}
-                  className="flex-1 py-2.5 rounded-xl font-bold bg-destructive text-white hover:bg-destructive/90 transition-all"
-                >
-                  Remover
+                <button type="submit" disabled={!cepReady || savingAddr} className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center gap-2">
+                  {savingAddr ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Salvar Endereço
                 </button>
               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* ── Modal de Exclusão ── */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-background max-w-sm rounded-3xl p-6 shadow-2xl text-center border border-border">
+            <div className="w-12 h-12 bg-destructive/10 text-destructive rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+            <h3 className="text-xl font-bold mb-2">Excluir Endereço?</h3>
+            <p className="text-muted-foreground text-sm mb-6">Esta ação não pode ser desfeita. O endereço será removido da sua lista.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-3 rounded-xl font-bold bg-secondary hover:bg-secondary/80 transition-colors">Cancelar</button>
+              <button onClick={() => deleteAddress(deleteConfirm)} className="flex-1 py-3 rounded-xl font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors">Excluir</button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
     </div>
   );
 }
 
-/* ── Helper components ─────────────────────────────────────────────────────── */
+/* ── Helpers ─────────────────────────────────────────────────────────────── */
 function AccountField({
-  label, value, onChange, ...props
-}: { label: string; value: string; onChange: (v: string) => void } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "value">) {
+  label, value, onChange, className, ...props
+}: { label: string; value: string; onChange: (v: string) => void; className?: string } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "value">) {
   return (
-    <div className="space-y-1">
+    <div className={`space-y-1 ${className}`}>
       <label className="text-xs font-semibold text-muted-foreground uppercase">{label}</label>
       <input
         value={value}
         onChange={e => onChange(e.target.value)}
         {...props}
-        className="w-full px-4 py-2.5 rounded-lg border border-border/60 bg-background focus:border-primary outline-none transition-colors text-sm"
+        className={`w-full px-4 py-3 rounded-xl border border-border/60 bg-background focus:border-primary outline-none transition-colors text-sm font-medium ${props.disabled ? 'opacity-60 cursor-not-allowed bg-secondary/50' : ''}`}
       />
     </div>
   );
@@ -717,14 +793,14 @@ function PwdField({
           value={value}
           onChange={e => onChange(e.target.value)}
           required
-          className="w-full px-4 pr-11 py-2.5 rounded-lg border border-border/60 bg-background focus:border-primary outline-none transition-colors text-sm"
+          className="w-full px-4 pr-11 py-3 rounded-xl border border-border/60 bg-background focus:border-primary outline-none transition-colors text-sm font-medium"
         />
         <button
           type="button"
           onClick={onToggle}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors"
         >
-          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {show ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
         </button>
       </div>
     </div>

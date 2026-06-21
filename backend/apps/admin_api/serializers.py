@@ -41,3 +41,11 @@ class AdminSellerListSerializer(serializers.ModelSerializer):
 
     def get_user_name(self, obj):
         return obj.user.full_name
+
+from apps.catalog.models import Banner
+
+class AdminBannerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Banner
+        fields = ["id", "title", "image", "link", "active", "order", "created_at"]
+

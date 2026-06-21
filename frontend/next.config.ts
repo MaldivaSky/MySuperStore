@@ -23,11 +23,6 @@ const nextConfig: NextConfig = {
         source: '/dashboard/recap',
         destination: '/dashboard',
         permanent: true,
-      },
-      {
-        source: '/dashboard/account',
-        destination: '/dashboard',
-        permanent: false, // temporarily fallback to dashboard since account page seems to have bugs for some users
       }
     ];
   },

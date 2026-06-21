@@ -42,21 +42,13 @@ export default function BuyerRecapDashboard() {
     );
   }
 
-  // Se não houver compras ainda
-  if (!recap || recap.total_orders === 0) {
+  if (!recap) {
     return (
-      <div className="min-h-[500px] flex flex-col items-center justify-center text-center p-8 rounded-3xl bg-gradient-to-br from-card to-background border border-border/50">
-        <Rocket className="h-16 w-16 text-muted-foreground mb-6 opacity-30" />
-        <h2 className="text-3xl font-display font-black mb-4">Seu Universo de Compras</h2>
-        <p className="text-muted-foreground max-w-md mb-8">
-          Você ainda não realizou nenhuma compra. Explore nosso catálogo e comece sua jornada para construir seu Recap de Comprador Voraz!
-        </p>
-        <button 
-          onClick={() => router.push("/")}
-          className="px-8 py-3 bg-primary text-primary-foreground font-bold rounded-full hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
-        >
-          Explorar Produtos
-        </button>
+      <div className="flex-grow flex items-center justify-center min-h-[500px]">
+        <div className="relative">
+          <div className="absolute inset-0 bg-primary/30 blur-xl rounded-full animate-pulse"></div>
+          <Sparkles className="h-10 w-10 text-primary animate-bounce relative z-10" />
+        </div>
       </div>
     );
   }
@@ -109,10 +101,10 @@ export default function BuyerRecapDashboard() {
           <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-8">Sua Vibe Principal</h3>
           <div className="space-y-2">
             <p className="text-5xl font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-500 pb-2">
-              {recap.favorite_category}
+              {recap.favorite_category || "Descobrindo..."}
             </p>
             <p className="text-muted-foreground font-medium">
-              Você respirou essa categoria. É literalmente a sua marca registrada.
+              {recap.favorite_category ? "Você respirou essa categoria. É literalmente a sua marca registrada." : "Faça suas primeiras compras para descobrirmos seu estilo."}
             </p>
           </div>
         </motion.div>
@@ -127,7 +119,7 @@ export default function BuyerRecapDashboard() {
           <TrendingUp className="h-8 w-8 text-green-500 mb-6" />
           <h3 className="text-sm font-bold uppercase tracking-widest text-green-600/80 dark:text-green-400 mb-2">Total Gasto</h3>
           <p className="text-3xl font-display font-black text-green-600 dark:text-green-400">
-            R$ {Number(recap.total_spent).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+            R$ {Number(recap.total_spent || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
           </p>
           <p className="text-xs text-green-600/70 dark:text-green-400/70 mt-2 font-medium">Investidos no seu lifestyle.</p>
         </motion.div>
@@ -141,7 +133,7 @@ export default function BuyerRecapDashboard() {
         >
           <PackageCheck className="h-8 w-8 text-blue-500 mb-4" />
           <div>
-            <p className="text-4xl font-display font-black">{recap.total_items}</p>
+            <p className="text-4xl font-display font-black">{recap.total_items || 0}</p>
             <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest mt-1">Itens Comprados</p>
           </div>
         </motion.div>
@@ -155,7 +147,7 @@ export default function BuyerRecapDashboard() {
         >
           <ShoppingBag className="h-8 w-8 text-orange-500 mb-4" />
           <div>
-            <p className="text-4xl font-display font-black">{recap.total_orders}</p>
+            <p className="text-4xl font-display font-black">{recap.total_orders || 0}</p>
             <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest mt-1">Pedidos Realizados</p>
           </div>
         </motion.div>

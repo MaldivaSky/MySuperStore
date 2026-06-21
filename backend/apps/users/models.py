@@ -96,6 +96,7 @@ class AffiliateLink(models.Model):
 class UserSurvey(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="survey")
     date_of_birth = models.DateField(null=True, blank=True)
+    bio = models.TextField(blank=True, default="")
     preferred_category = models.CharField(max_length=100, blank=True)
     education_level = models.CharField(max_length=100, blank=True)
     marital_status = models.CharField(max_length=50, blank=True)

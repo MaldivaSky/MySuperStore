@@ -232,11 +232,17 @@ export const adminApi = {
     list: () => api.get("/admin/sellers/"),
     approve: (id: string) => api.post(`/admin/sellers/${id}/approve/`),
     reject: (id: string, reason?: string) => api.post(`/admin/sellers/${id}/reject/`, { reason }),
+    suspend: (id: string, reason?: string) => api.post(`/admin/sellers/${id}/suspend/`, { reason }),
   },
   coupons: {
     list: () => api.get("/admin/coupons/"),
     create: (data: any) => api.post("/admin/coupons/", data),
     delete: (id: string) => api.delete(`/admin/coupons/${id}/`),
+  },
+  banners: {
+    list: () => api.get("/admin/banners/"),
+    create: (formData: FormData) => api.post("/admin/banners/", formData),
+    delete: (id: string) => api.delete(`/admin/banners/${id}/`),
   }
 };
 

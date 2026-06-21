@@ -3,18 +3,18 @@
 import { useState, useEffect } from "react";
 
 const LETTERS: { char: string; color: string; delay: number }[] = [
-  { char: "M", color: "#F3EFE6", delay: 1.50 },
-  { char: "y", color: "#F3EFE6", delay: 1.55 },
-  { char: "S", color: "#E6B53C", delay: 1.61 },
-  { char: "u", color: "#E6B53C", delay: 1.67 },
-  { char: "p", color: "#E6B53C", delay: 1.73 },
-  { char: "e", color: "#E6B53C", delay: 1.79 },
-  { char: "r", color: "#E6B53C", delay: 1.85 },
-  { char: "S", color: "#F3EFE6", delay: 1.91 },
-  { char: "t", color: "#F3EFE6", delay: 1.97 },
-  { char: "o", color: "#F3EFE6", delay: 2.03 },
-  { char: "r", color: "#F3EFE6", delay: 2.09 },
-  { char: "e", color: "#F3EFE6", delay: 2.15 },
+  { char: "M", color: "#F3EFE6", delay: 1.00 },
+  { char: "y", color: "#F3EFE6", delay: 1.05 },
+  { char: "S", color: "#E6B53C", delay: 1.11 },
+  { char: "u", color: "#E6B53C", delay: 1.17 },
+  { char: "p", color: "#E6B53C", delay: 1.23 },
+  { char: "e", color: "#E6B53C", delay: 1.29 },
+  { char: "r", color: "#E6B53C", delay: 1.35 },
+  { char: "S", color: "#F3EFE6", delay: 1.41 },
+  { char: "t", color: "#F3EFE6", delay: 1.47 },
+  { char: "o", color: "#F3EFE6", delay: 1.53 },
+  { char: "r", color: "#F3EFE6", delay: 1.59 },
+  { char: "e", color: "#F3EFE6", delay: 1.65 },
 ];
 
 export function SplashScreen() {
@@ -28,7 +28,25 @@ export function SplashScreen() {
   };
 
   useEffect(() => {
-    const t = setTimeout(dismiss, 4200);
+    const handlePlay = () => {
+      setGone(false);
+      setExiting(false);
+      setTimeout(dismiss, 3000);
+    };
+    window.addEventListener("play_splash", handlePlay);
+    return () => window.removeEventListener("play_splash", handlePlay);
+  }, [exiting, gone]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const seen = sessionStorage.getItem("splash_seen");
+      if (seen) {
+        setGone(true);
+        return;
+      }
+      sessionStorage.setItem("splash_seen", "true");
+    }
+    const t = setTimeout(dismiss, 3000);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -116,15 +134,15 @@ export function SplashScreen() {
             {/* Ring — back layer */}
             <g transform="rotate(-20 200 135)" fill="none">
               <ellipse cx="200" cy="135" rx="158" ry="49" stroke="#7C7568" strokeWidth="2"
-                style={{ animation: "mss-appear .9s ease-out .7s both" }} />
+                style={{ animation: "mss-appear .9s ease-out .2s both" }} />
               <ellipse cx="200" cy="135" rx="150" ry="43" stroke="url(#sp_ring)" strokeWidth="11"
                 pathLength="100" strokeDasharray="100" strokeLinecap="round"
-                style={{ animation: "mss-draw 1.05s cubic-bezier(.45,0,.15,1) .55s both" }} />
+                style={{ animation: "mss-draw 1.05s cubic-bezier(.45,0,.15,1) .1s both" }} />
             </g>
 
             {/* Planet sphere */}
             <g style={{ transformBox: "fill-box", transformOrigin: "center",
-              animation: "mss-pop .8s cubic-bezier(.34,1.5,.5,1) .25s both" } as React.CSSProperties}>
+              animation: "mss-pop .8s cubic-bezier(.34,1.5,.5,1) 0s both" } as React.CSSProperties}>
               <circle cx="200" cy="135" r="46" fill="url(#sp_sph)" />
               <ellipse cx="185" cy="119" rx="15" ry="10" fill="#FCE6A0" opacity="0.35" />
             </g>
@@ -132,22 +150,22 @@ export function SplashScreen() {
             {/* Ring — front layer (masked by planet) */}
             <g transform="rotate(-20 200 135)" fill="none" mask="url(#sp_front)">
               <ellipse cx="200" cy="135" rx="158" ry="49" stroke="#7C7568" strokeWidth="2"
-                style={{ animation: "mss-appear .9s ease-out .7s both" }} />
+                style={{ animation: "mss-appear .9s ease-out .2s both" }} />
               <ellipse cx="200" cy="135" rx="150" ry="43" stroke="url(#sp_ring)" strokeWidth="11"
                 pathLength="100" strokeDasharray="100" strokeLinecap="round"
-                style={{ animation: "mss-draw 1.05s cubic-bezier(.45,0,.15,1) .55s both" }} />
+                style={{ animation: "mss-draw 1.05s cubic-bezier(.45,0,.15,1) .1s both" }} />
             </g>
 
             {/* Glint travelling around ring */}
             <g transform="rotate(-20 200 135)" fill="none">
               <ellipse cx="200" cy="135" rx="150" ry="43" stroke="#FFF7DE" strokeWidth="5"
                 pathLength="100" strokeDasharray="9 91" strokeLinecap="round"
-                style={{ animation: "mss-glint 1.15s cubic-bezier(.4,0,.2,1) 1.05s both" }} />
+                style={{ animation: "mss-glint 1.15s cubic-bezier(.4,0,.2,1) .5s both" }} />
             </g>
 
             {/* Star sparkle */}
             <g style={{ transformBox: "fill-box", transformOrigin: "center",
-              animation: "mss-sparkle .65s cubic-bezier(.34,1.5,.5,1) 1.35s both, mss-twinkle 3.4s ease-in-out 2.2s infinite",
+              animation: "mss-sparkle .65s cubic-bezier(.34,1.5,.5,1) .85s both, mss-twinkle 3.4s ease-in-out 1.7s infinite",
             } as React.CSSProperties}>
               <path d="M334 60 l3.4 10.2 10.2 3.4 -10.2 3.4 -3.4 10.2 -3.4 -10.2 -10.2 -3.4 10.2 -3.4 z" fill="#FCE6A0" />
             </g>
@@ -180,7 +198,7 @@ export function SplashScreen() {
             letterSpacing: "0.34em",
             textTransform: "uppercase",
             color: "#D2A23A",
-            animation: "mss-tag .85s cubic-bezier(.22,1,.36,1) 2.3s both",
+            animation: "mss-tag .85s cubic-bezier(.22,1,.36,1) 1.8s both",
           }}>
             Onde tudo orbita você
           </div>
@@ -195,7 +213,7 @@ export function SplashScreen() {
           letterSpacing: "0.12em",
           textTransform: "uppercase",
           color: "rgba(243,239,230,.32)",
-          animation: "mss-hint 1s ease-out 3s both",
+          animation: "mss-hint 1s ease-out 2.0s both",
           pointerEvents: "none",
         }}>
           toque para pular

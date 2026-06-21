@@ -78,6 +78,7 @@ export default function StorePage() {
 
 function StorePageContent() {
   const [products, setProducts] = useState<any[]>([]);
+  const [totalProducts, setTotalProducts] = useState<number | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const searchParams = useSearchParams();
@@ -274,8 +275,12 @@ function StorePageContent() {
 
       const res = await catalogApi.products(params);
       const results: any[] = res.data.results ?? res.data;
-      if (pageNum === 1) setProducts(results);
-      else setProducts((prev) => [...prev, ...results]);
+      if (pageNum === 1) {
+        setProducts(results);
+        setTotalProducts(res.data.count ?? results.length);
+      } else {
+        setProducts((prev) => [...prev, ...results]);
+      }
       setHasMore(res.data.next != null);
     } catch (error: any) {
       console.error("Erro ao buscar produtos:", error);
@@ -624,10 +629,17 @@ function StorePageContent() {
           {/* Main Grid */}
           <div className="flex-1">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-8 gap-2">
-              <h2 className="text-base sm:text-2xl font-display font-bold flex items-center gap-2">
-                <TrendingUp className="text-primary h-4 w-4 sm:h-6 sm:w-6" />
-                {selectedCategory ? categories.find(c => c.slug === selectedCategory)?.name : "Tendências da Semana"}
-              </h2>
+              <div className="flex items-baseline gap-3">
+                <h2 className="text-base sm:text-2xl font-display font-bold flex items-center gap-2">
+                  <TrendingUp className="text-primary h-4 w-4 sm:h-6 sm:w-6" />
+                  {selectedCategory ? categories.find(c => c.slug === selectedCategory)?.name : "Tendências da Semana"}
+                </h2>
+                {totalProducts !== null && (
+                  <span className="text-xs sm:text-sm font-semibold text-neutral-400 bg-white/[0.03] px-2.5 py-0.5 rounded-full border border-white/[0.05]">
+                    {totalProducts} {totalProducts === 1 ? 'produto' : 'produtos'}
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-2">
                 <select
                   value={ordering}
@@ -707,6 +719,10 @@ function StorePageContent() {
                           TOP
                         </div>
                       )}
+                      {/* Tag genérica (Demo / Mais Pedido / Em Alta) */}
+                      <div className="bg-blue-600/90 backdrop-blur-md text-white text-[9px] sm:text-xs font-bold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-[0_0_15px_rgba(37,99,235,0.4)] border border-blue-400/30 uppercase tracking-wider">
+                        {product.custom_tag || "DEMO"}
+                      </div>
                     </div>
 
                     {/* Wishlist — sempre visível no mobile (sem hover), aparece no hover no desktop */}
@@ -816,7 +832,16 @@ function StorePageContent() {
                 <div className="flex flex-col items-center gap-4">
                   <span className="text-neutral-500 font-medium">Você chegou ao fim da lista.</span>
                   <button 
-                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    onClick={() => {
+                      const storeContent = document.getElementById('store-content');
+                      if (storeContent) {
+                        const yOffset = -100;
+                        const y = storeContent.getBoundingClientRect().top + window.scrollY + yOffset;
+                        window.scrollTo({ top: y, behavior: 'smooth' });
+                      } else {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
                     className="px-6 py-2 bg-primary/10 text-primary border border-primary/20 rounded-xl hover:bg-primary/20 transition-all font-semibold"
                   >
                     Voltar ao Topo

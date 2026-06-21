@@ -16,7 +16,8 @@ from core.permissions import IsPlatformAdmin
 from apps.orders.models import Order, Coupon
 from apps.sellers.models import Seller
 from apps.users.models import User
-from .serializers import AdminCouponSerializer, AdminSellerListSerializer
+from apps.catalog.models import Banner
+from .serializers import AdminCouponSerializer, AdminSellerListSerializer, AdminBannerSerializer
 
 class AdminDashboardView(viewsets.ViewSet):
     permission_classes = [IsPlatformAdmin]
@@ -104,10 +105,35 @@ class AdminSellerViewSet(viewsets.ModelViewSet):
         
         return Response({"detail": "Lojista rejeitado.", "status": seller.status})
 
+    @action(detail=True, methods=["post"], url_path="suspend")
+    def suspend(self, request, pk=None):
+        seller = self.get_object()
+        reason = request.data.get("reason", "Violação dos Termos de Serviço.")
+        seller.status = "suspended"
+        seller.save()
+        
+        send_mail(
+            subject="Aviso: Sua loja foi suspensa no MySuperStore",
+            message=f"Olá {seller.user.email},\n\nSua loja '{seller.store_name}' foi suspensa pela nossa equipe.\n\nMotivo:\n{reason}\n\nEntre em contato com o suporte para mais informações.",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[seller.user.email],
+            fail_silently=True,
+        )
+        
+        return Response({"detail": "Lojista suspenso.", "status": seller.status})
+
 class AdminCouponViewSet(viewsets.ModelViewSet):
     permission_classes = [IsPlatformAdmin]
     queryset = Coupon.objects.all().select_related("seller").order_by("-valid_from")
     serializer_class = AdminCouponSerializer
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+class AdminBannerViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsPlatformAdmin]
+    queryset = Banner.objects.all().order_by("order", "-created_at")
+    serializer_class = AdminBannerSerializer
 
     def perform_create(self, serializer):
         serializer.save()

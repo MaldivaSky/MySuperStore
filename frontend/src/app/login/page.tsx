@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { SaturnMark } from "@/components/Brand";
@@ -14,6 +14,14 @@ import { LogIn, Mail, Lock, Loader2, AlertCircle } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next") || null;

@@ -2,10 +2,10 @@
 
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
-import { Users, TrendingDown, DollarSign, ShieldAlert, Activity, Tag, Check, X, Trash2 } from "lucide-react";
+import { Users, TrendingDown, DollarSign, ShieldAlert, Activity, Tag, Check, X, Trash2, ArrowLeft, Briefcase, Image as ImageIcon, Upload } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, BarChart, Bar } from 'recharts';
 import { adminApi } from "@/lib/api";
 
@@ -41,15 +41,19 @@ export default function SuperAdminDashboard() {
 
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Real Data State
   const [metrics, setMetrics] = useState<any>(null);
   const [sellers, setSellers] = useState<any[]>([]);
   const [coupons, setCoupons] = useState<any[]>([]);
+  const [banners, setBanners] = useState<any[]>([]);
   
-  // Reject Modal State
+  // Sellers Filter State
+  const [sellerFilter, setSellerFilter] = useState("all"); // "all", "pending", "approved", "suspended"
+  
+  // Reject/Suspend Modal State
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
-  const [rejectSellerId, setRejectSellerId] = useState("");
-  const [rejectReason, setRejectReason] = useState("");
+  const [isSuspendModalOpen, setIsSuspendModalOpen] = useState(false);
+  const [targetSellerId, setTargetSellerId] = useState("");
+  const [actionReason, setActionReason] = useState("");
 
   // Coupon Form State
   const [couponCode, setCouponCode] = useState("");
@@ -58,11 +62,18 @@ export default function SuperAdminDashboard() {
   const [couponValidTo, setCouponValidTo] = useState("");
   const [couponSellerId, setCouponSellerId] = useState(""); // optional
 
+  // Banner Form State
+  const [bannerTitle, setBannerTitle] = useState("");
+  const [bannerLink, setBannerLink] = useState("");
+  const [bannerOrder, setBannerOrder] = useState("0");
+  const bannerFileRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     if (user?.role === "admin") {
       fetchDashboard();
       fetchSellers();
       fetchCoupons();
+      fetchBanners();
     }
   }, [user]);
 
@@ -93,6 +104,15 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  const fetchBanners = async () => {
+    try {
+      const res = await adminApi.banners.list();
+      setBanners(res.data.results || res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleApproveSeller = async (id: string) => {
     try {
       await adminApi.sellers.approve(id);
@@ -105,17 +125,33 @@ export default function SuperAdminDashboard() {
 
   const handleRejectSeller = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!rejectSellerId) return;
+    if (!targetSellerId) return;
     try {
-      await adminApi.sellers.reject(rejectSellerId, rejectReason);
+      await adminApi.sellers.reject(targetSellerId, actionReason);
       setIsRejectModalOpen(false);
-      setRejectSellerId("");
-      setRejectReason("");
+      setTargetSellerId("");
+      setActionReason("");
       fetchSellers();
       fetchDashboard();
     } catch (err) {
       console.error(err);
       alert("Erro ao rejeitar lojista.");
+    }
+  };
+
+  const handleSuspendSeller = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!targetSellerId) return;
+    try {
+      await adminApi.sellers.suspend(targetSellerId, actionReason);
+      setIsSuspendModalOpen(false);
+      setTargetSellerId("");
+      setActionReason("");
+      fetchSellers();
+      fetchDashboard();
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao suspender lojista.");
     }
   };
 
@@ -153,14 +189,56 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  const handleCreateBanner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const file = bannerFileRef.current?.files?.[0];
+    if (!file) {
+      alert("Selecione uma imagem para o banner.");
+      return;
+    }
+    
+    try {
+      const formData = new FormData();
+      formData.append("title", bannerTitle);
+      formData.append("link", bannerLink);
+      formData.append("order", bannerOrder);
+      formData.append("image", file);
+      formData.append("active", "true");
+
+      await adminApi.banners.create(formData);
+      setBannerTitle("");
+      setBannerLink("");
+      setBannerOrder("0");
+      if (bannerFileRef.current) bannerFileRef.current.value = "";
+      fetchBanners();
+    } catch (err) {
+      alert("Erro ao criar banner. Verifique os dados.");
+      console.error(err);
+    }
+  };
+
+  const handleDeleteBanner = async (id: string) => {
+    try {
+      await adminApi.banners.delete(id);
+      fetchBanners();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const filteredSellers = sellers.filter(s => {
+    if (sellerFilter === "all") return true;
+    return s.status === sellerFilter;
+  });
+
   return (
     <div className="min-h-screen bg-[#05050a] flex flex-col md:flex-row text-white font-sans">
       {/* Sidebar Admin Premium */}
       <div className="w-full md:w-72 bg-[#0a0a14] border-r border-white/[0.05] flex flex-col shadow-2xl relative z-10">
         <div className="p-8 border-b border-white/[0.05] bg-gradient-to-b from-blue-600/10 to-transparent">
           <h2 className="text-2xl font-display font-bold flex items-center gap-3 text-blue-500">
-            <div className="p-2 bg-blue-600/20 rounded-xl">
-              <ShieldAlert className="w-6 h-6" />
+            <div className="p-2 bg-blue-600/20 rounded-xl cursor-pointer hover:scale-105 transition-transform" onClick={() => router.push("/")} title="Voltar à Loja">
+              <ArrowLeft className="w-6 h-6 text-blue-400" />
             </div>
             SuperAdmin
           </h2>
@@ -172,10 +250,12 @@ export default function SuperAdminDashboard() {
             { id: "churn", label: "Gestão de Churn", icon: TrendingDown },
             { id: "sellers", label: "Gestão de Lojistas", icon: Users },
             { id: "coupons", label: "Central de Cupons", icon: Tag },
+            { id: "banners", label: "Banners da Home", icon: ImageIcon },
+            { id: "crm", label: "CRM & Vendas B2B", icon: Briefcase, action: () => router.push("/admin/crm") },
           ].map((tab) => (
             <button 
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)} 
+              onClick={() => tab.action ? tab.action() : setActiveTab(tab.id)} 
               className={`flex-shrink-0 flex items-center gap-4 px-5 py-3.5 rounded-2xl font-semibold transition-all duration-300 ${
                 activeTab === tab.id 
                   ? "bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-[0_4px_20px_rgba(37,99,235,0.3)] translate-x-1" 
@@ -290,7 +370,20 @@ export default function SuperAdminDashboard() {
         {activeTab === "sellers" && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="bg-[#0a0a14]/80 backdrop-blur-xl border border-white/[0.05] p-8 rounded-3xl">
-              <h3 className="text-xl font-bold mb-6">Lojistas Pendentes e Aprovados</h3>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <h3 className="text-xl font-bold">Lojistas ({filteredSellers.length})</h3>
+                <div className="flex bg-white/[0.05] p-1 rounded-xl">
+                  {["all", "pending", "approved", "suspended", "rejected"].map(s => (
+                    <button
+                      key={s}
+                      onClick={() => setSellerFilter(s)}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold capitalize transition-colors ${sellerFilter === s ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white'}`}
+                    >
+                      {s === "all" ? "Todos" : s === "suspended" ? "Inativos" : s}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
@@ -302,7 +395,7 @@ export default function SuperAdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sellers.map((s: any) => (
+                    {filteredSellers.map((s: any) => (
                       <tr key={s.id} className="border-b border-white/[0.02] hover:bg-white/[0.02]">
                         <td className="py-4 font-semibold">{s.store_name}</td>
                         <td className="py-4 text-neutral-400">{s.user_name} ({s.user_email})</td>
@@ -310,6 +403,7 @@ export default function SuperAdminDashboard() {
                           <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                             s.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400' :
                             s.status === 'pending' ? 'bg-amber-500/10 text-amber-400' :
+                            s.status === 'suspended' ? 'bg-neutral-500/20 text-neutral-400' :
                             'bg-rose-500/10 text-rose-400'
                           }`}>
                             {s.status.toUpperCase()}
@@ -318,9 +412,14 @@ export default function SuperAdminDashboard() {
                         <td className="py-4 flex justify-end gap-2">
                           {s.status === 'pending' && (
                             <>
-                              <button onClick={() => handleApproveSeller(s.id)} className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500/20"><Check className="w-4 h-4"/></button>
-                              <button onClick={() => { setRejectSellerId(s.id); setIsRejectModalOpen(true); }} className="p-2 bg-rose-500/10 text-rose-400 rounded-lg hover:bg-rose-500/20"><X className="w-4 h-4"/></button>
+                              <button onClick={() => handleApproveSeller(s.id)} className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500/20" title="Aprovar"><Check className="w-4 h-4"/></button>
+                              <button onClick={() => { setTargetSellerId(s.id); setIsRejectModalOpen(true); }} className="p-2 bg-rose-500/10 text-rose-400 rounded-lg hover:bg-rose-500/20" title="Rejeitar"><X className="w-4 h-4"/></button>
                             </>
+                          )}
+                          {s.status === 'approved' && (
+                            <button onClick={() => { setTargetSellerId(s.id); setIsSuspendModalOpen(true); }} className="px-3 py-2 bg-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-700 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors">
+                              Inativar
+                            </button>
                           )}
                         </td>
                       </tr>
@@ -402,6 +501,59 @@ export default function SuperAdminDashboard() {
           </div>
         )}
 
+        {activeTab === "banners" && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+              {/* Form */}
+              <div className="bg-[#0a0a14]/80 backdrop-blur-xl border border-white/[0.05] p-8 rounded-3xl col-span-1 h-fit">
+                <h3 className="text-xl font-bold mb-6 text-blue-400 flex items-center gap-2"><ImageIcon className="w-5 h-5"/> Novo Banner</h3>
+                <form onSubmit={handleCreateBanner} className="space-y-4">
+                  <div>
+                    <label className="block text-sm text-neutral-400 mb-1">Título</label>
+                    <input type="text" required value={bannerTitle} onChange={e=>setBannerTitle(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 focus:border-blue-500 outline-none text-white" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-neutral-400 mb-1">Link de Destino</label>
+                    <input type="text" value={bannerLink} onChange={e=>setBannerLink(e.target.value)} placeholder="https://..." className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 focus:border-blue-500 outline-none text-white" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-neutral-400 mb-1">Ordem (Exibição)</label>
+                    <input type="number" required value={bannerOrder} onChange={e=>setBannerOrder(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 focus:border-blue-500 outline-none text-white" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-neutral-400 mb-1">Imagem do Banner</label>
+                    <input type="file" ref={bannerFileRef} accept="image/*" required className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 focus:border-blue-500 outline-none text-white text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700" />
+                  </div>
+                  <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors mt-2 flex justify-center items-center gap-2">
+                    <Upload className="w-4 h-4" /> Enviar Banner
+                  </button>
+                </form>
+              </div>
+
+              {/* List */}
+              <div className="bg-[#0a0a14]/80 backdrop-blur-xl border border-white/[0.05] p-8 rounded-3xl col-span-1 xl:col-span-2">
+                <h3 className="text-xl font-bold mb-6">Banners Publicados</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {banners.map((b: any) => (
+                    <div key={b.id} className="relative rounded-2xl overflow-hidden border border-white/10 group aspect-[21/9] bg-neutral-900">
+                      <img src={b.image} alt={b.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-4 flex flex-col justify-end">
+                        <h4 className="font-bold text-white truncate">{b.title}</h4>
+                        {b.link && <p className="text-xs text-blue-400 truncate">{b.link}</p>}
+                        <span className="absolute top-3 left-3 bg-black/50 backdrop-blur-md px-2 py-1 rounded-md text-xs font-bold">Ordem: {b.order}</span>
+                        <button onClick={() => handleDeleteBanner(b.id)} className="absolute top-3 right-3 p-2 bg-rose-500/80 hover:bg-rose-500 text-white rounded-lg backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all">
+                          <Trash2 className="w-4 h-4"/>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {banners.length === 0 && <p className="text-neutral-500 col-span-full text-center py-8">Nenhum banner ativo no momento.</p>}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
 
       {/* Reject Seller Modal */}
@@ -413,14 +565,37 @@ export default function SuperAdminDashboard() {
             <p className="text-sm text-neutral-400 mb-6">Informe o motivo da recusa. Este motivo será enviado por e-mail ao lojista.</p>
             <form onSubmit={handleRejectSeller} className="space-y-4">
               <textarea 
-                value={rejectReason}
-                onChange={e => setRejectReason(e.target.value)}
+                value={actionReason}
+                onChange={e => setActionReason(e.target.value)}
                 required
                 placeholder="Ex: Documentação inválida ou fotos dos produtos não estão no padrão exigido."
                 className="w-full bg-[#141420] border border-white/[0.05] rounded-xl px-4 py-3 text-sm text-white focus:border-rose-500 outline-none min-h-[120px] resize-none"
               ></textarea>
               <button type="submit" className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl transition-all">
                 Confirmar Recusa e Enviar E-mail
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Suspend Seller Modal */}
+      {isSuspendModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+          <div className="bg-[#0a0a14] border border-white/[0.05] p-8 rounded-3xl max-w-md w-full relative">
+            <button onClick={() => setIsSuspendModalOpen(false)} className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-white bg-white/[0.02] rounded-full"><X className="w-4 h-4"/></button>
+            <h3 className="text-xl font-bold text-rose-400 mb-2 flex items-center gap-2"><ShieldAlert className="w-5 h-5"/> Inativar (Suspender) Lojista</h3>
+            <p className="text-sm text-neutral-400 mb-6">O lojista perderá acesso e os produtos sairão do ar. Informe o motivo, que será enviado por e-mail.</p>
+            <form onSubmit={handleSuspendSeller} className="space-y-4">
+              <textarea 
+                value={actionReason}
+                onChange={e => setActionReason(e.target.value)}
+                required
+                placeholder="Ex: Violação recorrente dos termos de envio e recebimento de denúncias."
+                className="w-full bg-[#141420] border border-white/[0.05] rounded-xl px-4 py-3 text-sm text-white focus:border-rose-500 outline-none min-h-[120px] resize-none"
+              ></textarea>
+              <button type="submit" className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl transition-all">
+                Confirmar Inativação
               </button>
             </form>
           </div>

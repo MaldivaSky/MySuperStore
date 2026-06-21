@@ -170,7 +170,7 @@ class UserSurveySerializer(serializers.ModelSerializer):
     class Meta:
         model = UserSurvey
         fields = [
-            "date_of_birth", "preferred_category", "education_level", 
+            "bio", "date_of_birth", "preferred_category", "education_level", 
             "marital_status", "gender", "preferred_brand", "profession", 
             "primary_intent", "other_interests", "updated_at"
         ]

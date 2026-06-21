@@ -14,23 +14,23 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, logout, user } = useAuthStore();
+  const { isAuthenticated, logout, user, _hydrated } = useAuthStore();
   const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (_hydrated && !isAuthenticated) {
       router.push("/login");
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, router, _hydrated]);
 
-  if (!isAuthenticated) return null;
+  if (!_hydrated || !isAuthenticated) return null;
 
   const tabs = [
-    { name: "Universo", href: "/dashboard", icon: Sparkles, exact: true },
+    { name: "Minha Conta", href: "/dashboard/account", icon: User },
     { name: "Pedidos", href: "/dashboard/orders", icon: ShoppingBag },
     { name: "Favoritos", href: "/dashboard/wishlist", icon: Heart },
-    { name: "Conta", href: "/dashboard/account", icon: User },
+    { name: "Universo (Recap)", href: "/dashboard", icon: Sparkles, exact: true },
   ];
 
   const initials = `${user?.first_name?.[0] || ""}${user?.last_name?.[0] || ""}`.toUpperCase();

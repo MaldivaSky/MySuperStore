@@ -167,9 +167,17 @@ function HeaderInner() {
 
                 <NotificationDropdown />
 
-                <Link href="/dashboard/account" className="p-1.5 rounded-full hover:bg-white/10 text-neutral-300 hover:text-white transition-colors relative group">
+                <Link 
+                  href="/dashboard/account" 
+                  onClick={() => {
+                    if (typeof window !== "undefined") {
+                      window.dispatchEvent(new Event("play_splash"));
+                    }
+                  }}
+                  className="flex items-center gap-2 p-1.5 pr-3 rounded-full hover:bg-white/10 text-neutral-300 hover:text-white transition-colors relative group"
+                >
                   {user?.avatar_url || (user as any)?.avatar ? (
-                    <div className="relative w-7 h-7 rounded-full overflow-hidden border border-white/20 bg-primary/20 flex items-center justify-center shrink-0">
+                    <div className="relative w-8 h-8 rounded-full overflow-hidden border border-white/20 bg-primary/20 flex items-center justify-center shrink-0">
                       <span className="absolute text-[11px] font-bold text-primary">
                         {user?.first_name?.charAt(0).toUpperCase() || ""}{user?.last_name?.charAt(0).toUpperCase() || ""}
                       </span>
@@ -181,13 +189,15 @@ function HeaderInner() {
                       />
                     </div>
                   ) : user?.first_name && user?.last_name ? (
-                    <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-[11px] font-bold text-primary border border-primary/30 shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-[12px] font-bold text-primary border border-primary/30 shrink-0">
                       {user.first_name.charAt(0).toUpperCase()}{user.last_name.charAt(0).toUpperCase()}
                     </div>
                   ) : (
-                    <User className="h-5 w-5 shrink-0" />
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <User className="h-5 w-5" />
+                    </div>
                   )}
-                  <span className="absolute top-14 right-0 scale-0 group-hover:scale-100 transition-all bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap z-50">Minha Conta</span>
+                  <span className="text-sm font-semibold whitespace-nowrap">Minha Conta</span>
                 </Link>
               </>
             ) : (
@@ -272,7 +282,12 @@ function HeaderInner() {
                     </Link>
                     <Link
                       href="/dashboard/account"
-                      onClick={() => setMobileOpen(false)}
+                      onClick={() => {
+                        setMobileOpen(false);
+                        if (typeof window !== "undefined") {
+                          window.dispatchEvent(new Event("play_splash"));
+                        }
+                      }}
                       className="flex-1 flex items-center justify-center gap-2 text-sm font-medium text-neutral-400 px-4 py-3 rounded-xl border border-white/[0.06] hover:bg-white/[0.04] transition-all"
                     >
                       <User className="h-4 w-4" /> Minha Conta
