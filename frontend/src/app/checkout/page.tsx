@@ -63,7 +63,7 @@ function CheckoutInner() {
 
   // Interest calculation helper
   const calculateInstallment = (n: number) => {
-    const total = cart?.total || 0;
+    const total = Number(cart?.total || 0);
     if (n <= 3) return total / n;
     const interestRate = 0.0199; // 1.99% a.m
     const pmt = total * interestRate * Math.pow(1 + interestRate, n) / (Math.pow(1 + interestRate, n) - 1);
@@ -256,12 +256,12 @@ function CheckoutInner() {
             <h3 className="font-bold text-lg mb-4 border-b border-white/10 pb-2">Resumo da Transação</h3>
             <div className="flex justify-between items-center mb-2">
               <span className="text-muted-foreground">Valor Pago</span>
-              <span className="font-bold">R$ {brl(method === "pix" ? (cart?.total || 0) * 0.95 : (cart?.total || 0))}</span>
+              <span className="font-bold">R$ {brl(method === "pix" ? Number(cart?.total || 0) * 0.95 : Number(cart?.total || 0))}</span>
             </div>
             {(cart?.coupon_code || method === "pix") && (
               <div className="flex justify-between items-center text-emerald-500 font-bold mt-3 pt-3 border-t border-white/10">
                 <span className="flex items-center gap-2">✨ Economia Total</span>
-                <span>R$ {brl(((cart?.subtotal || 0) - (cart?.total || 0)) + (method === "pix" ? (cart?.total || 0) * 0.05 : 0))}</span>
+                <span>R$ {brl((Number(cart?.subtotal || 0) - Number(cart?.total || 0)) + (method === "pix" ? Number(cart?.total || 0) * 0.05 : 0))}</span>
               </div>
             )}
           </div>
@@ -292,11 +292,11 @@ function CheckoutInner() {
           <div className="w-full bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-5 mb-6 text-left shadow-[0_0_15px_rgba(16,185,129,0.1)]">
             <div className="flex justify-between items-center mb-1">
               <span className="text-muted-foreground text-sm">Valor a Pagar:</span>
-              <span className="font-display font-black text-2xl text-foreground">R$ {brl((cart?.total || 0) * 0.95)}</span>
+              <span className="font-display font-black text-2xl text-foreground">R$ {brl(Number(cart?.total || 0) * 0.95)}</span>
             </div>
             <div className="flex justify-between items-center text-emerald-500 font-bold">
               <span className="text-xs">✨ Desconto PIX + Cupons aplicados:</span>
-              <span className="text-sm">Economia de R$ {brl(((cart?.subtotal || 0) - (cart?.total || 0)) + ((cart?.total || 0) * 0.05))}</span>
+              <span className="text-sm">Economia de R$ {brl((Number(cart?.subtotal || 0) - Number(cart?.total || 0)) + (Number(cart?.total || 0) * 0.05))}</span>
             </div>
           </div>
 
@@ -521,7 +521,7 @@ function CheckoutInner() {
                 {cart?.items.map((item) => (
                   <div key={item.id} className="flex gap-4">
                     <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-white/5 border border-border/20 shrink-0">
-                      <Image src={item.variant.product_image || "/placeholder.png"} alt={item.variant.product_name} fill className="object-cover" />
+                      <Image src={item.variant.product_image || "/placeholder.png"} alt={item.variant.product_name || "Produto"} fill className="object-cover" />
                     </div>
                     <div className="flex-grow flex flex-col justify-center">
                       <p className="font-bold text-sm line-clamp-2 leading-tight">{item.variant.product_name}</p>
@@ -536,20 +536,20 @@ function CheckoutInner() {
               <div className="mt-8 pt-6 border-t border-border/40 space-y-4">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Subtotal</span>
-                  <span>R$ {brl(cart?.items?.reduce((acc, item) => acc + (Number(item.variant.price || item.variant.product_base_price) * item.quantity), 0) || cart?.subtotal || 0)}</span>
+                  <span>R$ {brl(cart?.items?.reduce((acc, item) => acc + (Number(item.variant.price || item.variant.product_base_price) * item.quantity), 0) || Number(cart?.subtotal || 0))}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Frete</span>
                   <span className="text-green-500 font-semibold drop-shadow-[0_0_8px_rgba(34,197,94,0.4)]">Grátis</span>
                 </div>
 
-                {((cart?.subtotal || 0) > (cart?.total || 0) || method === "pix" || cart?.items?.some(i => Number(i.variant.price || i.variant.product_base_price) > Number(i.variant.effective_price))) && (
+                {(Number(cart?.subtotal || 0) > Number(cart?.total || 0) || method === "pix" || cart?.items?.some(i => Number(i.variant.price || i.variant.product_base_price) > Number(i.variant.effective_price))) && (
                   <div className="flex flex-col gap-2 mt-4 bg-emerald-500/5 p-4 rounded-xl border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
                     <span className="text-emerald-500 font-bold text-sm mb-1">Descontos Obtidos:</span>
                     
                     {(() => {
                       const originalSub = cart?.items?.reduce((acc, item) => acc + (Number(item.variant.price || item.variant.product_base_price) * item.quantity), 0) || 0;
-                      const prodDiscount = originalSub - (cart?.subtotal || 0);
+                      const prodDiscount = originalSub - Number(cart?.subtotal || 0);
                       return prodDiscount > 0 ? (
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-emerald-600/80">Desconto nos Produtos</span>
@@ -558,17 +558,17 @@ function CheckoutInner() {
                       ) : null;
                     })()}
                     
-                    {cart?.coupon_code && cart.subtotal > cart.total && (
+                    {cart?.coupon_code && Number(cart.subtotal) > Number(cart.total) && (
                       <div className="flex justify-between items-center text-sm">
                         <span className="text-emerald-600/80">Cupom ({cart.coupon_code})</span>
-                        <span className="text-emerald-600 font-bold">- R$ {brl(cart.subtotal - cart.total)}</span>
+                        <span className="text-emerald-600 font-bold">- R$ {brl(Number(cart.subtotal) - Number(cart.total))}</span>
                       </div>
                     )}
                     
                     {method === "pix" && (
                       <div className="flex justify-between items-center text-sm animate-in fade-in zoom-in duration-300">
                         <span className="text-emerald-600/80">Pagamento via PIX (5%)</span>
-                        <span className="text-emerald-600 font-bold">- R$ {brl((cart?.total || 0) * 0.05)}</span>
+                        <span className="text-emerald-600 font-bold">- R$ {brl(Number(cart?.total || 0) * 0.05)}</span>
                       </div>
                     )}
 
@@ -578,9 +578,9 @@ function CheckoutInner() {
                         - R$ {brl(
                           (() => {
                             const originalSub = cart?.items?.reduce((acc, item) => acc + (Number(item.variant.price || item.variant.product_base_price) * item.quantity), 0) || 0;
-                            const prodDiscount = originalSub - (cart?.subtotal || 0);
-                            const cupomDiscount = (cart?.subtotal || 0) - (cart?.total || 0);
-                            const pixDiscount = method === "pix" ? (cart?.total || 0) * 0.05 : 0;
+                            const prodDiscount = originalSub - Number(cart?.subtotal || 0);
+                            const cupomDiscount = Number(cart?.subtotal || 0) - Number(cart?.total || 0);
+                            const pixDiscount = method === "pix" ? Number(cart?.total || 0) * 0.05 : 0;
                             return prodDiscount + cupomDiscount + pixDiscount;
                           })()
                         )}
@@ -593,13 +593,13 @@ function CheckoutInner() {
                   <span className="font-bold text-lg">Total</span>
                   <div className="text-right">
                     <span className="font-display font-black text-4xl text-primary block leading-none">
-                      R$ {brl(method === "pix" ? (cart?.total || 0) * 0.95 : method === "credit_card" ? calculateInstallment(selectedInstallments) * selectedInstallments : (cart?.total || 0))}
+                      R$ {brl(method === "pix" ? Number(cart?.total || 0) * 0.95 : method === "credit_card" ? calculateInstallment(selectedInstallments) * selectedInstallments : Number(cart?.total || 0))}
                     </span>
                     {method === "credit_card" && selectedInstallments > 1 && (
                       <span className="text-xs text-muted-foreground mt-1 block">em {selectedInstallments}x de R$ {brl(calculateInstallment(selectedInstallments))}</span>
                     )}
                     {method === "pix" && (
-                      <span className="text-xs text-emerald-500 font-bold mt-1 block">✨ Você economizou R$ {brl((cart?.total || 0) * 0.05)} no PIX!</span>
+                      <span className="text-xs text-emerald-500 font-bold mt-1 block">✨ Você economizou R$ {brl(Number(cart?.total || 0) * 0.05)} no PIX!</span>
                     )}
                   </div>
                 </div>

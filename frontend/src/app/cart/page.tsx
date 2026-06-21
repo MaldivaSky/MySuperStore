@@ -225,7 +225,7 @@ export default function CartPage() {
                     <span>Subtotal ({cart.item_count} itens)</span>
                     <span className="line-through decoration-red-500/50">
                       De: R$ {Number(
-                        cart.items.reduce((acc, curr) => acc + (curr.variant.product_base_price * curr.quantity || Number(curr.subtotal)), 0)
+                        cart.items.reduce((acc, curr) => acc + ((curr.variant.product_base_price ? Number(curr.variant.product_base_price) : Number(curr.variant.effective_price)) * curr.quantity || Number(curr.subtotal)), 0)
                       ).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
