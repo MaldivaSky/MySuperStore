@@ -152,6 +152,8 @@ function HeaderInner() {
                   </Link>
                 )}
 
+                <NotificationDropdown />
+
                 <Link href="/dashboard/account" className="p-1.5 rounded-full hover:bg-white/10 text-neutral-300 hover:text-white transition-colors relative group">
                   {user?.avatar_url || (user as any)?.avatar ? (
                     <div className="relative w-7 h-7 rounded-full overflow-hidden border border-white/20 bg-primary/20 flex items-center justify-center shrink-0">
