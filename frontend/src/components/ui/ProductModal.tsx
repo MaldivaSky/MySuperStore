@@ -631,23 +631,23 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
                 </div>
 
                 {/* Footer Action (Sticky) */}
-                <div className="p-6 md:p-8 border-t border-border/40 bg-card/95 backdrop-blur-md sticky bottom-0 z-20">
+                <div className="px-5 py-3 md:px-6 md:py-3.5 border-t border-border/40 bg-card/95 backdrop-blur-md sticky bottom-0 z-20">
                   {cartMessage && (
-                    <div className={`mb-4 p-3 rounded-xl text-sm font-medium flex items-center gap-2 ${
+                    <div className={`mb-2 p-2 rounded-lg text-xs font-medium flex items-center gap-2 ${
                       cartMessage.includes("sucesso") ? "bg-green-500/10 text-green-600 border border-green-500/20" : "bg-destructive/10 text-destructive border border-destructive/20"
                     }`}>
-                      <Info className="h-4 w-4" /> {cartMessage}
+                      <Info className="h-3.5 w-3.5" /> {cartMessage}
                     </div>
                   )}
 
-                  <div className="flex gap-4 items-end">
-                    <div className="w-24 space-y-1.5 shrink-0">
-                      <label className="text-xs font-semibold text-muted-foreground">Quantidade</label>
+                  <div className="flex gap-3 items-center">
+                    <div className="w-20 space-y-1 shrink-0">
+                      <label className="text-[11px] font-semibold text-muted-foreground">Quantidade</label>
                       <select 
                         value={quantity}
                         onChange={(e) => setQuantity(Number(e.target.value))}
                         disabled={!selectedVariant || selectedVariant.stock === 0}
-                        className="w-full h-12 px-3 rounded-xl border border-border/60 bg-background/50 text-foreground focus:border-primary outline-none"
+                        className="w-full h-10 px-3 rounded-xl border border-border/60 bg-background/50 text-foreground text-sm focus:border-primary outline-none"
                       >
                         {[...Array(Math.min(10, selectedVariant?.stock || 1))].map((_, i) => (
                           <option key={i} value={i + 1}>{i + 1}</option>
@@ -658,12 +658,12 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
                     <button
                       onClick={handleAddToCart}
                       disabled={addingToCart || !selectedVariant || selectedVariant.stock === 0}
-                      className="flex-grow h-12 flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/95 font-bold transition-all shadow-lg hover:shadow-primary/20 disabled:opacity-50 disabled:hover:shadow-none"
+                      className="flex-grow h-10 flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/95 font-bold text-sm transition-all shadow-lg hover:shadow-primary/20 disabled:opacity-50 disabled:hover:shadow-none"
                     >
                       {addingToCart ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        <ShoppingCart className="h-5 w-5" />
+                        <ShoppingCart className="h-4 w-4" />
                       )}
                       {selectedVariant?.stock === 0 ? "Esgotado" : addingToCart ? "Adicionando..." : "Adicionar ao Carrinho"}
                     </button>
