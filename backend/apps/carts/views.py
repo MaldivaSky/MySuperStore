@@ -7,38 +7,12 @@ from .serializers import AddToCartSerializer, CartSerializer
 
 class BaseCartView:
     def get_cart(self, request):
-        if request.user.is_authenticated:
-            cart, _ = Cart.objects.get_or_create(user=request.user)
-            # Mesclar carrinho anônimo se existir
-            session_key = request.session.session_key
-            if session_key:
-                anon_cart = Cart.objects.filter(session_key=session_key).first()
-                if anon_cart:
-                    for item in anon_cart.items.all():
-                        user_item, created = CartItem.objects.get_or_create(
-                            cart=cart, variant=item.variant
-                        )
-                        if not created:
-                            user_item.quantity += item.quantity
-                        else:
-                            user_item.quantity = item.quantity
-                        
-                        # Garante que não ultrapasse o estoque
-                        if user_item.quantity > item.variant.stock:
-                            user_item.quantity = item.variant.stock
-                        user_item.save()
-                    anon_cart.delete()
-            return cart
-        else:
-            if not request.session.session_key:
-                request.session.create()
-            session_key = request.session.session_key
-            cart, _ = Cart.objects.get_or_create(session_key=session_key)
-            return cart
+        cart, _ = Cart.objects.get_or_create(user=request.user)
+        return cart
 
 
 class CartView(BaseCartView, generics.GenericAPIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -79,7 +53,7 @@ class CartView(BaseCartView, generics.GenericAPIView):
 
 
 class CartItemDetailView(BaseCartView, generics.GenericAPIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     queryset = CartItem.objects.all()
 
     def get_serializer_class(self):
@@ -145,7 +119,7 @@ from django.utils import timezone
 from .serializers import ApplyCouponSerializer
 
 class ApplyCouponView(BaseCartView, generics.GenericAPIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     serializer_class = ApplyCouponSerializer
 
     def post(self, request):

@@ -125,6 +125,11 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
 
   const handleAddToCart = async () => {
     if (!selectedVariant) return;
+    if (!isAuthenticated) {
+      setCartMessage("Você precisa estar logado para adicionar ao carrinho.");
+      toast("Você precisa estar logado para fazer compras no marketplace.", "error");
+      return;
+    }
     setAddingToCart(true);
     setCartMessage("");
     try {
