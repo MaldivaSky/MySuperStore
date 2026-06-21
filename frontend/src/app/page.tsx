@@ -24,11 +24,11 @@ import { OfficialLogo } from "@/components/Brand";
 import { WelcomeModal } from "@/components/ui/WelcomeModal";
 
 // Mock para o banner rotativo principal (Hero)
-const heroBanners = [
   {
     id: 1,
     title: "Apple Revolution",
     subtitle: "Descubra o novo iPhone 15 Pro Max em Titânio.",
+    coupon: "",
     cta: "Comprar Apple",
     image: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&q=80&w=2070",
     link: "/?search=iphone",
@@ -37,6 +37,7 @@ const heroBanners = [
     id: 2,
     title: "Lançamentos Nike",
     subtitle: "A vitrine exclusiva da marca. Conforto e performance.",
+    coupon: "",
     cta: "Explorar Loja Oficial",
     image: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&q=80&w=2070",
     link: "/s/nike",
@@ -44,10 +45,20 @@ const heroBanners = [
   {
     id: 3,
     title: "Especial Copa do Mundo",
-    subtitle: "Preparado para a emoção? Calçados e artigos esportivos.",
+    subtitle: "Preparado para a emoção? Ganhe 10% OFF em toda a loja!",
+    coupon: "HEXA",
     cta: "Ver Ofertas",
     image: "/world_cup_banner.png",
     link: "/?search=esporte",
+  },
+  {
+    id: 4,
+    title: "Primeira Compra",
+    subtitle: "Ganhe 30% OFF na sua primeira compra (*compras acima de R$100)",
+    coupon: "PRIMEIRACOMPRA",
+    cta: "Aproveitar Agora",
+    image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=2070",
+    link: "/",
   }
 ];
 
@@ -327,27 +338,42 @@ function StorePageContent() {
                 priority
               />
               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-4">
-                <motion.span 
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className="text-primary font-semibold tracking-wider uppercase mb-4 text-sm md:text-base bg-black/50 px-4 py-1 rounded-full backdrop-blur-sm"
-                >
-                  {heroBanners[activeBanner].subtitle}
-                </motion.span>
                 <motion.h1 
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                  className="text-4xl md:text-6xl lg:text-7xl font-display font-bold text-white mb-8 max-w-4xl"
+                  transition={{ delay: 0.3 }}
+                  className="text-4xl md:text-6xl lg:text-7xl font-display font-bold text-white mb-4 max-w-4xl drop-shadow-lg"
                 >
                   {heroBanners[activeBanner].title}
                 </motion.h1>
+                <motion.span 
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-white text-lg md:text-2xl font-medium mb-6 max-w-2xl drop-shadow-md"
+                >
+                  {heroBanners[activeBanner].subtitle}
+                </motion.span>
+
+                {heroBanners[activeBanner].coupon && (
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.5, type: "spring" }}
+                    className="mb-8 flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/30 px-6 py-3 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+                  >
+                    <span className="text-white/80 font-medium text-sm">Use o cupom:</span>
+                    <span className="bg-primary text-primary-foreground font-black text-xl px-4 py-1.5 rounded-xl border-2 border-dashed border-primary-foreground/30 uppercase tracking-widest">
+                      {heroBanners[activeBanner].coupon}
+                    </span>
+                  </motion.div>
+                )}
+
                 <motion.button 
                   onClick={() => router.push(heroBanners[activeBanner].link)}
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.5 }}
+                  transition={{ delay: 0.6 }}
                   className="bg-primary text-primary-foreground px-8 py-4 rounded-full font-bold text-lg hover:bg-primary/90 transition-all hover:scale-105 shadow-[0_0_20px_rgba(var(--primary),0.3)]"
                 >
                   {heroBanners[activeBanner].cta}

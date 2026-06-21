@@ -101,17 +101,22 @@ class GoogleLoginView(APIView):
             from django.utils import timezone
             
             # Busca ou cria o usuário pelo email
-            user, created = User.objects.get_or_create(
-                email=email,
-                defaults={
-                    "first_name": first_name,
-                    "last_name": last_name,
-                    "person_type": "PF",
-                    "role": role,
-                    "is_active": True,
-                    "email_verified_at": timezone.now(),
-                }
-            )
+            # Busca ou cria o usuário pelo email
+            try:
+                user = User.objects.get(email=email)
+                created = False
+            except User.DoesNotExist:
+                user = User.objects.create_user(
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name,
+                    person_type="PF",
+                    role=role,
+                )
+                user.is_active = True
+                user.email_verified_at = timezone.now()
+                user.save(update_fields=["is_active", "email_verified_at"])
+                created = True
 
             # Se o usuário já existia mas não estava ativo, ativa agora (pois o Google já validou o email)
             if not created and not user.is_active:
@@ -139,3 +144,5 @@ class GoogleLoginView(APIView):
 
         except ValueError:
             return Response({"detail": "Token do Google inválido."}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"detail": f"Erro interno: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

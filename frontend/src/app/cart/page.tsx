@@ -13,6 +13,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Trash2, ShoppingCart, ArrowRight, Loader2, Minus, Plus, CreditCard } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { ProductModal } from "@/components/ui/ProductModal";
 
 export default function CartPage() {
   const router = useRouter();
@@ -22,6 +23,9 @@ export default function CartPage() {
   
   const [couponCode, setCouponCode] = useState("");
   const [applyingCoupon, setApplyingCoupon] = useState(false);
+
+  const [selectedProductSlug, setSelectedProductSlug] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const loadCart = async () => {
     try {
@@ -134,12 +138,20 @@ export default function CartPage() {
                   animate={{ opacity: 1, x: 0 }}
                   className="flex flex-col sm:flex-row gap-6 p-4 rounded-2xl border border-border/40 bg-card/40 hover:bg-card/70 transition-all items-center"
                 >
-                  <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-white/5 shrink-0 border border-border/20">
+                  <div 
+                    className="relative w-24 h-24 rounded-xl overflow-hidden bg-white/5 shrink-0 border border-border/20 cursor-pointer hover:border-primary/50 transition-colors"
+                    onClick={() => {
+                      if (item.variant.product_slug) {
+                        setSelectedProductSlug(item.variant.product_slug);
+                        setIsModalOpen(true);
+                      }
+                    }}
+                  >
                     <Image
                       src={item.variant.product_image || "/placeholder.png"}
                       alt={item.variant.product_name || "Produto"}
                       fill
-                      className="object-cover"
+                      className="object-cover hover:scale-110 transition-transform duration-500"
                     />
                   </div>
                   
@@ -211,6 +223,14 @@ export default function CartPage() {
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between text-muted-foreground">
                     <span>Subtotal ({cart.item_count} itens)</span>
+                    <span className="line-through decoration-red-500/50">
+                      De: R$ {Number(
+                        cart.items.reduce((acc, curr) => acc + (curr.variant.product_base_price * curr.quantity || Number(curr.subtotal)), 0)
+                      ).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between font-semibold text-primary">
+                    <span>Para:</span>
                     <span>R$ {Number(cart.subtotal).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
@@ -266,6 +286,17 @@ export default function CartPage() {
           </div>
         )}
       </main>
+
+      {selectedProductSlug && (
+        <ProductModal 
+          slug={selectedProductSlug}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setTimeout(() => setSelectedProductSlug(null), 300);
+          }}
+        />
+      )}
     </div>
   );
 }

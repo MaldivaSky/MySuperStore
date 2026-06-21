@@ -108,7 +108,7 @@ class SellerDashboardSerializer(serializers.ModelSerializer):
         fields = [
             "id", "store_name", "slug", "status", "commission_rate",
             "stripe_authorized", "stripe_onboarding_complete", "pix_key",
-            "strike_count",
+            "strike_count", "max_installments",
             "total_products", "available_products",
             "total_orders", "pending_payout",
         ]
@@ -136,7 +136,7 @@ class SellerUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Seller
-        fields = ["description", "logo", "banner", "banner2", "banner3", "pix_key"]
+        fields = ["description", "logo", "banner", "banner2", "banner3", "pix_key", "max_installments"]
 
 
 from .models import ChatRoom, ChatMessage

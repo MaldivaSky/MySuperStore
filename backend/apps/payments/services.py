@@ -47,6 +47,13 @@ class StripeService:
                         "type": "destination_charge",
                         "seller_id": str(seller.id),
                     },
+                    payment_method_options={
+                        "card": {
+                            "installments": {
+                                "enabled": True
+                            }
+                        }
+                    }
                 )
                 return intent
 
@@ -60,6 +67,13 @@ class StripeService:
                 "order_number": order.order_number,
                 "type": "separate_transfers",
             },
+            payment_method_options={
+                "card": {
+                    "installments": {
+                        "enabled": True
+                    }
+                }
+            }
         )
         return intent
 

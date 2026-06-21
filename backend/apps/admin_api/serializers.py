@@ -36,7 +36,7 @@ class AdminSellerListSerializer(serializers.ModelSerializer):
         model = Seller
         fields = [
             "id", "store_name", "slug", "status", "created_at",
-            "user_email", "user_name"
+            "user_email", "user_name", "max_installments"
         ]
 
     def get_user_name(self, obj):

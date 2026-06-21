@@ -72,12 +72,14 @@ class ProductVariantSerializer(serializers.ModelSerializer):
     product_description = serializers.CharField(source="product.description", read_only=True)
     product_image = serializers.SerializerMethodField()
     product_base_price = serializers.DecimalField(source="product.base_price", read_only=True, max_digits=10, decimal_places=2)
+    product_slug = serializers.CharField(source="product.slug", read_only=True)
+    seller_max_installments = serializers.SerializerMethodField()
 
     class Meta:
         model = ProductVariant
         fields = [
             "id", "sku", "attributes", "price", "effective_price", 
-            "stock", "is_active", "product_name", "product_description", "product_image", "product_base_price"
+            "stock", "is_active", "product_name", "product_description", "product_image", "product_base_price", "product_slug", "seller_max_installments"
         ]
 
     def get_effective_price(self, obj):
@@ -87,6 +89,12 @@ class ProductVariantSerializer(serializers.ModelSerializer):
         if obj.price is not None:
             return obj.price
         return product.base_price if product else None
+
+    def get_seller_max_installments(self, obj):
+        product = self.context.get("product", obj.product)
+        if product and product.seller:
+            return product.seller.max_installments
+        return 12
 
     def get_product_image(self, obj):
         request = self.context.get("request")

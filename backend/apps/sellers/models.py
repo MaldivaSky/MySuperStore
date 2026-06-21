@@ -25,6 +25,9 @@ class Seller(models.Model):
     # Comissão da plataforma: Padrão 15% (0.1500)
     commission_rate = models.DecimalField(max_digits=5, decimal_places=4, default="0.1500")
     
+    # Regras de Venda
+    max_installments = models.PositiveIntegerField(default=12, help_text="Número máximo de parcelas permitidas para os produtos desta loja.")
+    
     # Moderação e Banimento
     strike_count = models.PositiveIntegerField(default=0, help_text="Quantidade de infrações graves (produtos ilícitos).")
     
