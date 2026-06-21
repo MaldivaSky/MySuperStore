@@ -35,6 +35,20 @@ export const metadata: Metadata = {
     type: "website",
     locale: "pt_BR",
     siteName: "MySuperStore",
+    images: [
+      {
+        url: "/logo.png",
+        width: 1200,
+        height: 630,
+        alt: "MySuperStore Logo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MySuperStore — O Centro da Gravidade Comercial",
+    description: "Explore um universo multi-vendedor.",
+    images: ["/logo.png"],
   },
 };
 
