@@ -20,7 +20,8 @@ import {
   Send,
   Activity,
   Star,
-  MessageCircle
+  MessageCircle,
+  CheckCircle2
 } from "lucide-react";
 
 function DashboardContent() {
