@@ -133,6 +133,7 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
             avatar_file = validated_data.pop("avatar")
             if avatar_file:
                 import base64
+                avatar_file.seek(0)
                 encoded = base64.b64encode(avatar_file.read()).decode('utf-8')
                 mime_type = getattr(avatar_file, 'content_type', 'image/jpeg')
                 instance.avatar_base64 = f"data:{mime_type};base64,{encoded}"

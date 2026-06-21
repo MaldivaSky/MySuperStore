@@ -21,11 +21,11 @@ export function NotificationDropdown() {
     disconnectWebSocket 
   } = useNotificationStore();
   
-  const { isAuthenticated, token } = useAuthStore();
+  const { isAuthenticated, accessToken } = useAuthStore();
 
   useEffect(() => {
-    if (isAuthenticated && token) {
-      connectWebSocket(token);
+    if (isAuthenticated && accessToken) {
+      connectWebSocket(accessToken);
     } else {
       disconnectWebSocket();
     }
@@ -36,7 +36,7 @@ export function NotificationDropdown() {
     }, 60000);
     
     return () => clearInterval(interval);
-  }, [isAuthenticated, token, connectWebSocket, disconnectWebSocket, fetchNotifications]);
+  }, [isAuthenticated, accessToken, connectWebSocket, disconnectWebSocket, fetchNotifications]);
 
   // Handle click outside to close
   useEffect(() => {

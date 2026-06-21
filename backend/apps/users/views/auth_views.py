@@ -142,7 +142,7 @@ class GoogleLoginView(APIView):
                 status=status.HTTP_200_OK,
             )
 
-        except ValueError:
-            return Response({"detail": "Token do Google inválido."}, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError as e:
+            return Response({"detail": f"Token do Google inválido. ({str(e)})"}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"detail": f"Erro interno: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

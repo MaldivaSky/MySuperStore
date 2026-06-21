@@ -32,7 +32,7 @@ const heroBanners = [
     coupon: "",
     cta: "Comprar Apple",
     image: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&q=80&w=2070",
-    link: "/",
+    link: "/?search=apple",
   },
   {
     id: 2,
@@ -41,7 +41,7 @@ const heroBanners = [
     coupon: "",
     cta: "Explorar Loja Oficial",
     image: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&q=80&w=2070",
-    link: "/s/nike",
+    link: "/?search=nike",
   },
   {
     id: 3,
@@ -50,7 +50,7 @@ const heroBanners = [
     coupon: "HEXA",
     cta: "Ver Ofertas",
     image: "/world_cup_banner.png",
-    link: "/",
+    link: "/?search=esporte",
   },
   {
     id: 4,
@@ -59,7 +59,7 @@ const heroBanners = [
     coupon: "PRIMEIRACOMPRA",
     cta: "Aproveitar Agora",
     image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=2070",
-    link: "/",
+    link: "/?search=oferta",
   }
 ];
 
@@ -127,6 +127,8 @@ function StorePageContent() {
     profession: "",
     primary_intent: ""
   });
+  
+  const isFirstMount = useRef(true);
 
   // Load product if parameter exists in url (sharing link)
   const productParam = searchParams.get("product");
@@ -184,17 +186,22 @@ function StorePageContent() {
     setPage(1);
     setHasMore(true);
     fetchProducts(1);
-    
-    // Scroll smoothly to the top of the store content, not the page header
-    setTimeout(() => {
-      const storeContent = document.getElementById('store-content');
-      if (storeContent) {
-        const yOffset = -100; // Account for sticky header
-        const y = storeContent.getBoundingClientRect().top + window.scrollY + yOffset;
-        window.scrollTo({ top: y, behavior: 'smooth' });
-      }
-    }, 100);
   }, [selectedCategory, minPrice, maxPrice, brand, rating, ordering, discountMin, search]);
+
+  useEffect(() => {
+    if (!isFirstMount.current) {
+      setTimeout(() => {
+        const storeContent = document.getElementById('store-content');
+        if (storeContent) {
+          const yOffset = -100; // Account for sticky header
+          const y = storeContent.getBoundingClientRect().top + window.scrollY + yOffset;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+      }, 100);
+    } else {
+      isFirstMount.current = false;
+    }
+  }, [search, selectedCategory]);
 
   useEffect(() => {
     if (page > 1) {
@@ -380,7 +387,7 @@ function StorePageContent() {
                 )}
 
                 <motion.button 
-                  onClick={() => router.push(heroBanners[activeBanner].link)}
+                  onClick={() => router.push(heroBanners[activeBanner].link, { scroll: false })}
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.6 }}

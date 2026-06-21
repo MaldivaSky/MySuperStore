@@ -91,8 +91,8 @@ def run_seed():
             "promotional_price": "1999.90",
             "is_free_shipping": True,
             "images": [
-                "https://images.unsplash.com/photo-1518605368461-1ee71168f8fb?auto=format&fit=crop&q=80&w=1000",
-                "https://images.unsplash.com/photo-1584735174965-48c48d4daf27?auto=format&fit=crop&q=80&w=1000"
+                "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=1000",
+                "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&q=80&w=1000"
             ]
         },
         {
@@ -103,8 +103,8 @@ def run_seed():
             "promotional_price": None,
             "is_free_shipping": True,
             "images": [
-                "https://images.unsplash.com/photo-1508344928928-7137b29de216?auto=format&fit=crop&q=80&w=1000",
-                "https://images.unsplash.com/photo-1514989940723-e8e51635b782?auto=format&fit=crop&q=80&w=1000"
+                "https://images.unsplash.com/photo-1514989940723-e8e51635b782?auto=format&fit=crop&q=80&w=1000",
+                "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&q=80&w=1000"
             ]
         },
         {
@@ -128,8 +128,8 @@ def run_seed():
             "promotional_price": None,
             "is_free_shipping": True,
             "images": [
-                "https://images.unsplash.com/photo-1584583570840-0a2d81577782?auto=format&fit=crop&q=80&w=1000",
-                "https://images.unsplash.com/photo-1584735174965-48c48d4daf27?auto=format&fit=crop&q=80&w=1000"
+                "https://images.unsplash.com/photo-1600185365926-3a2ce3cdb9eb?auto=format&fit=crop&q=80&w=1000",
+                "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=1000"
             ]
         },
         {
