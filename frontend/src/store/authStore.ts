@@ -46,6 +46,8 @@ export const useAuthStore = create<AuthState>()(
           if (tokens.refresh) {
             localStorage.setItem("refresh_token", tokens.refresh);
           }
+          // Cookie leve para o middleware Next.js (Edge) detectar sessão ativa sem expor o token
+          document.cookie = "mss_auth=1; path=/; max-age=604800; SameSite=Lax";
         }
         set({
           accessToken: tokens.access,
@@ -59,6 +61,7 @@ export const useAuthStore = create<AuthState>()(
         if (typeof window !== "undefined") {
           localStorage.removeItem("access_token");
           localStorage.removeItem("refresh_token");
+          document.cookie = "mss_auth=; path=/; max-age=0; SameSite=Lax";
         }
         set({
           accessToken: null,

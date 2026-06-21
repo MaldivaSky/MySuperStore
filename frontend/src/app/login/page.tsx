@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { SaturnMark } from "@/components/Brand";
 import { useAuthStore } from "@/store/authStore";
@@ -15,6 +15,8 @@ import { GoogleLogin } from "@react-oauth/google";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get("next") || null;
   const loginStore = useAuthStore((state) => state.login);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,8 +36,8 @@ export default function LoginPage() {
 
       const userRes = await authApi.me();
       loginStore(data, userRes.data);
-      
-      router.push(userRes.data.is_seller ? "/seller/dashboard" : "/");
+
+      router.push(nextPath || (userRes.data.is_seller ? "/seller/dashboard" : "/"));
     } catch (err: any) {
       console.error(err);
       setError(err.response?.data?.detail || "Email ou senha incorretos.");
@@ -53,7 +55,7 @@ export default function LoginPage() {
       localStorage.setItem("access_token", data.access);
       localStorage.setItem("refresh_token", data.refresh);
       loginStore({ access: data.access, refresh: data.refresh }, data.user);
-      router.push(data.user.is_seller ? "/seller/dashboard" : "/");
+      router.push(nextPath || (data.user.is_seller ? "/seller/dashboard" : "/"));
     } catch (err: any) {
       setError(err.response?.data?.detail || "Erro no login do Google.");
     } finally {

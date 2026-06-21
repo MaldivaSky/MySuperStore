@@ -8,7 +8,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { api, wishlistApi, userApi } from "@/lib/api";
+import { api, catalogApi, wishlistApi, userApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { useToast } from "@/components/ui/Toast";
 import { useCartStore } from "@/store/cartStore";
@@ -99,6 +99,7 @@ function StorePageContent() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   
   const observerTarget = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number>(0);
@@ -256,48 +257,38 @@ function StorePageContent() {
   };
 
   const fetchProducts = async (pageNum: number) => {
-    if (pageNum === 1) setLoading(true);
+    if (pageNum === 1) { setLoading(true); setFetchError(null); }
     else setLoadingMore(true);
 
     try {
-      let params = new URLSearchParams();
-      if (selectedCategory) params.append("category", selectedCategory);
-      if (minPrice) params.append("min_price", minPrice);
-      if (maxPrice) params.append("max_price", maxPrice);
-      if (brand) params.append("brand", brand);
-      if (rating) params.append("rating", rating.toString());
-      if (ordering) params.append("ordering", ordering);
-      if (discountMin) {
-        params.append("discount_min", discountMin.toString());
-        params.append("flash_sale_only", "true");
-      }
-      if (search) {
-        params.append("search", search);
-      } else if (!selectedCategory && !brand) {
-        // Enviar histórico apenas se não houver busca/filtro forte ativo
-        try {
-          const recentSearches = JSON.parse(localStorage.getItem('recent_searches') || '[]').join(',');
-          const recentCategories = JSON.parse(localStorage.getItem('recent_categories') || '[]').join(',');
-          if (recentSearches) params.append("recent_searches", recentSearches);
-          if (recentCategories) params.append("recent_categories", recentCategories);
-        } catch (e) {}
-      }
-      params.append("page", pageNum.toString());
+      // Monta params como objeto limpo — axios serializa corretamente sem URLSearchParams manual
+      const params: Record<string, string | number> = { page: pageNum };
+      if (selectedCategory) params.category = selectedCategory;
+      if (minPrice)         params.min_price = minPrice;
+      if (maxPrice)         params.max_price = maxPrice;
+      if (brand)            params.brand = brand;
+      if (rating)           params.rating = rating;
+      if (ordering)         params.ordering = ordering;
+      if (discountMin)      params.discount_min = discountMin;
+      if (search)           params.search = search;
 
-      const res = await api.get(`/catalog/products/?${params.toString()}`);
-      if (res.data.results) {
-        if (pageNum === 1) {
-          setProducts(res.data.results);
-        } else {
-          setProducts((prev) => [...prev, ...res.data.results]);
-        }
-        setHasMore(res.data.next !== null);
-      } else {
-        setProducts(res.data);
-        setHasMore(false);
-      }
-    } catch (error) {
+      const res = await catalogApi.products(params);
+      const results: any[] = res.data.results ?? res.data;
+      if (pageNum === 1) setProducts(results);
+      else setProducts((prev) => [...prev, ...results]);
+      setHasMore(res.data.next != null);
+    } catch (error: any) {
       console.error("Erro ao buscar produtos:", error);
+      if (pageNum === 1) {
+        const status = error?.response?.status;
+        setFetchError(
+          status === 404 ? "Endpoint de produtos não encontrado. Verifique a configuração da API." :
+          status === 500 ? "Erro interno do servidor. Tente novamente em instantes." :
+          !navigator.onLine ? "Sem conexão com a internet." :
+          "Não foi possível carregar os produtos. Verifique sua conexão."
+        );
+        setProducts([]);
+      }
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -664,10 +655,20 @@ function StorePageContent() {
                   <div key={i} className="animate-pulse bg-secondary/30 rounded-2xl h-[260px] sm:h-[400px]"></div>
                 ))}
               </div>
+            ) : fetchError ? (
+              <div className="text-center py-20 bg-destructive/5 rounded-2xl border border-destructive/20">
+                <p className="text-destructive font-semibold mb-1">Erro ao carregar produtos</p>
+                <p className="text-sm text-muted-foreground mb-4">{fetchError}</p>
+                <button onClick={() => fetchProducts(1)} className="text-primary hover:underline text-sm font-semibold">
+                  Tentar novamente
+                </button>
+              </div>
             ) : products.length === 0 ? (
               <div className="text-center py-20 bg-secondary/10 rounded-2xl border border-border/50">
-                <p className="text-muted-foreground font-semibold">Nenhum produto encontrado com estes filtros.</p>
-                <button onClick={clearFilters} className="mt-4 text-primary hover:underline">Limpar filtros</button>
+                <p className="text-muted-foreground font-semibold">
+                  {search ? `Nenhum resultado para "${search}".` : "Nenhum produto encontrado com estes filtros."}
+                </p>
+                <button onClick={clearFilters} className="mt-4 text-primary hover:underline text-sm">Limpar filtros</button>
               </div>
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
