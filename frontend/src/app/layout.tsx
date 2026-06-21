@@ -54,6 +54,7 @@ export const metadata: Metadata = {
 
 import { ToastProvider } from "@/components/ui/Toast";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { BottomNav } from "@/components/BottomNav";
 
 export default function RootLayout({
   children,
@@ -71,7 +72,11 @@ export default function RootLayout({
         >
           <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "1019190620170-a86680qpdbrjgu1vk31st0lts4ju3cm5.apps.googleusercontent.com"}>
             <ToastProvider>
-              {children}
+              {/* pb-20 no mobile garante que o conteúdo não fica atrás da BottomNav */}
+              <div className="pb-20 md:pb-0">
+                {children}
+              </div>
+              <BottomNav />
             </ToastProvider>
           </GoogleOAuthProvider>
         </ThemeProvider>

@@ -65,7 +65,7 @@ export default function AccountPage() {
   useEffect(() => {
     if (user) {
       setProfile({ first_name: user.first_name || "", last_name: user.last_name || "", phone: user.phone || "" });
-      setAvatarPreview(user.avatar_url || null);
+      setAvatarPreview(user.avatar_url || (user as any)?.avatar || null);
     }
     usersApi.survey().then((res) => {
       const s = res.data;

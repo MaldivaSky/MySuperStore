@@ -82,6 +82,7 @@ function StorePageContent() {
   const [loading, setLoading] = useState(true);
   const searchParams = useSearchParams();
   const search = searchParams.get("search") || "";
+  const discountParam = searchParams.get("discount");
   const { toast } = useToast();
   const { isAuthenticated } = useAuthStore();
   const router = useRouter();
@@ -100,6 +101,8 @@ function StorePageContent() {
   const [loadingMore, setLoadingMore] = useState(false);
   
   const observerTarget = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number>(0);
+  const touchStartY = useRef<number>(0);
 
   const [activeBanner, setActiveBanner] = useState(0);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
@@ -138,6 +141,11 @@ function StorePageContent() {
       setIsModalOpen(true);
     }
   }, [productParam]);
+
+  // Inicializa discountMin a partir do query param (?discount=10) — usado pela BottomNav "Ofertas"
+  useEffect(() => {
+    if (discountParam) setDiscountMin(Number(discountParam));
+  }, [discountParam]);
 
   // Check onboarding survey
   useEffect(() => {
@@ -325,18 +333,49 @@ function StorePageContent() {
       <Header />
 
       <main className="flex-grow">
-        {/* Ante-Página (Brand Splash) */}
-        <section className="relative w-full max-w-7xl mx-auto px-6 py-20 flex flex-col items-center text-center">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="flex flex-col items-center w-full">
-            <OfficialLogo className="w-[300px] md:w-[480px] lg:w-[650px] h-auto drop-shadow-[0_0_60px_rgba(212,175,55,0.4)] mb-2" />
-            <h2 className="font-mono text-xs md:text-lg uppercase tracking-[0.4em] text-[#E6B53C] font-black drop-shadow-[0_0_15px_rgba(230,181,60,0.6)]">
+        {/* Brand Splash — full-bleed, sem container, logo dominante */}
+        <section className="relative w-full overflow-hidden bg-gradient-to-b from-[#02020a] via-[#05050f] to-background py-8 md:py-16">
+          {/* Glow ambiente dourado — cresce no hover via group */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-[260px] md:w-[560px] h-[120px] md:h-[220px] bg-[#E6B53C]/12 rounded-full blur-[70px] md:blur-[110px]" />
+          </div>
+          {/* Estrelas de fundo sutis */}
+          <div className="absolute inset-0 pointer-events-none opacity-30" style={{backgroundImage:"radial-gradient(circle, #E6B53C 1px, transparent 1px)", backgroundSize:"60px 60px"}} />
+
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+            className="relative z-10 flex flex-col items-center px-4"
+          >
+            {/* Logo ocupa quase toda a largura do mobile — passa a pegada da marca */}
+            <OfficialLogo className="w-[90vw] max-w-[540px] md:w-[480px] lg:w-[660px] h-auto drop-shadow-[0_0_90px_rgba(230,181,60,0.55)] mb-2 md:mb-3" />
+            <h2 className="font-mono text-[10px] sm:text-sm md:text-base uppercase tracking-[0.45em] text-[#E6B53C] font-black drop-shadow-[0_0_18px_rgba(230,181,60,0.9)]">
               Onde Tudo Orbita Você
             </h2>
           </motion.div>
         </section>
 
-        {/* Hero Banner Section */}
-        <section className="relative h-[60vh] min-h-[500px] w-full overflow-hidden bg-black">
+        {/* Hero Banner Section — swipeable no mobile */}
+        <section
+          className="relative h-[55vh] min-h-[300px] sm:min-h-[420px] w-full overflow-hidden bg-black"
+          onTouchStart={(e) => {
+            touchStartX.current = e.touches[0].clientX;
+            touchStartY.current = e.touches[0].clientY;
+          }}
+          onTouchEnd={(e) => {
+            const dx = touchStartX.current - e.changedTouches[0].clientX;
+            const dy = touchStartY.current - e.changedTouches[0].clientY;
+            // Só dispara se for swipe horizontal dominante (> 50px, dx > dy)
+            if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+              setActiveBanner((prev) =>
+                dx > 0
+                  ? (prev + 1) % heroBanners.length
+                  : (prev - 1 + heroBanners.length) % heroBanners.length
+              );
+            }
+          }}
+        >
           <AnimatePresence mode="wait">
             <motion.div
               key={activeBanner}
@@ -420,8 +459,39 @@ function StorePageContent() {
           </div>
         </section>
 
+        {/* Category Chips — mobile only, sticky abaixo do header, padrão Shopee/Amazon */}
+        {categories.length > 0 && (
+          <div className="md:hidden sticky top-16 z-40 bg-background/90 backdrop-blur-sm border-b border-white/[0.05]">
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 py-2.5">
+              <button
+                onClick={() => setSelectedCategory(null)}
+                className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-bold border transition-all duration-200 ${
+                  !selectedCategory
+                    ? "bg-primary border-primary text-primary-foreground shadow-[0_0_12px_rgba(230,181,60,0.35)]"
+                    : "border-white/[0.12] text-neutral-400 bg-transparent"
+                }`}
+              >
+                Todos
+              </button>
+              {categories.map((cat: any) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.slug)}
+                  className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-bold border transition-all duration-200 whitespace-nowrap ${
+                    selectedCategory === cat.slug
+                      ? "bg-primary border-primary text-primary-foreground shadow-[0_0_12px_rgba(230,181,60,0.35)]"
+                      : "border-white/[0.12] text-neutral-400 bg-transparent"
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Content Wrapper */}
-        <div id="store-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col md:flex-row gap-8">
+        <div id="store-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12 flex flex-col md:flex-row gap-8">
           
           {/* Sidebar / Filters (Ultra Premium Design) */}
           <div className={`md:w-72 flex-shrink-0 flex flex-col space-y-8 ${isFilterOpen ? 'block' : 'hidden md:block'}`}>
@@ -562,36 +632,36 @@ function StorePageContent() {
 
           {/* Main Grid */}
           <div className="flex-1">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-2xl font-display font-bold flex items-center gap-2">
-                <TrendingUp className="text-primary h-6 w-6" />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-8 gap-2">
+              <h2 className="text-base sm:text-2xl font-display font-bold flex items-center gap-2">
+                <TrendingUp className="text-primary h-4 w-4 sm:h-6 sm:w-6" />
                 {selectedCategory ? categories.find(c => c.slug === selectedCategory)?.name : "Tendências da Semana"}
               </h2>
-              <div className="flex items-center gap-4">
-                <select 
-                  value={ordering} 
+              <div className="flex items-center gap-2">
+                <select
+                  value={ordering}
                   onChange={(e) => setOrdering(e.target.value)}
-                  className="bg-secondary/40 border border-border text-sm rounded-lg px-4 py-2 outline-none focus:border-primary text-foreground font-medium appearance-none min-w-[150px] cursor-pointer"
+                  className="flex-1 sm:flex-none bg-secondary/40 border border-border text-xs sm:text-sm rounded-lg px-3 py-2 outline-none focus:border-primary text-foreground font-medium appearance-none sm:min-w-[150px] cursor-pointer"
                 >
                   <option value="">Mais Relevantes</option>
                   <option value="base_price">Menor Preço</option>
                   <option value="-base_price">Maior Preço</option>
                   <option value="-avg_rating">Melhores Avaliações</option>
                 </select>
-                
-                <button 
-                  className="md:hidden flex items-center gap-2 text-sm font-semibold text-muted-foreground border border-border px-3 py-1.5 rounded-lg"
+
+                <button
+                  className="md:hidden flex items-center gap-1.5 text-xs font-semibold text-muted-foreground border border-border px-3 py-2 rounded-lg whitespace-nowrap"
                   onClick={() => setIsFilterOpen(!isFilterOpen)}
                 >
-                  <Filter className="h-4 w-4" /> Filtros
+                  <Filter className="h-3.5 w-3.5" /> Filtros
                 </button>
               </div>
             </div>
 
             {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="animate-pulse bg-secondary/30 rounded-2xl h-[400px]"></div>
+                  <div key={i} className="animate-pulse bg-secondary/30 rounded-2xl h-[260px] sm:h-[400px]"></div>
                 ))}
               </div>
             ) : products.length === 0 ? (
@@ -600,7 +670,7 @@ function StorePageContent() {
                 <button onClick={clearFilters} className="mt-4 text-primary hover:underline">Limpar filtros</button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                 {products.map((product) => {
                   const totalStock = product.variants?.reduce((acc: number, v: any) => acc + (v.stock || 0), 0) || 0;
                   const isLowStock = totalStock > 0 && totalStock <= 5;
@@ -620,28 +690,28 @@ function StorePageContent() {
                     onClick={() => handleProductClick(product)}
                   >
                     {/* Badge */}
-                    <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+                    <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 flex flex-col gap-1">
                       {product.is_flash_sale && (
-                        <div className="bg-yellow-500 text-black text-xs font-extrabold px-3 py-1 rounded-full shadow-lg flex items-center gap-1 animate-pulse">
-                          <Zap className="w-3 h-3" /> RELÂMPAGO
+                        <div className="bg-yellow-500 text-black text-[9px] sm:text-xs font-extrabold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-lg flex items-center gap-1 animate-pulse">
+                          <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> RELÂMPAGO
                         </div>
                       )}
                       {isLowStock && (
-                        <div className="bg-red-500 text-white text-xs font-extrabold px-3 py-1 rounded-full shadow-lg flex items-center gap-1 animate-pulse">
-                          🔥 APENAS {totalStock} RESTANTES!
+                        <div className="bg-red-500 text-white text-[9px] sm:text-xs font-extrabold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-lg flex items-center gap-1 animate-pulse">
+                          🔥 {totalStock} LEFT!
                         </div>
                       )}
                       {!product.is_flash_sale && !isLowStock && product.avg_rating >= 4.5 && (
-                        <div className="bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                          TOP RATED
+                        <div className="bg-primary text-primary-foreground text-[9px] sm:text-xs font-bold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-lg">
+                          TOP
                         </div>
                       )}
                     </div>
-                    
-                    {/* Wishlist Button */}
-                    <button 
+
+                    {/* Wishlist — sempre visível no mobile (sem hover), aparece no hover no desktop */}
+                    <button
                       onClick={async (e) => {
-                        e.stopPropagation(); // Previne abrir o modal do produto
+                        e.stopPropagation();
                         try {
                           await wishlistApi.add(product);
                           toast("Produto adicionado aos favoritos!", "success");
@@ -649,9 +719,9 @@ function StorePageContent() {
                           toast("Faça login para favoritar produtos.", "error");
                         }
                       }}
-                      className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-red-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+                      className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 p-1.5 sm:p-2 rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-red-500 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                     >
-                      <Heart className="h-4 w-4" />
+                      <Heart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </button>
 
                     <div className="aspect-[4/5] relative bg-secondary/30 overflow-hidden">
@@ -677,57 +747,57 @@ function StorePageContent() {
                         </div>
                       )}
                     </div>
-                    <div className="p-5">
-                      <div className="flex justify-between items-start mb-2">
-                        <p className="text-xs font-semibold text-primary uppercase tracking-wider">
+                    <div className="p-2.5 sm:p-5">
+                      <div className="flex justify-between items-start mb-1 sm:mb-2">
+                        <p className="text-[10px] sm:text-xs font-semibold text-primary uppercase tracking-wider truncate max-w-[70%]">
                           {product.brand?.name || product.category?.name || "Premium"}
                         </p>
-                        <div className="flex items-center gap-1 text-xs font-semibold">
-                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                        <div className="flex items-center gap-0.5 text-[10px] sm:text-xs font-semibold shrink-0">
+                          <Star className="h-2.5 w-2.5 sm:h-3 sm:w-3 fill-yellow-400 text-yellow-400" />
                           {product.avg_rating ? Number(product.avg_rating).toFixed(1) : "5.0"}
                         </div>
                       </div>
-                      <h3 className="font-semibold text-lg leading-tight mb-2 group-hover:text-primary transition-colors line-clamp-2">
+                      <h3 className="font-semibold text-xs sm:text-base leading-tight mb-1.5 sm:mb-2 group-hover:text-primary transition-colors line-clamp-2">
                         {product.name}
                       </h3>
-                      
-                      {/* Logística */}
-                      <div className="flex flex-col gap-1 mb-3">
+
+                      {/* Logística — frete grátis aparece no mobile, prazo só no desktop */}
+                      <div className="flex flex-col gap-0.5 sm:gap-1 mb-1.5 sm:mb-3">
                         {product.is_free_shipping && (
-                          <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full w-fit flex items-center gap-1">
-                            <Truck className="w-3 h-3" /> FRETE GRÁTIS
+                          <span className="text-[9px] sm:text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 sm:px-2 py-0.5 rounded-full w-fit flex items-center gap-1">
+                            <Truck className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> FRETE GRÁTIS
                           </span>
                         )}
-                        <span className="text-[11px] text-neutral-400 flex items-center gap-1">
+                        <span className="hidden sm:flex text-[11px] text-neutral-400 items-center gap-1">
                           <Clock className="w-3 h-3" /> Chega em aprox. {product.estimated_delivery_days || 5} dias
                         </span>
                       </div>
 
                       <div className="flex items-end justify-between mt-auto">
-                        <div className="space-y-0.5">
+                        <div className="space-y-0.5 min-w-0">
                           {product.is_flash_sale ? (
                             <>
-                              <div className="flex items-center gap-2">
-                                <p className="text-xs text-muted-foreground line-through font-medium">
+                              <div className="flex items-center gap-1">
+                                <p className="text-[9px] sm:text-xs text-muted-foreground line-through font-medium">
                                   R$ {Number(product.base_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                                 </p>
-                                <span className="text-[10px] font-black text-black bg-yellow-400 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
-                                  <Zap className="w-2.5 h-2.5 fill-current" />
+                                <span className="text-[8px] sm:text-[10px] font-black text-black bg-yellow-400 px-1 sm:px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                                  <Zap className="w-2 h-2 sm:w-2.5 sm:h-2.5 fill-current" />
                                   -{product.discount_percentage}%
                                 </span>
                               </div>
-                              <p className="font-display font-bold text-xl text-yellow-500">
+                              <p className="font-display font-bold text-sm sm:text-xl text-yellow-500">
                                 R$ {Number(product.promotional_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                               </p>
                             </>
                           ) : (
-                            <p className="font-display font-bold text-xl text-foreground">
+                            <p className="font-display font-bold text-sm sm:text-xl text-foreground">
                               R$ {Number(product.base_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                             </p>
                           )}
                         </div>
-                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary transition-colors mb-0.5">
-                          <ShoppingBag className="h-4 w-4 text-primary group-hover:text-primary-foreground" />
+                        <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary transition-colors mb-0.5 shrink-0">
+                          <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary group-hover:text-primary-foreground" />
                         </div>
                       </div>
                     </div>
