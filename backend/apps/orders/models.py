@@ -21,6 +21,12 @@ class Coupon(models.Model):
     valid_from = models.DateTimeField()
     valid_to = models.DateTimeField()
     active = models.BooleanField(default=True)
+    
+    # Regras de Negócio Avançadas
+    is_first_purchase_only = models.BooleanField(default=False)
+    min_cart_value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    max_uses = models.PositiveIntegerField(null=True, blank=True)
+    current_uses = models.PositiveIntegerField(default=0)
 
     class Meta:
         verbose_name = "cupom"

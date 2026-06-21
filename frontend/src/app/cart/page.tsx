@@ -243,6 +243,23 @@ export default function CartPage() {
                       <span>Aplicado</span>
                     </div>
                   )}
+                  {(() => {
+                    const baseTotal = cart.items.reduce((acc, curr) => {
+                      const originalPrice = curr.variant.price ? Number(curr.variant.price) : Number(curr.variant.product_base_price);
+                      return acc + (originalPrice * curr.quantity);
+                    }, 0);
+                    const finalTotal = Number(cart.total);
+                    const diff = baseTotal - finalTotal;
+                    if (diff > 0) {
+                      return (
+                        <div className="flex justify-between font-bold text-emerald-500 bg-emerald-500/10 p-2 rounded-lg mt-2 shadow-[0_0_10px_rgba(16,185,129,0.1)] border border-emerald-500/20">
+                          <span>✨ Descontos Obtidos</span>
+                          <span>- R$ {diff.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
 
                 <form onSubmit={applyCoupon} className="flex gap-2 pt-2">

@@ -589,6 +589,23 @@ function CheckoutInner() {
                   </div>
                 )}
                 
+                {(() => {
+                  const baseTotal = cart?.items.reduce((acc, curr) => {
+                    const originalPrice = curr.variant.price ? Number(curr.variant.price) : Number(curr.variant.product_base_price);
+                    return acc + (originalPrice * curr.quantity);
+                  }, 0) || 0;
+                  const finalTotal = Number(cart?.total || 0);
+                  const diff = baseTotal - finalTotal;
+                  if (diff > 0) {
+                    return (
+                      <div className="flex justify-between font-bold text-emerald-500 bg-emerald-500/10 p-3 rounded-xl mt-3 shadow-[0_0_10px_rgba(16,185,129,0.1)] border border-emerald-500/20">
+                        <span>✨ Total de Descontos Obtidos</span>
+                        <span>- R$ {brl(diff)}</span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
                 <div className="pt-6 border-t border-border/40 flex justify-between items-end mt-4">
                   <span className="font-bold text-lg">Total</span>
                   <div className="text-right">

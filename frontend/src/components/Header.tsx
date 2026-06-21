@@ -152,14 +152,24 @@ function HeaderInner() {
                 )}
 
                 <Link href="/dashboard/account" className="p-1.5 rounded-full hover:bg-white/10 text-neutral-300 hover:text-white transition-colors relative group">
-                  {user?.avatar_url ? (
-                    <img src={user.avatar_url} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-white/20" />
+                  {user?.avatar_url || (user as any)?.avatar ? (
+                    <div className="relative w-7 h-7 rounded-full overflow-hidden border border-white/20 bg-primary/20 flex items-center justify-center shrink-0">
+                      <span className="absolute text-[11px] font-bold text-primary">
+                        {user?.first_name?.charAt(0).toUpperCase() || ""}{user?.last_name?.charAt(0).toUpperCase() || ""}
+                      </span>
+                      <img 
+                        src={user?.avatar_url || (user as any)?.avatar} 
+                        alt="Avatar" 
+                        className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
+                        onError={(e) => { e.currentTarget.style.opacity = '0'; }}
+                      />
+                    </div>
                   ) : user?.first_name && user?.last_name ? (
-                    <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-[11px] font-bold text-primary border border-primary/30">
+                    <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-[11px] font-bold text-primary border border-primary/30 shrink-0">
                       {user.first_name.charAt(0).toUpperCase()}{user.last_name.charAt(0).toUpperCase()}
                     </div>
                   ) : (
-                    <User className="h-5 w-5" />
+                    <User className="h-5 w-5 shrink-0" />
                   )}
                   <span className="absolute top-14 right-0 scale-0 group-hover:scale-100 transition-all bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap z-50">Minha Conta</span>
                 </Link>

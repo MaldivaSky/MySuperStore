@@ -23,7 +23,8 @@ User = get_user_model()
 def download_image(url, filename):
     print(f"Baixando imagem de {url}...")
     try:
-        response = requests.get(url, timeout=15)
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        response = requests.get(url, headers=headers, timeout=15)
         if response.status_code == 200:
             return ContentFile(response.content, name=filename)
     except Exception as e:

@@ -184,7 +184,16 @@ function StorePageContent() {
     setPage(1);
     setHasMore(true);
     fetchProducts(1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Scroll smoothly to the top of the store content, not the page header
+    setTimeout(() => {
+      const storeContent = document.getElementById('store-content');
+      if (storeContent) {
+        const yOffset = -100; // Account for sticky header
+        const y = storeContent.getBoundingClientRect().top + window.scrollY + yOffset;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    }, 100);
   }, [selectedCategory, minPrice, maxPrice, brand, rating, ordering, discountMin, search]);
 
   useEffect(() => {
@@ -405,7 +414,7 @@ function StorePageContent() {
         </section>
 
         {/* Content Wrapper */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col md:flex-row gap-8">
+        <div id="store-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col md:flex-row gap-8">
           
           {/* Sidebar / Filters (Ultra Premium Design) */}
           <div className={`md:w-72 flex-shrink-0 flex flex-col space-y-8 ${isFilterOpen ? 'block' : 'hidden md:block'}`}>

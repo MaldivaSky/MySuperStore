@@ -4,7 +4,11 @@ from .models import Product
 
 
 class ProductFilter(django_filters.FilterSet):
-    category = django_filters.CharFilter(field_name="category__slug", lookup_expr="exact")
+    category = django_filters.CharFilter(method="filter_category")
+
+    def filter_category(self, queryset, name, value):
+        from django.db.models import Q
+        return queryset.filter(Q(category__slug=value) | Q(category__parent__slug=value))
     seller = django_filters.CharFilter(field_name="seller__slug", lookup_expr="exact")
     brand = django_filters.CharFilter(field_name="brand__slug", lookup_expr="exact")
     min_price = django_filters.NumberFilter(field_name="base_price", lookup_expr="gte")
@@ -30,12 +34,20 @@ class ProductFilter(django_filters.FilterSet):
         # Filtra na memória pois o django orm math pode ser complexo, mas dá pra usar F() expressions
         from django.db.models import F, FloatField, ExpressionWrapper
         # (base - promo) / base * 100 >= value
+        
+        # O cálculo pode dar 29.999% quando o desconto é 30% devido a problemas de precisão de float no ORM.
+        # Portanto, aplicamos uma margem de -0.5 para o threshold.
+        try:
+            threshold = float(value) - 0.5
+        except (ValueError, TypeError):
+            threshold = 0
+
         qs = qs.annotate(
             discount_calc=ExpressionWrapper(
                 ((F('base_price') - F('promotional_price')) / F('base_price')) * 100.0,
                 output_field=FloatField()
             )
-        ).filter(discount_calc__gte=value)
+        ).filter(discount_calc__gte=threshold)
         return qs
 
     def filter_flash_sale(self, queryset, name, value):

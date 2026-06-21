@@ -3,5 +3,5 @@ builder = "DOCKERFILE"
 dockerfilePath = "backend/Dockerfile.prod"
 
 [deploy]
-startCommand = "sh -c 'python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120'"
+startCommand = "sh -c 'python manage.py migrate --noinput && python manage.py seed_coupons && python manage.py collectstatic --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120'"
 restartPolicyType = "ON_FAILURE"

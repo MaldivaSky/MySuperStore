@@ -127,7 +127,7 @@ class ApplyCouponView(BaseCartView, generics.GenericAPIView):
         cart = self.get_cart(request)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        code = serializer.validated_data["code"]
+        code = serializer.validated_data["code"].strip().upper()
 
         try:
             coupon = Coupon.objects.get(code=code, active=True)
@@ -137,6 +137,20 @@ class ApplyCouponView(BaseCartView, generics.GenericAPIView):
         now = timezone.now()
         if not (coupon.valid_from <= now <= coupon.valid_to):
             return Response({"detail": "Este cupom não está vigente."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Regras de Negócio: Primeira compra
+        if coupon.is_first_purchase_only:
+            from apps.orders.models import Order
+            if Order.objects.filter(user=request.user).exists():
+                return Response({"detail": "Este cupom é válido apenas para a primeira compra."}, status=status.HTTP_400_BAD_REQUEST)
+                
+        # Valor mínimo do carrinho
+        if coupon.min_cart_value and cart.subtotal < coupon.min_cart_value:
+            return Response({"detail": f"Este cupom exige um valor mínimo de R$ {coupon.min_cart_value}."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Limite de usos globais
+        if coupon.max_uses is not None and coupon.current_uses >= coupon.max_uses:
+            return Response({"detail": "Este cupom esgotou o limite de usos."}, status=status.HTTP_400_BAD_REQUEST)
 
         cart.coupon = coupon
         cart.save()
