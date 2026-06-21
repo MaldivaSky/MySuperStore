@@ -19,10 +19,16 @@ class CartSerializer(serializers.ModelSerializer):
     total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     item_count = serializers.IntegerField(read_only=True)
     coupon_code = serializers.CharField(source="coupon.code", read_only=True, default=None)
+    coupon_discount_percentage = serializers.DecimalField(
+        source="coupon.discount_percentage", max_digits=5, decimal_places=2, read_only=True, default=None
+    )
+    coupon_discount_amount = serializers.DecimalField(
+        source="coupon.discount_amount", max_digits=10, decimal_places=2, read_only=True, default=None
+    )
 
     class Meta:
         model = Cart
-        fields = ["id", "items", "subtotal", "total", "item_count", "coupon_code"]
+        fields = ["id", "items", "subtotal", "total", "item_count", "coupon_code", "coupon_discount_percentage", "coupon_discount_amount"]
 
 class ApplyCouponSerializer(serializers.Serializer):
     code = serializers.CharField(max_length=50)

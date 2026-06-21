@@ -560,7 +560,19 @@ function CheckoutInner() {
                     
                     {cart?.coupon_code && Number(cart.subtotal) > Number(cart.total) && (
                       <div className="flex justify-between items-center text-sm">
-                        <span className="text-emerald-600/80">Cupom ({cart.coupon_code})</span>
+                        <span className="text-emerald-600/80 flex items-center gap-1.5">
+                          Cupom ({cart.coupon_code})
+                          {(cart as any).coupon_discount_percentage && (
+                            <span className="text-xs font-bold bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded-full">
+                              -{Number((cart as any).coupon_discount_percentage).toFixed(0)}%
+                            </span>
+                          )}
+                          {!(cart as any).coupon_discount_percentage && (cart as any).coupon_discount_amount && (
+                            <span className="text-xs font-bold bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded-full">
+                              -R$ {Number((cart as any).coupon_discount_amount).toFixed(2)}
+                            </span>
+                          )}
+                        </span>
                         <span className="text-emerald-600 font-bold">- R$ {brl(Number(cart.subtotal) - Number(cart.total))}</span>
                       </div>
                     )}
