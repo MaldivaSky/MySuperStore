@@ -131,3 +131,20 @@ class BuyerRecapView(APIView):
         })
 
 
+from apps.users.models import Notification
+from apps.users.serializers import NotificationSerializer
+from rest_framework.decorators import action
+
+class NotificationViewSet(viewsets.ModelViewSet):
+    """CRUD para Notificações do usuário autenticado."""
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(user=self.request.user)
+
+    @action(detail=False, methods=['post'])
+    def mark_all_read(self, request):
+        self.get_queryset().update(is_read=True)
+        return Response({"status": "success"})
+

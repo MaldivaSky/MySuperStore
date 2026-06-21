@@ -95,6 +95,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     def get_avatar_url(self, obj):
         request = self.context.get("request")
+        if getattr(obj, "avatar_base64", None):
+            return obj.avatar_base64
         if obj.avatar and request:
             return request.build_absolute_uri(obj.avatar.url)
         return None
@@ -125,6 +127,21 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["first_name", "last_name", "phone", "avatar"]
+
+    def update(self, instance, validated_data):
+        if "avatar" in validated_data:
+            avatar_file = validated_data.pop("avatar")
+            if avatar_file:
+                import base64
+                encoded = base64.b64encode(avatar_file.read()).decode('utf-8')
+                mime_type = getattr(avatar_file, 'content_type', 'image/jpeg')
+                instance.avatar_base64 = f"data:{mime_type};base64,{encoded}"
+            else:
+                instance.avatar_base64 = None
+            # Evita salvar no file system da Railway
+            instance.avatar = None
+            
+        return super().update(instance, validated_data)
 
 
 # ── Change password ──────────────────────────────────────────────────────────
@@ -157,6 +174,15 @@ class UserSurveySerializer(serializers.ModelSerializer):
             "primary_intent", "other_interests", "updated_at"
         ]
         read_only_fields = ["updated_at"]
+
+
+from .models import Notification
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ["id", "title", "message", "type", "related_entity_id", "is_read", "created_at"]
+        read_only_fields = ["id", "created_at"]
 
 
 # ── Addresses ────────────────────────────────────────────────────────────────

@@ -7,6 +7,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useCartStore } from "@/store/cartStore";
 import { ThemeToggle } from "./ThemeToggle";
 import { BrandLogo, SaturnMark, OfficialLogo } from "./Brand";
+import { NotificationDropdown } from "./NotificationDropdown";
 import {
   Store,
   LayoutDashboard,
@@ -180,6 +181,8 @@ function HeaderInner() {
                 <span className="absolute top-14 right-0 scale-0 group-hover:scale-100 transition-all bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap z-50">Entrar</span>
               </Link>
             )}
+
+            <NotificationDropdown />
 
             <Link href="/cart" className="p-2 rounded-full hover:bg-white/10 text-neutral-300 hover:text-white transition-colors relative group">
               <div className="relative">

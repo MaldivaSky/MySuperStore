@@ -24,6 +24,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     phone = models.CharField(max_length=20, unique=True, null=True, blank=True)
     role = models.CharField(max_length=20, choices=UserRole.choices, default=UserRole.CUSTOMER)
     avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
+    avatar_base64 = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=False)  # ativo somente após verificação de e-mail
     is_staff = models.BooleanField(default=False)
     email_verified_at = models.DateTimeField(null=True, blank=True)
@@ -111,4 +112,23 @@ class UserSurvey(models.Model):
 
     def __str__(self):
         return f"Interesses de {self.user.email}"
+
+
+class Notification(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notifications")
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    type = models.CharField(max_length=50) # e.g. 'order_update', 'new_chat_message', 'review'
+    related_entity_id = models.CharField(max_length=255, blank=True, null=True) # UUID of order, chat, etc.
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "notificação"
+        verbose_name_plural = "notificações"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Notificação: {self.title} para {self.user.email}"
 

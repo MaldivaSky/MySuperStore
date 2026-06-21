@@ -165,6 +165,8 @@ export const userApi = {
   createAddress: (data: any) => api.post("/users/me/addresses/", data),
   updateAddress: (id: string, data: any) => api.patch(`/users/me/addresses/${id}/`, data),
   deleteAddress: (id: string) => api.delete(`/users/me/addresses/${id}/`),
+  getNotifications: () => api.get("/users/me/notifications/"),
+  markAllNotificationsRead: () => api.post("/users/me/notifications/mark_all_read/")
 };
 
 export const chatApi = {

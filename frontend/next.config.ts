@@ -17,6 +17,20 @@ const nextConfig: NextConfig = {
       // { protocol: "https", hostname: "*.r2.cloudflarestorage.com" },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/dashboard/recap',
+        destination: '/dashboard',
+        permanent: true,
+      },
+      {
+        source: '/dashboard/account',
+        destination: '/dashboard',
+        permanent: false, // temporarily fallback to dashboard since account page seems to have bugs for some users
+      }
+    ];
+  },
   async rewrites() {
     // Extrai a base URL do backend (remove /api/v1) para o proxy de media local
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";

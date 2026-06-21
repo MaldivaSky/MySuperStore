@@ -66,6 +66,37 @@ class SellerSubOrderViewSet(viewsets.ModelViewSet):
         sub_order.status = new_status
         sub_order.save()
         
+        # Disparar Notificação para o Comprador
+        from apps.users.models import Notification
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        
+        status_display = dict(OrderStatus.choices).get(new_status, new_status)
+        notif = Notification.objects.create(
+            user=sub_order.order.user,
+            title=f"Atualização do Pedido #{sub_order.order.order_number[-6:]}",
+            message=f"Seu pedido na loja {sub_order.seller.store_name} mudou para: {status_display}.",
+            type="order",
+            related_entity_id=str(sub_order.id)
+        )
+        
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"user_{sub_order.order.user.id}_notifications",
+            {
+                "type": "send_notification",
+                "data": {
+                    "id": str(notif.id),
+                    "title": notif.title,
+                    "message": notif.message,
+                    "type": notif.type,
+                    "related_entity_id": notif.related_entity_id,
+                    "is_read": False,
+                    "created_at": notif.created_at.isoformat()
+                }
+            }
+        )
+        
         serializer = self.get_serializer(sub_order)
         return Response(serializer.data)
 

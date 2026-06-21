@@ -65,4 +65,37 @@ class ChatConsumer(AsyncWebsocketConsumer):
         room = ChatRoom.objects.get(id=room_id)
         msg = ChatMessage.objects.create(room=room, sender=user, message=message_text)
         room.save(update_fields=["updated_at"])  # Atualiza last activity
+        
+        # Notificar o outro participante (comprador ou lojista)
+        target_user = room.customer if user.id == room.seller.user.id else room.seller.user
+        
+        from apps.users.models import Notification
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        
+        notif = Notification.objects.create(
+            user=target_user,
+            title=f"Nova mensagem de {user.first_name or user.email}",
+            message=message_text[:50] + ("..." if len(message_text) > 50 else ""),
+            type="chat",
+            related_entity_id=str(room.id)
+        )
+        
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"user_{target_user.id}_notifications",
+            {
+                "type": "send_notification",
+                "data": {
+                    "id": str(notif.id),
+                    "title": notif.title,
+                    "message": notif.message,
+                    "type": notif.type,
+                    "related_entity_id": notif.related_entity_id,
+                    "is_read": False,
+                    "created_at": notif.created_at.isoformat()
+                }
+            }
+        )
+        
         return msg
