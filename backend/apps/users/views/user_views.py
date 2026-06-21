@@ -82,3 +82,52 @@ class AddressViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Address.objects.filter(user=self.request.user)
 
+
+from django.db.models import Sum, Count
+from apps.orders.models import Order, OrderItem, OrderStatus
+
+class BuyerRecapView(APIView):
+    """GET /api/v1/users/me/recap/ — Gera o 'Spotify Recap' das compras do usuário."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        
+        # Filtra apenas pedidos pagos/confirmados/entregues
+        valid_statuses = [OrderStatus.CONFIRMED, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED]
+        orders = Order.objects.filter(user=user, status__in=valid_statuses)
+        
+        total_orders = orders.count()
+        total_spent = orders.aggregate(total=Sum("total"))["total"] or 0
+        
+        # Pega todos os itens comprados nesses pedidos
+        items = OrderItem.objects.filter(sub_order__order__in=orders)
+        total_items = items.aggregate(qtd=Sum("quantity"))["qtd"] or 0
+        
+        # Descobre a categoria favorita
+        # Como o nome da categoria fica salvo no histórico (ou usando o relacional se quisermos)
+        # Vamos pegar os produtos dos OrderItems e agrupar pela categoria do produto (que está salva no histórico de preço, ou podemos navegar para variante)
+        favorite_category = "Explorador"
+        
+        # Agrupa pelo nome do produto, pois não replicamos o nome da categoria direto no OrderItem,
+        # mas podemos extrair navegando `variant__product__category__name`
+        category_stats = items.values("variant__product__category__name").annotate(
+            count=Count("id")
+        ).order_by("-count")
+        
+        if category_stats and category_stats[0]["variant__product__category__name"]:
+            favorite_category = category_stats[0]["variant__product__category__name"]
+
+        first_order = orders.order_by("created_at").first()
+        first_purchase_date = first_order.created_at.isoformat() if first_order else None
+
+        return Response({
+            "member_since": user.date_joined.isoformat(),
+            "first_purchase_date": first_purchase_date,
+            "total_spent": total_spent,
+            "total_orders": total_orders,
+            "total_items": total_items,
+            "favorite_category": favorite_category
+        })
+
+

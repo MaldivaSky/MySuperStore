@@ -32,7 +32,7 @@ const heroBanners = [
     coupon: "",
     cta: "Comprar Apple",
     image: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&q=80&w=2070",
-    link: "/?search=iphone",
+    link: "/",
   },
   {
     id: 2,
@@ -50,7 +50,7 @@ const heroBanners = [
     coupon: "HEXA",
     cta: "Ver Ofertas",
     image: "/world_cup_banner.png",
-    link: "/?search=esporte",
+    link: "/",
   },
   {
     id: 4,

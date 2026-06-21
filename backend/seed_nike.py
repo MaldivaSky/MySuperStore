@@ -21,14 +21,6 @@ settings.CELERY_TASK_ALWAYS_EAGER = True
 User = get_user_model()
 
 def download_image(url, filename):
-    print(f"Baixando imagem de {url}...")
-    try:
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-        response = requests.get(url, headers=headers, timeout=15)
-        if response.status_code == 200:
-            return ContentFile(response.content, name=filename)
-    except Exception as e:
-        print(f"Erro ao baixar imagem: {e}")
     return None
 
 def run_seed():
@@ -51,11 +43,9 @@ def run_seed():
 
     brand, _ = Brand.objects.get_or_create(slug="nike", defaults={"name": "Nike"})
     
-    if not brand.logo:
-        logo_file = download_image("https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Logo_NIKE.svg/1200px-Logo_NIKE.svg.png", "nike_logo.png")
-        if logo_file:
-            brand.logo.save("nike_logo.png", logo_file)
-            brand.save()
+    if not brand.logo and not brand.external_url:
+        brand.external_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Logo_NIKE.svg/1200px-Logo_NIKE.svg.png"
+        brand.save()
 
     cat, _ = Category.objects.get_or_create(
         slug="esportes",
@@ -74,21 +64,17 @@ def run_seed():
     )
     
     # Atualiza Assets da Loja (Logo e 3 Banners)
-    if not seller.logo:
-        s_logo = download_image("https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Logo_NIKE.svg/1200px-Logo_NIKE.svg.png", "nike_store_logo.png")
-        if s_logo: seller.logo.save("nike_store_logo.png", s_logo)
+    if not seller.logo and not seller.logo_external:
+        seller.logo_external = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Logo_NIKE.svg/1200px-Logo_NIKE.svg.png"
     
-    if not seller.banner:
-        b1 = download_image("https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=2070", "nike_banner1.jpg")
-        if b1: seller.banner.save("nike_banner1.jpg", b1)
+    if not seller.banner and not seller.banner_external:
+        seller.banner_external = "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=2070"
         
-    if not seller.banner2:
-        b2 = download_image("https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&q=80&w=2070", "nike_banner2.jpg")
-        if b2: seller.banner2.save("nike_banner2.jpg", b2)
+    if not seller.banner2 and not seller.banner2_external:
+        seller.banner2_external = "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&q=80&w=2070"
         
-    if not seller.banner3:
-        b3 = download_image("https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&q=80&w=2070", "nike_banner3.jpg")
-        if b3: seller.banner3.save("nike_banner3.jpg", b3)
+    if not seller.banner3 and not seller.banner3_external:
+        seller.banner3_external = "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&q=80&w=2070"
 
     seller.save()
 
@@ -189,16 +175,14 @@ def run_seed():
         ProductVariant.objects.create(product=prod, sku=f"SKU-{prod.slug}-41", stock=25)
         ProductVariant.objects.create(product=prod, sku=f"SKU-{prod.slug}-42", stock=20)
         
-        # Imagens Múltiplas
+        # Imagens Múltiplas usando external_url
         for idx, img_url in enumerate(p_data["images"]):
-            img_file = download_image(img_url, f"{prod.slug}_{idx}.jpg")
-            if img_file:
-                ProductImage.objects.create(
-                    product=prod,
-                    image=img_file,
-                    is_primary=(idx == 0),
-                    order=idx
-                )
+            ProductImage.objects.create(
+                product=prod,
+                external_url=img_url,
+                is_primary=(idx == 0),
+                order=idx
+            )
         print(f"Produto '{prod.name}' semeado com {len(p_data['images'])} imagens.")
     
     print("Semente (Seed) PREMIUM Finalizada com Sucesso! 5 Produtos impecáveis adicionados.")

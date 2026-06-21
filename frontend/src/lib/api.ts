@@ -158,6 +158,7 @@ export const reviewApi = {
 };
 
 export const userApi = {
+  getRecap: () => api.get("/users/me/recap/"),
   getSurvey: () => api.get("/users/me/survey/"),
   saveSurvey: (data: any) => api.post("/users/me/survey/", data),
   getAddresses: () => api.get("/users/me/addresses/"),

@@ -5,7 +5,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ShoppingBag, Heart, User, LogOut } from "lucide-react";
+import { ShoppingBag, Heart, User, LogOut, Sparkles } from "lucide-react";
 import { useEffect } from "react";
 
 export default function DashboardLayout({
@@ -26,6 +26,7 @@ export default function DashboardLayout({
   if (!isAuthenticated) return null;
 
   const links = [
+    { name: "Meu Universo", href: "/dashboard", icon: Sparkles, exact: true },
     { name: "Meus Pedidos", href: "/dashboard/orders", icon: ShoppingBag },
     { name: "Lista de Desejos", href: "/dashboard/wishlist", icon: Heart },
     { name: "Minha Conta", href: "/dashboard/account", icon: User },
@@ -52,7 +53,7 @@ export default function DashboardLayout({
                     key={link.href}
                     href={link.href}
                     className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${
-                      isActive 
+                      (link.exact ? pathname === link.href : pathname.startsWith(link.href))
                         ? "bg-primary text-primary-foreground font-semibold shadow-md" 
                         : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground font-medium"
                     }`}

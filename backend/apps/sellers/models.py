@@ -19,9 +19,16 @@ class Seller(models.Model):
     slug = models.SlugField(max_length=160, unique=True)
     description = models.TextField(blank=True)
     logo = models.ImageField(upload_to="sellers/logos/", blank=True, null=True)
+    logo_external = models.URLField(max_length=500, blank=True, null=True)
+    
+    # Storefront customization
     banner = models.ImageField(upload_to="sellers/banners/", blank=True, null=True)
+    banner_external = models.URLField(max_length=500, blank=True, null=True)
     banner2 = models.ImageField(upload_to="sellers/banners/", blank=True, null=True)
+    banner2_external = models.URLField(max_length=500, blank=True, null=True)
     banner3 = models.ImageField(upload_to="sellers/banners/", blank=True, null=True)
+    banner3_external = models.URLField(max_length=500, blank=True, null=True)
+    
     # Comissão da plataforma: Padrão 15% (0.1500)
     commission_rate = models.DecimalField(max_digits=5, decimal_places=4, default="0.1500")
     

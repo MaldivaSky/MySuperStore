@@ -9,10 +9,12 @@ from .models import (
 PROFANITY = {"merda", "bosta", "caralho", "porra", "fuder", "arrombado", "safado", "idiota"}
 
 
-def get_clean_image_url(image_field, request=None):
+def get_clean_image_url(image_field, request=None, external_url=None):
+    if external_url:
+        return external_url
     if not image_field:
         return None
-    name = image_field.name or ""
+    name = getattr(image_field, "name", "")
     if "dummyjson.com" in name or "unsplash.com" in name or "loremflickr.com" in name or "http" in name:
         clean_name = name.replace("%3A", ":")
         if clean_name.startswith("https:/") and not clean_name.startswith("https://"):
@@ -47,7 +49,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
         fields = ["id", "image", "is_primary", "order"]
 
     def get_image(self, obj):
-        return get_clean_image_url(obj.image, self.context.get("request"))
+        return get_clean_image_url(obj.image, self.context.get("request"), getattr(obj, "external_url", None))
 
 class ProductImageUploadSerializer(serializers.ModelSerializer):
     class Meta:
@@ -109,7 +111,7 @@ class ProductVariantSerializer(serializers.ModelSerializer):
 
         primary = next((i for i in images if i.is_primary), None) or (images[0] if images else None)
         if primary:
-            return get_clean_image_url(primary.image, request)
+            return get_clean_image_url(primary.image, request, getattr(primary, "external_url", None))
         return None
 
 
@@ -167,9 +169,14 @@ class CategoryTreeSerializer(serializers.ModelSerializer):
 # -- Marcas --------------------------------------------------------------------
 
 class BrandSerializer(serializers.ModelSerializer):
+    logo = serializers.SerializerMethodField()
+
     class Meta:
         model = Brand
         fields = ["id", "name", "slug", "logo"]
+
+    def get_logo(self, obj):
+        return get_clean_image_url(obj.logo, self.context.get("request"), getattr(obj, "external_url", None))
 
 
 # -- Reviews -------------------------------------------------------------------
@@ -268,7 +275,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             images = list(obj.images.all())
         primary = next((i for i in images if i.is_primary), None) or (images[0] if images else None)
         if primary:
-            return get_clean_image_url(primary.image, request)
+            return get_clean_image_url(primary.image, request, getattr(primary, "external_url", None))
         return None
 
     def get_min_price(self, obj):

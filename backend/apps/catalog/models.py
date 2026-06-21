@@ -19,6 +19,7 @@ class Category(models.Model):
     slug = models.SlugField(max_length=110, unique=True)
     description = models.TextField(blank=True)
     image = models.ImageField(upload_to="categories/", blank=True, null=True)
+    external_url = models.URLField(max_length=500, blank=True, null=True, help_text="URL externa para imagens (usado caso S3 não esteja ativo)")
     parent = models.ForeignKey(
         "self", on_delete=models.SET_NULL, null=True, blank=True, related_name="children"
     )
@@ -42,6 +43,7 @@ class Brand(models.Model):
     name = models.CharField(max_length=100, unique=True)
     slug = models.SlugField(max_length=110, unique=True)
     logo = models.ImageField(upload_to="brands/", blank=True, null=True)
+    external_url = models.URLField(max_length=500, blank=True, null=True)
 
     class Meta:
         verbose_name = "marca"
@@ -131,7 +133,8 @@ class ProductSpecification(models.Model):
 class ProductImage(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="images")
-    image = models.ImageField(upload_to="products/")
+    image = models.ImageField(upload_to="products/", blank=True, null=True)
+    external_url = models.URLField(max_length=500, blank=True, null=True)
     is_primary = models.BooleanField(default=False)
     order = models.PositiveSmallIntegerField(default=0)
 
