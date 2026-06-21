@@ -25,7 +25,7 @@ def send_order_confirmation_email_task(order_id):
         "shipping": order.shipping,
         "discount": discount,
         "total": order.total,
-        "orders_url": "http://localhost:3000/dashboard/orders"
+        "orders_url": f"{settings.FRONTEND_URL}/dashboard/orders"
     }
 
     html_content = render_to_string("emails/order_confirmation.html", context)
@@ -66,7 +66,7 @@ def send_seller_sale_notification_email_task(order_id):
             "items": [{"quantity": i.quantity, "product_name": i.product_name, "unit_price": i.unit_price} for i in sub_order.items.all()],
             "commission": sub_order.commission,
             "seller_amount": sub_order.seller_amount,
-            "dashboard_url": "http://localhost:3000/dashboard/seller/orders"
+            "dashboard_url": f"{settings.FRONTEND_URL}/seller/dashboard"
         }
 
         html_content = render_to_string("emails/seller_notification.html", context)

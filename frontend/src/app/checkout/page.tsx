@@ -47,6 +47,7 @@ function CheckoutInner() {
   const [pix, setPix] = useState<{ paymentId: string; copia: string; qr: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [awaitingPix, setAwaitingPix] = useState(false);
+  const [pixConfirmed, setPixConfirmed] = useState(false);
 
   // Address
   const [addr, setAddr] = useState({
@@ -219,6 +220,22 @@ function CheckoutInner() {
     }
   };
 
+  // Polling de confirmação do PIX — verifica a cada 5 segundos
+  useEffect(() => {
+    if (!awaitingPix || !pix || pixConfirmed) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await paymentsApi.status(pix.paymentId);
+        if (res.data?.status === "approved") {
+          setPixConfirmed(true);
+          setSuccessOrder("PIX-OK");
+          setAwaitingPix(false);
+        }
+      } catch { /* silencioso — não para o polling por erro pontual */ }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [awaitingPix, pix, pixConfirmed]);
+
   const copyPix = () => {
     if (!pix) return;
     navigator.clipboard.writeText(pix.copia);
@@ -283,7 +300,7 @@ function CheckoutInner() {
         <main className="flex-grow flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto w-full">
           <QrCode className="h-10 w-10 text-primary mb-4" />
           <h1 className="text-2xl font-display font-bold mb-2">Pague com PIX</h1>
-          <p className="text-muted-foreground mb-6">Escaneie o QR Code no app do seu banco ou use o Copia e Cola para finalizar.</p>
+          <p className="text-muted-foreground mb-6">Escaneie o QR Code no app do seu banco ou use o Copia e Cola para finalizar. Seu pedido será confirmado automaticamente.</p>
 
           <div className="bg-white p-4 rounded-3xl shadow-2xl mb-6 border border-border/20">
             <img src={`data:image/png;base64,${pix.qr}`} alt="QR Code PIX" className="w-56 h-56" />
@@ -295,24 +312,31 @@ function CheckoutInner() {
               <span className="font-display font-black text-2xl text-foreground">R$ {brl(Number(cart?.total || 0) * 0.95)}</span>
             </div>
             <div className="flex justify-between items-center text-emerald-500 font-bold">
-              <span className="text-xs">✨ Desconto PIX + Cupons aplicados:</span>
-              <span className="text-sm">Economia de R$ {brl((Number(cart?.subtotal || 0) - Number(cart?.total || 0)) + (Number(cart?.total || 0) * 0.05))}</span>
+              <span className="text-xs">✨ Desconto PIX 5% aplicado:</span>
+              <span className="text-sm">Economia de R$ {brl(Number(cart?.total || 0) * 0.05)}</span>
             </div>
           </div>
 
           <button onClick={copyPix}
-            className="w-full flex items-center justify-center gap-2 py-4 rounded-xl border border-border/60 bg-card/40 hover:bg-card/70 transition-all mb-4 font-mono text-xs break-all shadow-inner">
+            className="w-full flex items-center justify-center gap-2 py-4 rounded-xl border border-border/60 bg-card/40 hover:bg-card/70 transition-all mb-6 font-mono text-xs break-all shadow-inner">
             {copied ? <Check className="h-4 w-4 text-green-500 shrink-0" /> : <Copy className="h-4 w-4 shrink-0" />}
             <span className="truncate">{copied ? "Copiado!" : pix.copia}</span>
           </button>
 
           {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
-          <button onClick={handleSimulatePix} disabled={processing}
-            className="w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/95 transition-all shadow-[0_0_20px_rgba(var(--primary),0.3)] disabled:opacity-50">
-            {processing ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
-            Já paguei (simular confirmação)
-          </button>
+          <div className="w-full flex items-center justify-center gap-3 py-4 rounded-xl border border-border/30 bg-card/20 text-muted-foreground text-sm">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            Aguardando confirmação do pagamento...
+          </div>
+
+          {process.env.NEXT_PUBLIC_IS_DEBUG === "true" && (
+            <button onClick={handleSimulatePix} disabled={processing}
+              className="w-full mt-4 flex items-center justify-center gap-2 py-4 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/95 transition-all shadow-[0_0_20px_rgba(var(--primary),0.3)] disabled:opacity-50">
+              {processing ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
+              Já paguei (simular confirmação)
+            </button>
+          )}
         </main>
       </div>
     );

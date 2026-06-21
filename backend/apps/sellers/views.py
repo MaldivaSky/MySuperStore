@@ -37,7 +37,7 @@ class SellerApplyView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         from apps.sellers.models import SellerStatus
-        seller = serializer.save(status=SellerStatus.APPROVED)
+        seller = serializer.save(status=SellerStatus.PENDING)
         user = self.request.user
         if user.role != "seller":
             user.role = "seller"
@@ -201,55 +201,6 @@ class SellerProductViewSet(viewsets.ModelViewSet):
         except Product.DoesNotExist:
             from rest_framework.exceptions import NotFound
             raise NotFound("Produto nao encontrado.")
-
-    def upload_image(self, request, product_pk=None):
-        from apps.catalog.serializers import ProductImageUploadSerializer
-        product = self._get_product(product_pk)
-        serializer = ProductImageUploadSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        # Primeira imagem vira primaria automaticamente; nova primaria desbanca a anterior
-        if serializer.validated_data.get("is_primary") or not product.images.exists():
-            product.images.update(is_primary=False)
-            serializer.validated_data["is_primary"] = True
-
-        serializer.save(product=product)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def delete_image(self, request, product_pk=None, image_pk=None):
-        from apps.catalog.models import ProductImage
-        product = self._get_product(product_pk)
-        try:
-            image = product.images.get(pk=image_pk)
-        except ProductImage.DoesNotExist:
-            return Response({"detail": "Imagem nao encontrada."}, status=status.HTTP_404_NOT_FOUND)
-        was_primary = image.is_primary
-        image.delete()
-        # Promove a proxima imagem a primaria se a excluida era a principal
-        if was_primary:
-            next_img = product.images.order_by("order").first()
-            if next_img:
-                next_img.is_primary = True
-                next_img.save(update_fields=["is_primary"])
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-    # -- Variantes ------------------------------------------------------------
-
-    def create_variant(self, request, product_pk=None):
-        from apps.catalog.serializers import ProductVariantWriteSerializer
-        product = self._get_product(product_pk)
-        serializer = ProductVariantWriteSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        variant = serializer.save(product=product)
-        # Resposta com leitura completa
-        from apps.catalog.serializers import ProductVariantSerializer
-        if OrderItem.objects.filter(variant__product=product).exists():
-            return Response(
-                {"detail": "Nao e possivel excluir um produto com pedidos. Desative-o em vez disso."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        product.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
 
     # -- Imagens --------------------------------------------------------------
 

@@ -210,3 +210,6 @@ MEILI_MASTER_KEY = env("MEILI_MASTER_KEY", default="devmasterkey")
 
 # ── Google OAuth ─────────────────────────────────────────────────────────────
 GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID", default="1019190620170-a86680qpdbrjgu1vk31st0lts4ju3cm5.apps.googleusercontent.com")
+
+# ── Frontend URL (para links nos e-mails) ─────────────────────────────────────
+FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000")
