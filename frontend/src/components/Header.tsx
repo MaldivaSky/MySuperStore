@@ -129,9 +129,22 @@ function HeaderInner() {
           )}
         </form>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-1 sm:gap-2">
           <ThemeToggle />
-          
+
+          {/* Cart — always visible on all screen sizes */}
+          <Link href="/cart" className="p-2 rounded-full hover:bg-white/10 text-neutral-300 hover:text-white transition-colors relative group">
+            <div className="relative">
+              <ShoppingCart className="h-5 w-5" />
+              {itemCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground text-[10px] font-bold h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center shadow-sm">
+                  {itemCount > 99 ? "99+" : itemCount}
+                </span>
+              )}
+            </div>
+            <span className="absolute top-14 right-0 scale-0 group-hover:scale-100 transition-all bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap z-50">Carrinho</span>
+          </Link>
+
           <div className="hidden sm:flex items-center gap-2">
             <Link href="/wishlist" className="p-2 rounded-full hover:bg-white/10 text-neutral-300 hover:text-white transition-colors relative group">
               <Heart className="h-5 w-5" />
@@ -160,9 +173,9 @@ function HeaderInner() {
                       <span className="absolute text-[11px] font-bold text-primary">
                         {user?.first_name?.charAt(0).toUpperCase() || ""}{user?.last_name?.charAt(0).toUpperCase() || ""}
                       </span>
-                      <img 
-                        src={user?.avatar_url || (user as any)?.avatar} 
-                        alt="Avatar" 
+                      <img
+                        src={user?.avatar_url || (user as any)?.avatar}
+                        alt="Avatar"
                         className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
                         onError={(e) => { e.currentTarget.style.opacity = '0'; }}
                       />
@@ -183,20 +196,6 @@ function HeaderInner() {
                 <span className="absolute top-14 right-0 scale-0 group-hover:scale-100 transition-all bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap z-50">Entrar</span>
               </Link>
             )}
-
-            <NotificationDropdown />
-
-            <Link href="/cart" className="p-2 rounded-full hover:bg-white/10 text-neutral-300 hover:text-white transition-colors relative group">
-              <div className="relative">
-                <ShoppingCart className="h-5 w-5" />
-                {itemCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground text-[10px] font-bold h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center shadow-sm">
-                    {itemCount > 99 ? "99+" : itemCount}
-                  </span>
-                )}
-              </div>
-              <span className="absolute top-14 right-0 scale-0 group-hover:scale-100 transition-all bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap z-50">Carrinho</span>
-            </Link>
           </div>
 
           {/* Mobile menu button */}
@@ -220,6 +219,27 @@ function HeaderInner() {
             className="md:hidden overflow-hidden border-t border-white/[0.06] bg-[#050510]/95 backdrop-blur-xl"
           >
             <div className="px-4 py-4 space-y-2">
+              {/* Search on mobile */}
+              <form onSubmit={handleSearchSubmit} className="relative mb-3">
+                <input
+                  type="text"
+                  placeholder="Pesquisar produtos..."
+                  value={search}
+                  onChange={handleSearchChange}
+                  className="w-full bg-white/[0.03] border border-white/[0.08] focus:border-primary/50 text-white rounded-full pl-10 pr-8 py-2.5 text-sm outline-none transition-all placeholder:text-neutral-500"
+                />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+                {search.trim() !== "" && (
+                  <button
+                    type="button"
+                    onClick={() => { setSearch(""); router.push("/"); }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </form>
+
               {navLinks.map((link) => {
                 const Icon = link.icon;
                 const isActive = pathname === link.href;
@@ -239,24 +259,44 @@ function HeaderInner() {
                   </Link>
                 );
               })}
-              {!isAuthenticated && (
-                <div className="flex gap-2 pt-3 border-t border-white/[0.06]">
-                  <Link
-                    href="/login"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex-1 text-center text-sm font-medium text-neutral-400 px-4 py-3 rounded-xl border border-white/[0.06] hover:bg-white/[0.04] transition-all"
-                  >
-                    Entrar
-                  </Link>
-                  <Link
-                    href="/register"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex-1 text-center text-sm font-bold bg-gradient-to-r from-primary to-amber-600 text-black px-4 py-3 rounded-xl transition-all"
-                  >
-                    Cadastrar
-                  </Link>
-                </div>
-              )}
+              {/* Bottom actions */}
+              <div className="pt-3 border-t border-white/[0.06] flex flex-col gap-2">
+                {isAuthenticated ? (
+                  <div className="flex gap-2">
+                    <Link
+                      href="/wishlist"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex-1 flex items-center justify-center gap-2 text-sm font-medium text-neutral-400 px-4 py-3 rounded-xl border border-white/[0.06] hover:bg-white/[0.04] transition-all"
+                    >
+                      <Heart className="h-4 w-4" /> Favoritos
+                    </Link>
+                    <Link
+                      href="/dashboard/account"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex-1 flex items-center justify-center gap-2 text-sm font-medium text-neutral-400 px-4 py-3 rounded-xl border border-white/[0.06] hover:bg-white/[0.04] transition-all"
+                    >
+                      <User className="h-4 w-4" /> Minha Conta
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Link
+                      href="/login"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex-1 text-center text-sm font-medium text-neutral-400 px-4 py-3 rounded-xl border border-white/[0.06] hover:bg-white/[0.04] transition-all"
+                    >
+                      Entrar
+                    </Link>
+                    <Link
+                      href="/register"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex-1 text-center text-sm font-bold bg-gradient-to-r from-primary to-amber-600 text-black px-4 py-3 rounded-xl transition-all"
+                    >
+                      Cadastrar
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
           </motion.div>
         )}

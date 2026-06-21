@@ -771,12 +771,14 @@ function StorePageContent() {
       {/* Onboarding survey modal */}
       <AnimatePresence>
         {showSurveyModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+          <div className="fixed inset-0 z-[100]">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowSurveyModal(false)} />
+            <div className="relative h-full overflow-y-auto flex items-start sm:items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="w-full max-w-lg bg-[#0c0c1e] border border-white/[0.08] p-8 rounded-3xl shadow-2xl relative overflow-hidden text-white"
+              className="w-full max-w-lg bg-[#0c0c1e] border border-white/[0.08] p-6 sm:p-8 rounded-2xl sm:rounded-3xl shadow-2xl relative overflow-hidden text-white my-auto"
             >
               {/* Decorative glows */}
               <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -920,10 +922,11 @@ function StorePageContent() {
                 </button>
               </div>
             </motion.div>
+            </div>
           </div>
         )}
       </AnimatePresence>
-      
+
       <Footer />
     </div>
   );

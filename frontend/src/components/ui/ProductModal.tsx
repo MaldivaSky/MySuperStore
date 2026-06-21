@@ -194,7 +194,7 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
           ) : (
             <>
               {/* LEFT: Image Gallery with Zoom */}
-              <div className="w-full md:w-1/2 bg-black/5 flex flex-col p-6 gap-4 border-r border-border/20 overflow-y-auto">
+              <div className="w-full md:w-1/2 bg-black/5 flex flex-col p-4 md:p-6 gap-4 border-b md:border-b-0 md:border-r border-border/20 overflow-y-auto max-h-[45vh] md:max-h-none">
                 <div 
                   className="relative aspect-square w-full rounded-xl overflow-hidden border border-border/30 bg-background/50 cursor-crosshair group"
                   onMouseEnter={() => setIsZooming(true)}
@@ -679,7 +679,7 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
             initial={{ opacity: 0, x: 100, y: 50 }}
             animate={{ opacity: 1, x: 0, y: 0 }}
             exit={{ opacity: 0, x: 100, y: 50 }}
-            className="fixed bottom-24 right-6 z-[200] w-96 h-[480px] bg-[#0c0c1e] border border-white/[0.08] rounded-3xl shadow-2xl flex flex-col overflow-hidden text-white"
+            className="fixed bottom-20 right-3 sm:right-6 z-[200] w-[calc(100vw-24px)] sm:w-96 max-w-[384px] h-[420px] sm:h-[480px] bg-[#0c0c1e] border border-white/[0.08] rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden text-white"
           >
             {/* Header */}
             <div className="p-4 border-b border-white/[0.08] bg-gradient-to-r from-primary/10 to-transparent flex items-center justify-between">
