@@ -24,5 +24,10 @@ if settings.DEBUG:
     import debug_toolbar
     urlpatterns += [path("__debug__/", include(debug_toolbar.urls))]
 
-    from django.conf.urls.static import static
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Serve media files in both dev and production (for ephemeral cloud hosting without S3)
+from django.urls import re_path
+from django.views.static import serve
+
+urlpatterns += [
+    re_path(r"^media/(?P<path>.*)$", serve, {"document_root": settings.MEDIA_ROOT}),
+]
