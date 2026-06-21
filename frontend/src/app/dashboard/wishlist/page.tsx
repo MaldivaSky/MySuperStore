@@ -1,5 +1,8 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
+
 import { useEffect, useState } from "react";
 import { wishlistApi, cartApi } from "@/lib/api";
 import { Heart, Loader2, ShoppingCart, Trash2, ShoppingBag } from "lucide-react";
