@@ -36,6 +36,12 @@ export interface ProductVariant {
   effective_price: string;
   stock: number;
   is_active: boolean;
+  product_name?: string;
+  product_description?: string;
+  product_image?: string;
+  product_base_price?: string;
+  product_slug?: string;
+  seller_max_installments?: number;
 }
 
 export interface ProductImage {
@@ -81,7 +87,7 @@ export interface Product {
 // ── Carrinho ─────────────────────────────────────────────────────────────────
 export interface CartItem {
   id: string;
-  variant: ProductVariant & { product_name: string; product_image: string; product_description: string };
+  variant: ProductVariant;
   quantity: number;
   subtotal: string;
 }
