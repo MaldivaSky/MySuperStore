@@ -70,7 +70,8 @@ def run_master_seed():
         role=UserRole.CUSTOMER,
         person_type="PF",
         cpf_cnpj="11122233344",
-        phone=f"119{random.randint(10000000, 99999999)}"
+        phone=f"119{random.randint(10000000, 99999999)}",
+        is_active=True
     )
 
     buyer_2 = User.objects.create_user(
@@ -81,7 +82,8 @@ def run_master_seed():
         role=UserRole.CUSTOMER,
         person_type="PF",
         cpf_cnpj="55566677788",
-        phone=f"119{random.randint(10000000, 99999999)}"
+        phone=f"119{random.randint(10000000, 99999999)}",
+        is_active=True
     )
 
     seller_user = User.objects.create_user(
@@ -91,7 +93,8 @@ def run_master_seed():
         last_name="Oficial",
         role=UserRole.SELLER,
         person_type="PJ",
-        cpf_cnpj="99988877766655"
+        cpf_cnpj="99988877766655",
+        is_active=True
     )
 
     seller_profile = Seller.objects.create(
@@ -110,7 +113,8 @@ def run_master_seed():
         last_name="Oficial",
         role=UserRole.SELLER,
         person_type="PJ",
-        cpf_cnpj="12345678901234"
+        cpf_cnpj="12345678901234",
+        is_active=True
     )
 
     seller_profile_2 = Seller.objects.create(
