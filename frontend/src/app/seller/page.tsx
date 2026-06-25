@@ -236,8 +236,17 @@ function SellerDashboard() {
   };
 
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
+    let trackingCode = undefined;
+    if (newStatus === "shipped") {
+      const input = prompt("Informe o código de rastreio (Opcional):");
+      if (input !== null) {
+        trackingCode = input.trim();
+      } else {
+        return; // Cancelou o envio
+      }
+    }
     try {
-      await sellerOrdersApi.updateStatus(orderId, newStatus);
+      await sellerOrdersApi.updateStatus(orderId, newStatus, trackingCode);
       toast("Status do pedido atualizado com sucesso!", "success");
       fetchOrders();
     } catch (err) {
@@ -1467,14 +1476,19 @@ function SellerDashboard() {
                         <td className="py-4 text-sm font-semibold text-emerald-400">R$ {Number(order.seller_amount || 0).toFixed(2)}</td>
                         <td className="py-4 font-bold text-white">R$ {Number(order.total_price || order.total).toFixed(2)}</td>
                         <td className="py-4">
-                          <span className={`px-3 py-1 text-xs font-bold rounded-full ${
-                            order.status === "delivered" ? "bg-emerald-500/10 text-emerald-400" 
-                            : order.status === "preparing" ? "bg-amber-500/10 text-amber-400" 
-                            : order.status === "shipped" ? "bg-blue-500/10 text-blue-400"
-                            : "bg-neutral-500/10 text-neutral-400"
-                          }`}>
-                            {order.status === 'pending' ? 'Pendente' : order.status === 'preparing' ? 'Preparando' : order.status === 'shipped' ? 'Enviado' : order.status === 'delivered' ? 'Entregue' : 'Cancelado'}
-                          </span>
+                          <div className="flex flex-col items-start gap-1">
+                            <span className={`px-3 py-1 text-xs font-bold rounded-full ${
+                              order.status === "delivered" ? "bg-emerald-500/10 text-emerald-400" 
+                              : order.status === "preparing" ? "bg-amber-500/10 text-amber-400" 
+                              : order.status === "shipped" ? "bg-blue-500/10 text-blue-400"
+                              : "bg-neutral-500/10 text-neutral-400"
+                            }`}>
+                              {order.status === 'pending' ? 'Pendente' : order.status === 'preparing' ? 'Preparando' : order.status === 'shipped' ? 'Enviado' : order.status === 'delivered' ? 'Entregue' : 'Cancelado'}
+                            </span>
+                            {order.tracking_code && (
+                              <span className="text-[10px] text-neutral-500 font-mono tracking-wider ml-1 mt-1">Rastreio: {order.tracking_code}</span>
+                            )}
+                          </div>
                         </td>
                         <td className="py-4 text-right">
                           <div className="flex justify-end gap-1.5">

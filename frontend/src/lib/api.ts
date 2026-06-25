@@ -149,8 +149,8 @@ export const returnsApi = {
 };
 
 export const sellerOrdersApi = {
-  updateStatus: (subOrderId: string, status: string) =>
-    api.patch(`/orders/seller/orders/${subOrderId}/update_status/`, { status }),
+  updateStatus: (subOrderId: string, status: string, trackingCode?: string) =>
+    api.patch(`/orders/seller/orders/${subOrderId}/update_status/`, { status, tracking_code: trackingCode }),
   uploadInvoice: (subOrderId: string, invoice_link: string) =>
     api.post(`/orders/seller/orders/${subOrderId}/upload_invoice/`, { invoice_link }),
 };

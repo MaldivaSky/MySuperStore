@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { userApi } from "@/lib/api";
+import { usePwaStore } from "@/store/pwaStore";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -20,6 +21,13 @@ function urlBase64ToUint8Array(base64String: string) {
 
 export function PWARegistry() {
   useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      usePwaStore.getState().setDeferredPrompt(e);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       // 1. Registra o Service Worker
       navigator.serviceWorker
@@ -56,6 +64,10 @@ export function PWARegistry() {
           console.error("Falha ao registrar o Service Worker:", err);
         });
     }
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    };
   }, []);
 
   return null;

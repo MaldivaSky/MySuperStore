@@ -64,6 +64,11 @@ class SellerSubOrderViewSet(viewsets.ModelViewSet):
             return Response({"error": "Status inválido."}, status=status.HTTP_400_BAD_REQUEST)
             
         sub_order.status = new_status
+        
+        tracking_code = request.data.get("tracking_code")
+        if tracking_code is not None:
+            sub_order.tracking_code = tracking_code
+            
         sub_order.save()
         
         # Disparar Notificação + E-mail para o Comprador

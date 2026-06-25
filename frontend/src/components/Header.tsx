@@ -8,6 +8,7 @@ import { useCartStore } from "@/store/cartStore";
 import { ThemeToggle } from "./ThemeToggle";
 import { BrandLogo, SaturnMark, OfficialLogo } from "./Brand";
 import { NotificationDropdown } from "./NotificationDropdown";
+import { InstallAppButton } from "./InstallAppButton";
 import {
   Store,
   LayoutDashboard,
@@ -137,6 +138,7 @@ function HeaderInner() {
         </form>
 
         <div className="flex items-center gap-1 sm:gap-2">
+          <InstallAppButton />
           <ThemeToggle />
 
           {/* Cart — always visible on all screen sizes */}

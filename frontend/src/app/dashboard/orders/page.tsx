@@ -228,9 +228,16 @@ export default function OrdersPage() {
                       <span className="text-sm font-semibold text-foreground flex items-center gap-2">
                         <Package className="h-4 w-4" /> {sub.seller_name}
                       </span>
-                      <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide bg-background px-3 py-1 rounded-full border border-border/60">
-                        {getStatusIcon(sub.status)} {getStatusLabel(sub.status)}
-                      </span>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide bg-background px-3 py-1 rounded-full border border-border/60">
+                          {getStatusIcon(sub.status)} {getStatusLabel(sub.status)}
+                        </span>
+                        {sub.tracking_code && (
+                          <span className="text-[10px] text-muted-foreground font-mono tracking-wider px-2">
+                            Rastreio: {sub.tracking_code}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     
                     <div className="space-y-6">

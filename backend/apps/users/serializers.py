@@ -27,13 +27,17 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, data):
+        from .utils import validate_cpf, validate_cnpj
+        
         cpf_cnpj = data.get("cpf_cnpj", "")
         person_type = data.get("person_type", "PF")
         
-        if person_type == "PF" and cpf_cnpj and len(cpf_cnpj) != 11:
-            raise serializers.ValidationError({"cpf_cnpj": "CPF deve ter exatamente 11 dígitos."})
-        if person_type == "PJ" and cpf_cnpj and len(cpf_cnpj) != 14:
-            raise serializers.ValidationError({"cpf_cnpj": "CNPJ deve ter exatamente 14 dígitos."})
+        if person_type == "PF":
+            if not validate_cpf(cpf_cnpj):
+                raise serializers.ValidationError({"cpf_cnpj": "CPF inválido."})
+        elif person_type == "PJ":
+            if not validate_cnpj(cpf_cnpj):
+                raise serializers.ValidationError({"cpf_cnpj": "CNPJ inválido."})
             
         if data.get("password") != data.pop("password_confirm", None):
             raise serializers.ValidationError({"password_confirm": "As senhas não conferem."})
