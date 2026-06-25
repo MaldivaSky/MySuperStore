@@ -229,3 +229,29 @@ FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000")
 # ── Melhor Envio ─────────────────────────────────────────────────────────────
 MELHOR_ENVIO_TOKEN = env("MELHOR_ENVIO_TOKEN", default="")
 MELHOR_ENVIO_ENVIRONMENT = env("MELHOR_ENVIO_ENVIRONMENT", default="sandbox")  # sandbox ou production
+
+# ── Efí Bank ──────────────────────────────────────────────────────────────────
+# Dois apps Efí (cada um com credenciais próprias):
+#   • API Pix       → PIX (precisa de certificado mTLS)
+#   • API Cobranças → cartão de crédito (só OAuth, sem certificado)
+EFI_ENV = env("EFI_ENV", default="sandbox")
+EFI_SANDBOX = EFI_ENV != "production"
+_efi_sfx = "HOMOL" if EFI_SANDBOX else "PROD"
+
+# --- API Pix ---
+EFI_PIX_CLIENT_ID = env(f"EFI_PIX_CLIENT_ID_{_efi_sfx}", default="")
+EFI_PIX_CLIENT_SECRET = env(f"EFI_PIX_CLIENT_SECRET_{_efi_sfx}", default="")
+EFI_PIX_CERT_PATH = env(f"EFI_PIX_CERT_{_efi_sfx}", default="")
+EFI_PIX_KEY = env("EFI_PIX_KEY", default="")  # chave PIX recebedora da plataforma
+EFI_PIX_EXPIRACAO = env.int("EFI_PIX_EXPIRACAO", default=3600)
+
+# --- API Cobranças (cartão) ---
+EFI_COBRANCAS_CLIENT_ID = env(f"EFI_COBRANCAS_CLIENT_ID_{_efi_sfx}", default="")
+EFI_COBRANCAS_CLIENT_SECRET = env(f"EFI_COBRANCAS_CLIENT_SECRET_{_efi_sfx}", default="")
+# Identificador de conta usado pelo Efí.js (tokenização do cartão no frontend)
+EFI_ACCOUNT_IDENTIFIER = env("EFI_ACCOUNT_IDENTIFIER", default="")
+
+# Compat: EfiPixService consome estes nomes "genéricos"
+EFI_CLIENT_ID = EFI_PIX_CLIENT_ID
+EFI_CLIENT_SECRET = EFI_PIX_CLIENT_SECRET
+EFI_CERT_PATH = EFI_PIX_CERT_PATH

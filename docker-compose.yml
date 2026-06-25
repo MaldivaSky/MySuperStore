@@ -6,6 +6,8 @@ services:
       - ./backend:/app
       - ./media:/app/media
       - ./db.sqlite3:/legacy_db.sqlite3:ro
+      # Certificados mTLS do Efí (somente leitura) — caminho casa com EFI_CERT_* no .env
+      - ./SuperStore/Documents:/app/SuperStore/Documents:ro
     ports:
       - "8000:8000"
     environment:
@@ -37,6 +39,8 @@ services:
     command: celery -A config worker -l info
     volumes:
       - ./backend:/app
+      - ./media:/app/media
+      - ./SuperStore/Documents:/app/SuperStore/Documents:ro
     env_file:
       - .env
     depends_on:

@@ -275,7 +275,15 @@ function DashboardContent() {
                 Stripe: {store.stripe_authorized ? "Vinculado" : "Não Vinculado"}
               </span>
 
-              <button 
+              <button
+                onClick={() => router.push("/seller/dashboard/products")}
+                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-bold flex items-center gap-2 transition-colors text-sm shadow-md"
+              >
+                <Package className="h-4 w-4" />
+                Produtos
+              </button>
+
+              <button
                 onClick={() => router.push("/seller/dashboard/analytics")}
                 className="px-4 py-2 ml-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 font-bold flex items-center gap-2 transition-colors text-sm"
               >

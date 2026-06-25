@@ -126,6 +126,7 @@ export const paymentsApi = {
   createIntent: (orderId: string, method: PaymentMethodChoice) =>
     api.post("/payments/create-intent/", { order_id: orderId, payment_method: method }),
   confirm: (paymentId: string) => api.post(`/payments/${paymentId}/confirm/`),
+  confirmPix: (paymentId: string) => api.post(`/payments/${paymentId}/confirm-pix/`),
   simulatePix: (paymentId: string) => api.post(`/payments/${paymentId}/simulate-pix/`),
   cancel: (paymentId: string) => api.post(`/payments/${paymentId}/cancel/`),
   refund: (paymentId: string, amount?: number) =>
@@ -194,6 +195,7 @@ export const sellerDashboardApi = {
     api.post("/sellers/me/reviews-given/", data),
   products: {
     list: () => api.get("/sellers/me/products/"),
+    get: (id: string) => api.get(`/sellers/me/products/${id}/`),
     create: (data: any) => api.post("/sellers/me/products/", data),
     update: (id: string, data: any) => api.patch(`/sellers/me/products/${id}/`, data),
     delete: (id: string) => api.delete(`/sellers/me/products/${id}/`),
@@ -203,6 +205,8 @@ export const sellerDashboardApi = {
       }),
     deleteImage: (productId: string, imageId: string) =>
       api.delete(`/sellers/me/products/${productId}/images/${imageId}/`),
+    setPrimaryImage: (productId: string, imageId: string) =>
+      api.post(`/sellers/me/products/${productId}/images/${imageId}/primary/`),
     uploadVideo: (productId: string, formData: FormData) =>
       api.post(`/sellers/me/products/${productId}/video/`, formData, {
         headers: { "Content-Type": "multipart/form-data" }

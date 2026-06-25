@@ -10,12 +10,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { OfficialLogo } from "@/components/Brand";
 import {
   Rocket, Store, Image as ImageIcon, FileText, DollarSign,
-  Clock, CheckCircle2, ChevronRight, UploadCloud, ShieldCheck, Zap,
+  Clock, CheckCircle2, ChevronRight, ShieldCheck, Zap,
   Loader2, Play, Flame, ArrowRight, ArrowLeft, MailCheck, RefreshCw
 } from "lucide-react";
 import Confetti from "react-confetti";
 import { authApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
+import { ProductMediaUploader } from "@/components/seller/ProductMediaUploader";
 
 export default function SellerOnboardingPage() {
   const router = useRouter();
@@ -101,6 +102,7 @@ export default function SellerOnboardingPage() {
   const [productName, setProductName] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [basePrice, setBasePrice] = useState("");
+  const [productStock, setProductStock] = useState("");
   const [isSubmittingPhase1, setIsSubmittingPhase1] = useState(false);
   const [createdProductId, setCreatedProductId] = useState<string | null>(null);
 
@@ -108,7 +110,8 @@ export default function SellerOnboardingPage() {
   const [description, setDescription] = useState("");
   const [promotionalPrice, setPromotionalPrice] = useState("");
   const [promoEndsAt, setPromoEndsAt] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [mediaCount, setMediaCount] = useState(0);
+  const [mediaError, setMediaError] = useState("");
   const [isSubmittingPhase2, setIsSubmittingPhase2] = useState(false);
   
   // Confetti / Done
@@ -153,7 +156,8 @@ export default function SellerOnboardingPage() {
       const res = await sellerDashboardApi.products.create({
         name: productName,
         category: categoryId,
-        base_price: parseFloat(basePrice)
+        base_price: parseFloat(basePrice),
+        initial_stock: productStock ? parseInt(productStock, 10) : 0,
       });
       setCreatedProductId(res.data.id);
       setPhase(3); // Vai para o Booster
@@ -168,23 +172,23 @@ export default function SellerOnboardingPage() {
   const handlePhase2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!createdProductId) return;
-    
+
+    // Fotos já foram enviadas ao vivo pelo uploader; exige ao menos a capa.
+    if (mediaCount < 1) {
+      setMediaError("Adicione ao menos 1 foto para publicar o produto.");
+      return;
+    }
+    setMediaError("");
+
     setIsSubmittingPhase2(true);
     try {
-      // 1. Atualiza dados de texto/promo
+      // Atualiza texto/promo e PUBLICA (is_available) — as mídias já estão salvas.
       await sellerDashboardApi.products.update(createdProductId, {
         description,
+        is_available: true,
         promotional_price: promotionalPrice ? parseFloat(promotionalPrice) : null,
         promo_ends_at: promoEndsAt ? new Date(promoEndsAt).toISOString() : null
       });
-
-      // 2. Sobe a imagem, se houver
-      if (imageFile) {
-        const formData = new FormData();
-        formData.append("image", imageFile);
-        formData.append("is_primary", "true");
-        await sellerDashboardApi.products.uploadImage(createdProductId, formData);
-      }
 
       setShowConfetti(true);
       setTimeout(() => {
@@ -481,6 +485,19 @@ export default function SellerOnboardingPage() {
                   </div>
                 </div>
 
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Estoque inicial</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={productStock}
+                    onChange={e => setProductStock(e.target.value)}
+                    className="w-full mt-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] outline-none transition-colors font-mono text-lg"
+                    placeholder="Ex: 10 unidades"
+                  />
+                  <p className="text-xs text-neutral-500 mt-1.5">Quantas unidades você tem para vender agora.</p>
+                </div>
+
                 <div className="pt-6">
                   <button 
                     type="submit"
@@ -518,31 +535,19 @@ export default function SellerOnboardingPage() {
               </div>
 
               <form onSubmit={handlePhase2Submit} className="space-y-8 relative z-10">
+                {/* Mídia: até 6 fotos + 1 vídeo (upload ao vivo) */}
+                {createdProductId && (
+                  <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-5">
+                    <ProductMediaUploader
+                      productId={createdProductId}
+                      onChange={({ images }) => setMediaCount(images.length)}
+                    />
+                  </div>
+                )}
+
                 <div className="grid md:grid-cols-2 gap-8">
                   {/* Coluna Esquerda */}
                   <div className="space-y-6">
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400 flex items-center gap-2">
-                        <ImageIcon className="w-4 h-4" /> Imagem Principal 1080x1080
-                      </label>
-                      <label className="mt-2 flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-white/20 rounded-2xl hover:border-[#E6B53C]/50 hover:bg-[#E6B53C]/5 transition-all cursor-pointer group">
-                        <UploadCloud className="w-10 h-10 text-neutral-500 group-hover:text-[#E6B53C] mb-2" />
-                        <span className="text-sm text-neutral-400 group-hover:text-white">
-                          {imageFile ? imageFile.name : "Clique para selecionar foto"}
-                        </span>
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          className="hidden"
-                          onChange={e => {
-                            if (e.target.files && e.target.files[0]) {
-                              setImageFile(e.target.files[0]);
-                            }
-                          }}
-                        />
-                      </label>
-                    </div>
-
                     <div>
                       <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400 flex items-center gap-2">
                         <FileText className="w-4 h-4" /> Descrição Persuasiva
@@ -598,15 +603,23 @@ export default function SellerOnboardingPage() {
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-white/10">
-                  <button 
+                <div className="pt-6 border-t border-white/10 space-y-3">
+                  {mediaError && (
+                    <p className="text-sm text-red-400 font-semibold text-center">{mediaError}</p>
+                  )}
+                  <button
                     type="submit"
                     disabled={isSubmittingPhase2}
-                    className="w-full py-5 rounded-2xl bg-gradient-to-r from-orange-500 to-red-600 text-white font-black hover:opacity-90 transition-opacity flex items-center justify-center gap-3 text-lg shadow-[0_0_40px_rgba(249,115,22,0.4)]"
+                    className="w-full py-5 rounded-2xl bg-gradient-to-r from-orange-500 to-red-600 text-white font-black hover:opacity-90 transition-opacity flex items-center justify-center gap-3 text-lg shadow-[0_0_40px_rgba(249,115,22,0.4)] disabled:opacity-50"
                   >
                     {isSubmittingPhase2 ? <Loader2 className="w-6 h-6 animate-spin" /> : <Rocket className="w-6 h-6" />}
                     {isSubmittingPhase2 ? "Aplicando Booster Algorítmico..." : "PUBLICAR PRODUTO E ACESSAR PAINEL"}
                   </button>
+                  <p className="text-xs text-neutral-500 text-center">
+                    {mediaCount > 0
+                      ? `${mediaCount} foto(s) adicionada(s) — pronto para publicar.`
+                      : "Adicione ao menos 1 foto acima para liberar a publicação."}
+                  </p>
                 </div>
               </form>
             </motion.div>

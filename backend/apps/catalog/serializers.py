@@ -354,12 +354,13 @@ class ProductCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            "name", "slug", "category", "brand", "description",
+            "id", "name", "slug", "category", "brand", "description",
             "base_price", "is_available",
             "is_free_shipping", "estimated_delivery_days",
             "weight", "length", "width", "height",
             "meta_title", "meta_description",
         ]
+        read_only_fields = ["id"]
 
     def validate_base_price(self, value):
         if value <= 0:

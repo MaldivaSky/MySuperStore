@@ -180,6 +180,126 @@ class StripeService:
         return account_link.url
 
 
+import logging
+import os
+import threading
+
+logger = logging.getLogger(__name__)
+
+# Cache do caminho do .pem convertido (a conversão p12->pem roda uma vez por processo).
+_efi_pem_lock = threading.Lock()
+_efi_pem_cache: dict[str, str] = {}
+
+
+def _ensure_pem_certificate(cert_path: str) -> str:
+    """
+    O Efí entrega o certificado em .p12, mas o SDK/requests precisa de .pem.
+    Converte uma vez e guarda em /tmp. Se já for .pem, retorna como está.
+    """
+    if not cert_path:
+        raise ValueError("Certificado do Efí não configurado (EFI_CERT_*).")
+    if cert_path.lower().endswith(".pem"):
+        return cert_path
+    with _efi_pem_lock:
+        cached = _efi_pem_cache.get(cert_path)
+        if cached and os.path.exists(cached):
+            return cached
+        from cryptography.hazmat.primitives.serialization import (
+            Encoding, NoEncryption, PrivateFormat, pkcs12,
+        )
+        with open(cert_path, "rb") as fh:
+            data = fh.read()
+        key, cert, _chain = pkcs12.load_key_and_certificates(data, None)
+        pem = b""
+        if key:
+            pem += key.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption())
+        if cert:
+            pem += cert.public_bytes(Encoding.PEM)
+        out = os.path.join("/tmp", f"efi_{abs(hash(cert_path))}.pem")
+        with open(out, "wb") as fh:
+            fh.write(pem)
+        os.chmod(out, 0o600)
+        _efi_pem_cache[cert_path] = out
+        return out
+
+
+class EfiPixService:
+    """
+    Integração real de PIX (Recebimentos) com o Efí Bank.
+
+    A conta da plataforma recebe todas as cobranças; o repasse ao lojista é feito
+    depois pela `pix_key` do vendedor (modelo centralizado). Trocar para split é
+    transparente para o resto do sistema, que só consome `create_charge`.
+    """
+
+    @staticmethod
+    def is_configured() -> bool:
+        from django.conf import settings
+        return bool(
+            getattr(settings, "EFI_CLIENT_ID", "")
+            and getattr(settings, "EFI_CLIENT_SECRET", "")
+            and getattr(settings, "EFI_CERT_PATH", "")
+            and getattr(settings, "EFI_PIX_KEY", "")
+        )
+
+    @staticmethod
+    def _client():
+        from django.conf import settings
+        from efipay import EfiPay
+        return EfiPay({
+            "client_id": settings.EFI_CLIENT_ID,
+            "client_secret": settings.EFI_CLIENT_SECRET,
+            "sandbox": settings.EFI_SANDBOX,
+            "certificate": _ensure_pem_certificate(settings.EFI_CERT_PATH),
+        })
+
+    @classmethod
+    def create_charge(cls, order):
+        """
+        Cria uma cobrança PIX imediata no Efí e retorna
+        (txid, copia_e_cola, qr_code_base64). Levanta exceção em caso de falha.
+        """
+        from decimal import Decimal
+        from django.conf import settings
+
+        efi = cls._client()
+        valor = f"{Decimal(str(order.total)):.2f}"
+        body = {
+            "calendario": {"expiracao": int(getattr(settings, "EFI_PIX_EXPIRACAO", 3600))},
+            "valor": {"original": valor},
+            "chave": settings.EFI_PIX_KEY,
+            "solicitacaoPagador": f"Pedido {order.order_number} - MySuperStore"[:140],
+        }
+        charge = efi.pix_create_immediate_charge(body=body)
+        if not isinstance(charge, dict) or not charge.get("txid"):
+            raise RuntimeError(f"Resposta inesperada do Efí ao criar cobrança: {charge}")
+
+        txid = charge["txid"]
+        loc_id = charge.get("loc", {}).get("id")
+        qr = efi.pix_generate_qrcode(params={"id": loc_id})
+        copia_e_cola = qr.get("qrcode", "") if isinstance(qr, dict) else ""
+        imagem = qr.get("imagemQrcode", "") if isinstance(qr, dict) else ""
+        # imagemQrcode vem como data URI (data:image/png;base64,XXXX) — extrai o base64
+        qr_base64 = imagem.split(",", 1)[1] if "," in imagem else imagem
+        return txid, copia_e_cola, qr_base64
+
+    @classmethod
+    def get_charge(cls, txid: str) -> dict:
+        """Consulta uma cobrança pelo txid (usado para polling/confirmação)."""
+        efi = cls._client()
+        return efi.pix_detail_charge(params={"txid": txid})
+
+    @classmethod
+    def is_paid(cls, txid: str) -> bool:
+        """True se a cobrança consta como concluída (paga) no Efí."""
+        try:
+            charge = cls.get_charge(txid)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Falha ao consultar cobrança PIX %s: %s", txid, exc)
+            return False
+        return isinstance(charge, dict) and charge.get("status") == "CONCLUIDA"
+
+
 class PixService:
     """
     Gera cobranças PIX no padrão BR Code (EMV) do Banco Central — o mesmo "Copia e Cola"

@@ -204,7 +204,21 @@ class SellerProductViewSet(viewsets.ModelViewSet):
         return ProductListSerializer
 
     def perform_create(self, serializer):
-        serializer.save(seller=self.request.user.seller_profile)
+        product = serializer.save(seller=self.request.user.seller_profile)
+        # Garante ao menos uma variante padrão — sem isso o produto não entra no
+        # carrinho (o checkout opera sobre variantes). O estoque inicial é opcional.
+        from apps.catalog.models import ProductVariant
+        if not product.variants.exists():
+            try:
+                stock = max(0, int(self.request.data.get("initial_stock") or 0))
+            except (TypeError, ValueError):
+                stock = 0
+            ProductVariant.objects.create(
+                product=product,
+                sku=f"{product.slug[:40]}-{str(product.id)[:8]}",
+                stock=stock,
+                is_active=True,
+            )
 
     def destroy(self, request, *args, **kwargs):
         product = self.get_object()
@@ -280,6 +294,18 @@ class SellerProductViewSet(viewsets.ModelViewSet):
                 next_img.is_primary = True
                 next_img.save(update_fields=["is_primary"])
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def set_primary_image(self, request, product_pk=None, image_pk=None):
+        from apps.catalog.models import ProductImage
+        product = self._get_product(product_pk)
+        try:
+            image = product.images.get(pk=image_pk)
+        except ProductImage.DoesNotExist:
+            return Response({"detail": "Imagem nao encontrada."}, status=status.HTTP_404_NOT_FOUND)
+        product.images.update(is_primary=False)
+        image.is_primary = True
+        image.save(update_fields=["is_primary"])
+        return Response({"detail": "Foto de capa definida.", "id": str(image.id)})
 
     # -- Vídeo (máx. 1 por produto) -------------------------------------------
 

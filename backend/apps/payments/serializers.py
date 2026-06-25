@@ -70,11 +70,28 @@ class PaymentCreateSerializer(serializers.Serializer):
         payment.status = PaymentStatus.PENDING
 
         if method == PaymentMethod.PIX:
-            # Gera o BR Code PIX (Copia e Cola + QR). Liquidação simulada via endpoint de confirmação.
+            from .services import EfiPixService
+            import logging
+            logger = logging.getLogger(__name__)
+
+            if EfiPixService.is_configured():
+                try:
+                    txid, copia_cola, qr_base64 = EfiPixService.create_charge(order)
+                    payment.mp_payment_id = txid  # correlação para webhook/polling
+                    payment.pix_qr_code = copia_cola
+                    payment.pix_qr_code_base64 = qr_base64
+                    payment.raw_response = {"provider": "efi", "txid": txid}
+                    payment.save()
+                    return payment
+                except Exception as exc:  # noqa: BLE001
+                    # Não derruba o checkout: cai no BR Code local e registra o problema.
+                    logger.error("Falha ao criar cobrança PIX no Efí: %s", exc)
+
+            # Fallback: BR Code local (Copia e Cola + QR). Baixa via endpoint de confirmação.
             copia_cola, qr_base64 = PixService.generate_brcode(order)
             payment.pix_qr_code = copia_cola
             payment.pix_qr_code_base64 = qr_base64
-            payment.raw_response = {}
+            payment.raw_response = {"provider": "local"}
             payment.save()
         else:
             # Cartão de crédito/débito → PaymentIntent no Stripe

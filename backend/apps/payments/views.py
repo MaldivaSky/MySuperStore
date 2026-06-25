@@ -121,6 +121,70 @@ def simulate_pix_payment_view(request, pk):
 
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
+def confirm_pix_view(request, pk):
+    """
+    POST /api/v1/payments/{id}/confirm-pix/
+    Consulta a cobrança no Efí (polling) e, se estiver paga, confirma o pedido.
+    Usado pelo frontend enquanto o cliente paga o PIX (quando não há webhook público).
+    """
+    try:
+        payment = Payment.objects.get(id=pk, order__user=request.user, method=PaymentMethod.PIX)
+    except Payment.DoesNotExist:
+        return Response({"detail": "Pagamento PIX não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+    if payment.status == PaymentStatus.APPROVED:
+        return Response(PaymentSerializer(payment, context={"request": request}).data)
+
+    from .services import EfiPixService
+    txid = payment.mp_payment_id
+    if not (txid and EfiPixService.is_configured()):
+        return Response(
+            {"detail": "Confirmação automática indisponível; aguardando baixa.", "status": payment.status},
+            status=status.HTTP_202_ACCEPTED,
+        )
+
+    if EfiPixService.is_paid(txid):
+        processed = process_successful_payment(
+            payment.order, raw_response={"provider": "efi", "txid": txid, "metadata": {"type": "pix"}}
+        )
+        if processed:
+            dispatch_post_payment_tasks(payment.order)
+        payment.refresh_from_db()
+        return Response(PaymentSerializer(payment, context={"request": request}).data)
+
+    return Response(
+        {"detail": "Pagamento ainda não identificado.", "status": payment.status},
+        status=status.HTTP_202_ACCEPTED,
+    )
+
+
+@csrf_exempt
+@api_view(["POST"])
+@permission_classes([permissions.AllowAny])
+def efi_webhook(request):
+    """
+    POST /api/v1/payments/efi-webhook/ — recebe notificações de PIX do Efí.
+    Em produção a URL é registrada no Efí e protegida por mTLS (o Efí apresenta o
+    certificado dele). Para cada PIX recebido, dá baixa no pedido correspondente.
+    """
+    data = request.data if isinstance(request.data, dict) else {}
+    for pix in data.get("pix", []) or []:
+        txid = pix.get("txid")
+        if not txid:
+            continue
+        payment = Payment.objects.filter(mp_payment_id=txid, method=PaymentMethod.PIX).first()
+        if payment and payment.status != PaymentStatus.APPROVED:
+            processed = process_successful_payment(
+                payment.order, raw_response={"provider": "efi", "txid": txid, "metadata": {"type": "pix"}}
+            )
+            if processed:
+                dispatch_post_payment_tasks(payment.order)
+    # O Efí espera 200 para considerar a notificação entregue.
+    return Response({"status": "ok"}, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
 def cancel_payment_view(request, pk):
     """
     POST /api/v1/payments/{id}/cancel/
