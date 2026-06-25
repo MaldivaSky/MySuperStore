@@ -46,21 +46,70 @@ def send_verification_email(user) -> bool:
         "Equipe MySuperStore"
     )
     html_body = f"""
-    <div style="font-family:Arial,Helvetica,sans-serif;max-width:480px;margin:0 auto;color:#111">
-      <h2 style="color:#B38F25">Confirme seu e-mail</h2>
-      <p>Olá, <strong>{first_name}</strong>! Falta só um passo para ativar sua conta na
-      <strong>MySuperStore</strong>.</p>
-      <p>
-        <a href="{link}"
-           style="display:inline-block;background:#E6B53C;color:#000;font-weight:bold;
-                  padding:14px 28px;border-radius:10px;text-decoration:none">
-          Confirmar meu e-mail
-        </a>
-      </p>
-      <p style="font-size:12px;color:#666">O link expira em 48 horas. Se o botão não funcionar,
-      copie e cole no navegador:<br><span style="word-break:break-all">{link}</span></p>
-      <p style="font-size:12px;color:#666">Se você não criou esta conta, ignore esta mensagem.</p>
-    </div>
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Ative sua Conta - MySuperStore</title>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+            body {{ font-family: 'Inter', Arial, sans-serif; background-color: #0e0e1a; color: #ffffff; margin: 0; padding: 0; }}
+            .container {{ max-width: 600px; margin: 40px auto; background: #1a1a2e; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); }}
+            .header {{ background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 30px; text-align: center; }}
+            .header h1 {{ margin: 0; color: #ffffff; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }}
+            .content {{ padding: 40px 30px; }}
+            .content h2 {{ color: #ffffff; font-size: 22px; margin-top: 0; font-weight: 600; }}
+            .content p {{ color: #94a3b8; font-size: 16px; line-height: 1.6; margin-bottom: 24px; }}
+            .cta-button {{ display: inline-block; background: #10b981; color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-weight: 600; font-size: 16px; text-align: center; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }}
+            .cta-button:hover {{ background: #059669; transform: translateY(-2px); }}
+            .benefits {{ background: #0f172a; padding: 24px; border-radius: 12px; margin-bottom: 30px; border: 1px solid rgba(255,255,255,0.05); }}
+            .benefits ul {{ list-style: none; padding: 0; margin: 0; }}
+            .benefits li {{ color: #cbd5e1; margin-bottom: 12px; font-size: 15px; display: flex; align-items: center; }}
+            .benefits li::before {{ content: '✓'; color: #10b981; font-weight: bold; margin-right: 10px; font-size: 18px; }}
+            .footer {{ background: #0b0f19; padding: 30px; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); }}
+            .footer p {{ color: #64748b; font-size: 13px; margin: 5px 0; }}
+            .footer a {{ color: #10b981; text-decoration: none; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>MySuperStore</h1>
+            </div>
+            <div class="content">
+                <h2>Seja bem-vindo(a) ao Futuro do E-commerce, {first_name}! 🚀</h2>
+                <p>Estamos muito felizes em ter você conosco. Você acaba de dar o primeiro passo para escalar suas vendas e fazer parte de um marketplace robusto, seguro e inovador.</p>
+                
+                <div class="benefits">
+                    <p style="color: #ffffff; font-weight: 600; margin-bottom: 16px; margin-top: 0;">Por que vender na MySuperStore?</p>
+                    <ul>
+                        <li><strong>Split de Pagamento Nativo:</strong> Receba sua parte automaticamente no momento da venda (via PIX ou Cartão).</li>
+                        <li><strong>Taxas Transparentes:</strong> Sem surpresas. Você sabe exatamente o que paga e o que recebe.</li>
+                        <li><strong>Dashboard Poderoso:</strong> Controle total sobre seu estoque, pedidos e relatórios de vendas.</li>
+                        <li><strong>Tecnologia de Ponta:</strong> Plataforma ultrarrápida projetada para maximizar sua conversão.</li>
+                    </ul>
+                </div>
+
+                <p>Para ativar sua conta e desbloquear a criação da sua loja, clique no botão abaixo:</p>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{link}" class="cta-button">Ativar Minha Conta</a>
+                </div>
+
+                <p style="font-size: 14px; color: #64748b;">Se o botão não funcionar, copie e cole este link no seu navegador:<br>
+                <a href="{link}" style="color: #10b981; word-break: break-all;">{link}</a></p>
+                
+                <p>Prepare-se para transformar seu negócio.<br><strong>Equipe MySuperStore</strong></p>
+            </div>
+            <div class="footer">
+                <p>Este link expira em 48 horas por questões de segurança.</p>
+                <p>Se você não se cadastrou em nossa plataforma, por favor ignore este e-mail.</p>
+                <p>&copy; 2026 MySuperStore. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </body>
+    </html>
     """
 
     try:
