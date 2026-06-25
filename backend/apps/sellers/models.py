@@ -67,14 +67,12 @@ class Seller(models.Model):
     person_type = models.CharField(max_length=2, choices=PersonType.choices, default=PersonType.PF)
     cpf_cnpj = models.CharField(max_length=18, blank=True, help_text="Somente dígitos. CPF (PF) ou CNPJ (PJ).")
 
-    # Dados Bancários (Para criação do Efí Payee)
-    bank_code = models.CharField(max_length=10, blank=True, help_text="Código do Banco (ex: 341 para Itaú)")
-    bank_agency = models.CharField(max_length=20, blank=True, help_text="Agência sem o dígito")
-    bank_account = models.CharField(max_length=30, blank=True, help_text="Número da conta com o dígito")
-    bank_account_type = models.CharField(max_length=20, choices=BankAccountType.choices, blank=True)
+    # Logística / Frete (Melhor Envio)
+    origin_cep = models.CharField(max_length=9, blank=True, help_text="CEP de origem do Galpão/Loja para cálculo de frete (Ex: 01001000)")
 
-    # Identificador de conta Efí para Split Nativo (payee_code)
-    efi_payee_code = models.CharField(max_length=100, blank=True, help_text="Identificador de conta Efí para repasse (Split)")
+    # Dados Bancários (Para criação do Efí Payee)
+    # Identificador de conta Efí para Split Nativo (payee_code) - A Efí exige conta própria para repasse
+    efi_payee_code = models.CharField(max_length=100, blank=True, help_text="Identificador de Conta Digital Efí para repasse (Split)")
     # Dados bancários para repasse manual (fallback)
     pix_key = models.CharField(max_length=150, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

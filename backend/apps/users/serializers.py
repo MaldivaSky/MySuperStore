@@ -122,7 +122,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return bool(seller and seller.products.exists())
 
     def get_is_seller(self, obj):
-        return obj.role == "seller"
+        return obj.role == "seller" or hasattr(obj, "seller_profile")
 
     def get_efi_payee_code(self, obj):
         seller = getattr(obj, "seller_profile", None)

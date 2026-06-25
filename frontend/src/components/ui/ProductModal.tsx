@@ -42,9 +42,7 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
   const [chatLoading, setChatLoading] = useState(false);
   
   // Q&A States
-  const [questions, setQuestions] = useState<{ id: number; user: string; text: string; reply: string | null; replyBy: string | null; date: string }[]>([
-    { id: 1, user: "Visitante", text: "O produto vem na caixa original lacrada?", reply: "Olá! Sim, todos os nossos produtos são 100% originais, enviados na caixa lacrada de fábrica com nota fiscal.", replyBy: "Lojista", date: "Hoje" }
-  ]);
+  const [questions, setQuestions] = useState<{ id: number; user: string; text: string; reply: string | null; replyBy: string | null; date: string }[]>([]);
   const [questionInput, setQuestionInput] = useState("");
   
   // Image Zoom states
@@ -98,6 +96,12 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
         if (prod.variants && prod.variants.length > 0) {
           const activeVariant = prod.variants.find((v: any) => v.is_active && v.stock > 0) || prod.variants[0];
           setSelectedVariant(activeVariant);
+        }
+
+        if (prod.is_demo) {
+          setQuestions([{ id: 1, user: "Visitante", text: "O produto vem na caixa original lacrada?", reply: "Olá! Sim, todos os nossos produtos são 100% originais, enviados na caixa lacrada de fábrica com nota fiscal.", replyBy: "Lojista", date: "Hoje" }]);
+        } else {
+          setQuestions([]);
         }
 
         // Fetch similar products in same category
@@ -417,13 +421,15 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
                       {selectedVariant && (
                         <div className="flex flex-col gap-2 mt-2">
                           {/* Social Proof Trigger */}
-                          <div className="flex items-center gap-2 text-xs font-semibold text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-lg border border-blue-500/20 w-fit">
-                            <span className="relative flex h-2 w-2 mr-1">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                            </span>
-                            {((product.views_count || 10) % 15) + 3} pessoas estão com este item no carrinho
-                          </div>
+                          {product.carts_count > 0 && (
+                            <div className="flex items-center gap-2 text-xs font-semibold text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-lg border border-blue-500/20 w-fit">
+                              <span className="relative flex h-2 w-2 mr-1">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                              </span>
+                              {product.carts_count} {product.carts_count === 1 ? "pessoa está" : "pessoas estão"} com este item no carrinho
+                            </div>
+                          )}
 
                           {/* Scarcity Trigger */}
                           {selectedVariant.stock > 0 && selectedVariant.stock <= 5 ? (
@@ -480,9 +486,16 @@ export function ProductModal({ slug, isOpen, onClose }: ProductModalProps) {
                       <div className="mt-4 bg-secondary/10 rounded-xl p-4 border border-border/30">
                         <h4 className="text-xs font-bold uppercase tracking-wider mb-3 text-foreground">Características Técnicas</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                          {product.variants && product.variants.length > 0 ? (
-                             product.variants[0].attributes.map((attr: any, idx: number) => (
+                          {product.specifications && product.specifications.length > 0 ? (
+                             product.specifications.map((spec: any, idx: number) => (
                                <div key={idx} className="flex justify-between border-b border-border/20 pb-1">
+                                 <span className="text-muted-foreground">{spec.attribute_name}</span>
+                                 <span className="font-medium text-foreground">{spec.attribute_value}</span>
+                               </div>
+                             ))
+                          ) : product.variants && product.variants.length > 0 ? (
+                             product.variants[0].attributes.map((attr: any, idx: number) => (
+                               <div key={`var-${idx}`} className="flex justify-between border-b border-border/20 pb-1">
                                  <span className="text-muted-foreground">{attr.attribute_name}</span>
                                  <span className="font-medium text-foreground">{attr.value}</span>
                                </div>

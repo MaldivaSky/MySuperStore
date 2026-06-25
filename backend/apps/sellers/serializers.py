@@ -77,18 +77,14 @@ class SellerApplySerializer(serializers.ModelSerializer):
     main_category = serializers.ChoiceField(
         choices=Seller._meta.get_field("main_category").choices, required=False
     )
-    bank_code = serializers.CharField(required=False, allow_blank=True)
-    bank_agency = serializers.CharField(required=False, allow_blank=True)
-    bank_account = serializers.CharField(required=False, allow_blank=True)
-    bank_account_type = serializers.ChoiceField(
-        choices=Seller._meta.get_field("bank_account_type").choices, required=False
-    )
+    efi_payee_code = serializers.CharField(required=True, allow_blank=False, help_text="Identificador de Conta Efí")
+    origin_cep = serializers.CharField(required=True, allow_blank=False, help_text="CEP de postagem (Galpão/Loja)")
 
     class Meta:
         model = Seller
         fields = [
             "store_name", "description", "pix_key", "cpf_cnpj", "person_type",
-            "main_category", "bank_code", "bank_agency", "bank_account", "bank_account_type"
+            "main_category", "efi_payee_code", "origin_cep"
         ]
 
     def validate_store_name(self, value):
@@ -110,13 +106,6 @@ class SellerApplySerializer(serializers.ModelSerializer):
         while Seller.objects.filter(slug=slug).exists():
             slug = f"{base_slug}-{n}"
             n += 1
-
-        # INTEGRAÇÃO EFÍ BANK: Aqui enviaríamos os dados bancários (bank_code, bank_agency, etc) 
-        # para a API de Criação de Recebedores da Efí Bank.
-        # Simulando o retorno com um identificador de conta gerado:
-        if validated_data.get("bank_account") and validated_data.get("bank_code"):
-            import uuid
-            validated_data["efi_payee_code"] = f"efi_{uuid.uuid4().hex[:12]}"
 
         seller = Seller.objects.create(
             user=user,

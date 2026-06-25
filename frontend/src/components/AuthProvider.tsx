@@ -24,8 +24,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const accessToken = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
     const refreshToken = typeof window !== "undefined" ? localStorage.getItem("refresh_token") : null;
 
-    if (accessToken && !isAuthenticated) {
-      // Tokens exist but state is not authenticated — silently revalidate
+    if (accessToken) {
+      // Always revalidate user data to ensure roles (is_seller, admin) are in sync
       authApi.me()
         .then((res) => {
           login(

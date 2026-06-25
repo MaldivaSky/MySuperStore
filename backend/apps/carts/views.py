@@ -209,9 +209,8 @@ class CartShippingQuoteView(BaseCartView, generics.GenericAPIView):
         quotes = {}
 
         for seller, items in sellers_items.items():
-            # Busca o CEP de origem do Lojista
-            origin_address = seller.user.addresses.filter(is_default=True).first()
-            origin_cep = origin_address.cep if origin_address else "01001000" # Fallback pra nao quebrar checkout
+            # Busca o CEP de origem direto do cadastro do Lojista
+            origin_cep = seller.origin_cep or "01001000" # Fallback extremo se o lojista não tiver preenchido (só p/ lojas antigas)
             
             try:
                 seller_quotes = me_service.calculate_shipping(origin_cep, dest_cep, items)

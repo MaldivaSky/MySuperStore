@@ -45,6 +45,8 @@ class AdminSellerListSerializer(serializers.ModelSerializer):
 from apps.catalog.models import Banner
 
 class AdminBannerSerializer(serializers.ModelSerializer):
+    link = serializers.CharField(source="link_url", required=False, allow_blank=True)
+
     class Meta:
         model = Banner
         fields = ["id", "title", "image", "link", "active", "order", "created_at"]

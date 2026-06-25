@@ -75,10 +75,8 @@ export default function SellerOnboardingPage() {
   const [personType, setPersonType] = useState("PF");
   const [storeCpfCnpj, setStoreCpfCnpj] = useState("");
   const [mainCategory, setMainCategory] = useState("outros");
-  const [bankCode, setBankCode] = useState("");
-  const [bankAgency, setBankAgency] = useState("");
-  const [bankAccount, setBankAccount] = useState("");
-  const [bankAccountType, setBankAccountType] = useState("corrente");
+  const [originCep, setOriginCep] = useState("");
+  const [efiPayeeCode, setEfiPayeeCode] = useState("");
   const [isSubmittingStore, setIsSubmittingStore] = useState(false);
 
   const formatCpfCnpj = (value: string, type: string) => {
@@ -140,10 +138,8 @@ export default function SellerOnboardingPage() {
         cpf_cnpj: storeCpfCnpj.replace(/\D/g, ''),
         person_type: personType,
         main_category: mainCategory,
-        bank_code: bankCode,
-        bank_agency: bankAgency,
-        bank_account: bankAccount,
-        bank_account_type: bankAccountType,
+        origin_cep: originCep.replace(/\D/g, ''),
+        efi_payee_code: efiPayeeCode,
       });
       // Refresh user role via authApi.me ou atualiza Zustand manualmente
       updateUser({ is_seller: true, role: "seller" });
@@ -389,63 +385,66 @@ export default function SellerOnboardingPage() {
                     <option value="outros" className="bg-[#0A0A15]">Outros</option>
                   </select>
                 </div>
-                
-                {/* DADOS BANCÁRIOS */}
+
+                {/* CEP DE ORIGEM (FRETE) */}
                 <div className="pt-6 border-t border-white/10">
                   <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-[#E6B53C]" /> Dados para Repasse (Efí Bank)
+                    📦 Origem dos Envios (Melhor Envio)
                   </h3>
                   <p className="text-sm text-neutral-400 mb-6">
-                    A MySuperStore utiliza a Efí Bank para dividir o pagamento das vendas de forma automática (Split Nativo). 
-                    Informe uma conta bancária vinculada ao mesmo CPF/CNPJ acima para criarmos o seu código recebedor seguro.
+                    Para calcularmos os fretes automaticamente para os clientes (Correios/Jadlog), o sistema precisa saber de qual CEP seus produtos sairão.
+                  </p>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">CEP de Origem (Galpão ou Loja)</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={originCep}
+                      onChange={e => setOriginCep(e.target.value)}
+                      maxLength={9}
+                      className="w-full mt-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] outline-none transition-colors"
+                      placeholder="Ex: 01001-000"
+                    />
+                  </div>
+                </div>
+                
+                {/* DADOS PARA REPASSE EFÍ */}
+                <div className="pt-6 border-t border-white/10">
+                  <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-[#E6B53C]" /> Conta Recebedora (Efí Bank)
+                  </h3>
+                  <p className="text-sm text-neutral-400 mb-6">
+                    Para receber automaticamente suas comissões das vendas via PIX e Cartão, você deve ter uma **Conta Digital na Efí Bank**.
                   </p>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Código do Banco</label>
-                      <input 
-                        type="text" 
-                        required 
-                        value={bankCode}
-                        onChange={e => setBankCode(e.target.value)}
-                        className="w-full mt-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] outline-none transition-colors"
-                        placeholder="Ex: 341 (Itaú), 260 (Nubank)"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Tipo de Conta</label>
-                      <select 
-                        required 
-                        value={bankAccountType}
-                        onChange={e => setBankAccountType(e.target.value)}
-                        className="w-full mt-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] outline-none transition-colors appearance-none"
-                      >
-                        <option value="corrente" className="bg-[#0A0A15]">Conta Corrente</option>
-                        <option value="poupanca" className="bg-[#0A0A15]">Conta Poupança</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Agência (sem dígito)</label>
-                      <input 
-                        type="text" 
-                        required 
-                        value={bankAgency}
-                        onChange={e => setBankAgency(e.target.value)}
-                        className="w-full mt-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] outline-none transition-colors"
-                        placeholder="Ex: 0001"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Conta (com dígito)</label>
-                      <input 
-                        type="text" 
-                        required 
-                        value={bankAccount}
-                        onChange={e => setBankAccount(e.target.value)}
-                        className="w-full mt-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] outline-none transition-colors"
-                        placeholder="Ex: 12345-6"
-                      />
-                    </div>
+                  <div className="bg-white/[0.03] border border-[#E6B53C]/20 rounded-2xl p-6 mb-6">
+                    <h4 className="font-bold text-[#E6B53C] mb-4 uppercase text-xs tracking-wider">Como encontrar o Número da sua Conta na Efí</h4>
+                    <ul className="space-y-3">
+                      <li className="flex items-start gap-3 text-sm text-neutral-300">
+                        <span className="w-6 h-6 rounded-full bg-[#E6B53C]/10 text-[#E6B53C] flex items-center justify-center font-bold shrink-0">1</span>
+                        <span>Abra a Efí Bank (App Celular ou Site).</span>
+                      </li>
+                      <li className="flex items-start gap-3 text-sm text-neutral-300">
+                        <span className="w-6 h-6 rounded-full bg-[#E6B53C]/10 text-[#E6B53C] flex items-center justify-center font-bold shrink-0">2</span>
+                        <span>No menu lateral esquerdo, vá em <strong>Configurações de conta &gt; Dados da conta</strong>.</span>
+                      </li>
+                      <li className="flex items-start gap-3 text-sm text-neutral-300">
+                        <span className="w-6 h-6 rounded-full bg-[#E6B53C]/10 text-[#E6B53C] flex items-center justify-center font-bold shrink-0">3</span>
+                        <span>Copie o número exato do campo <strong>Conta</strong> (incluindo o traço).</span>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Número da Conta Efí (Com traço)</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={efiPayeeCode}
+                      onChange={e => setEfiPayeeCode(e.target.value)}
+                      className="w-full mt-2 px-4 py-3 bg-black/40 border border-[#E6B53C]/40 rounded-xl text-white focus:border-[#E6B53C] outline-none transition-colors font-mono tracking-widest text-lg"
+                      placeholder="Ex: 931902-6"
+                    />
                   </div>
                 </div>
 

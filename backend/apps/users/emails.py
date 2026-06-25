@@ -78,7 +78,7 @@ def send_verification_email(user) -> bool:
     <body>
         <div class="container">
             <div class="header">
-                <h1>MySuperStore</h1>
+                <img src="{settings.FRONTEND_URL.rstrip('/')}/logo.png" alt="MySuperStore" style="max-height: 50px; width: auto; object-fit: contain;">
             </div>
             <div class="content">
                 <h2>O futuro do seu E-commerce começa agora, {first_name}. 🚀</h2>

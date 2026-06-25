@@ -44,7 +44,7 @@ export default function CRMPipefyPage() {
     try {
       setLoading(true);
       const res = await crmApi.getLeads();
-      setLeads(res.data);
+      setLeads(res.data.results || res.data);
     } catch (err) {
       console.error(err);
     } finally {

@@ -25,7 +25,9 @@ import {
   ArrowLeft,
   Star,
   Activity,
-  Package
+  Package,
+  Eye,
+  MousePointerClick
 } from "lucide-react";
 
 export default function SellerAnalyticsPage() {
@@ -97,44 +99,62 @@ export default function SellerAnalyticsPage() {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-6 rounded-2xl bg-card border border-border shadow-sm">
-            <div className="flex items-center justify-between text-muted-foreground mb-4">
-              <span className="text-xs uppercase tracking-wider font-semibold">Receita Total</span>
-              <DollarSign className="h-5 w-5" />
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-2xl bg-card border border-border shadow-sm">
+            <div className="flex items-center justify-between text-muted-foreground mb-2">
+              <span className="text-[10px] uppercase tracking-wider font-semibold">Receita Total</span>
+              <DollarSign className="h-4 w-4" />
             </div>
-            <h2 className="text-3xl font-bold">R$ {Number(data.kpis.total_revenue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h2>
-            <p className="text-xs text-green-500 mt-2 font-medium flex items-center gap-1"><TrendingUp className="h-3 w-3" /> GMV do período</p>
+            <h2 className="text-xl font-bold truncate">R$ {Number(data.kpis.total_revenue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h2>
+            <p className="text-[10px] text-green-500 mt-1 font-medium flex items-center gap-1"><TrendingUp className="h-3 w-3" /> GMV do período</p>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="p-6 rounded-2xl bg-card border border-border shadow-sm">
-            <div className="flex items-center justify-between text-muted-foreground mb-4">
-              <span className="text-xs uppercase tracking-wider font-semibold">Pedidos Entregues</span>
-              <ShoppingBag className="h-5 w-5" />
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="p-4 rounded-2xl bg-card border border-border shadow-sm">
+            <div className="flex items-center justify-between text-muted-foreground mb-2">
+              <span className="text-[10px] uppercase tracking-wider font-semibold">Pedidos</span>
+              <ShoppingBag className="h-4 w-4" />
             </div>
-            <h2 className="text-3xl font-bold">{data.kpis.total_orders}</h2>
-            <p className="text-xs text-muted-foreground mt-2 font-medium">Transações com sucesso</p>
+            <h2 className="text-xl font-bold truncate">{data.kpis.total_orders}</h2>
+            <p className="text-[10px] text-muted-foreground mt-1 font-medium">Sucesso</p>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="p-6 rounded-2xl bg-card border border-border shadow-sm">
-            <div className="flex items-center justify-between text-muted-foreground mb-4">
-              <span className="text-xs uppercase tracking-wider font-semibold">Ticket Médio (AOV)</span>
-              <Activity className="h-5 w-5 text-primary" />
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="p-4 rounded-2xl bg-card border border-border shadow-sm">
+            <div className="flex items-center justify-between text-muted-foreground mb-2">
+              <span className="text-[10px] uppercase tracking-wider font-semibold">Ticket Médio</span>
+              <Activity className="h-4 w-4 text-primary" />
             </div>
-            <h2 className="text-3xl font-bold">R$ {Number(data.kpis.avg_ticket).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h2>
-            <p className="text-xs text-muted-foreground mt-2 font-medium">Gasto médio por cliente</p>
+            <h2 className="text-xl font-bold truncate">R$ {Number(data.kpis.avg_ticket).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h2>
+            <p className="text-[10px] text-muted-foreground mt-1 font-medium">AOV</p>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="p-6 rounded-2xl bg-card border border-border shadow-sm">
-            <div className="flex items-center justify-between text-muted-foreground mb-4">
-              <span className="text-xs uppercase tracking-wider font-semibold">Sua Reputação</span>
-              <Star className="h-5 w-5 text-amber-500" />
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="p-4 rounded-2xl bg-card border border-border shadow-sm">
+            <div className="flex items-center justify-between text-muted-foreground mb-2">
+              <span className="text-[10px] uppercase tracking-wider font-semibold">Views</span>
+              <Eye className="h-4 w-4 text-blue-500" />
             </div>
-            <div className="flex items-end gap-2">
-              <h2 className="text-3xl font-bold">{data.reputation.avg_rating}</h2>
-              <span className="text-sm font-medium text-amber-500 mb-1">/ 5.0</span>
+            <h2 className="text-xl font-bold truncate">{data.kpis.total_views}</h2>
+            <p className="text-[10px] text-muted-foreground mt-1 font-medium">Tráfego gerado</p>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="p-4 rounded-2xl bg-card border border-border shadow-sm">
+            <div className="flex items-center justify-between text-muted-foreground mb-2">
+              <span className="text-[10px] uppercase tracking-wider font-semibold">Cliques</span>
+              <MousePointerClick className="h-4 w-4 text-purple-500" />
             </div>
-            <p className="text-xs text-muted-foreground mt-2 font-medium">Baseado em {data.reputation.review_count} avaliações</p>
+            <h2 className="text-xl font-bold truncate">{data.kpis.total_clicks}</h2>
+            <p className="text-[10px] text-muted-foreground mt-1 font-medium">Interações totais</p>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="p-4 rounded-2xl bg-card border border-border shadow-sm">
+            <div className="flex items-center justify-between text-muted-foreground mb-2">
+              <span className="text-[10px] uppercase tracking-wider font-semibold">Reputação</span>
+              <Star className="h-4 w-4 text-amber-500" />
+            </div>
+            <div className="flex items-end gap-1">
+              <h2 className="text-xl font-bold truncate">{data.reputation.avg_rating}</h2>
+              <span className="text-[10px] font-medium text-amber-500 mb-1">/ 5.0</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1 font-medium">({data.reputation.review_count} reviews)</p>
           </motion.div>
         </div>
 
@@ -161,23 +181,46 @@ export default function SellerAnalyticsPage() {
             </div>
           </div>
 
-          {/* Top Products Table */}
-          <div className="p-6 rounded-2xl bg-card border border-border shadow-sm">
-            <h3 className="text-lg font-bold mb-6 flex items-center gap-2"><Package className="h-5 w-5 text-primary" /> Curva ABC (Top 5)</h3>
-            <div className="space-y-4">
-              {data.top_products.length > 0 ? data.top_products.map((item: any, idx: number) => (
-                <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-background border border-border/50">
-                  <div>
-                    <p className="text-sm font-semibold line-clamp-1">{item.product_name}</p>
-                    <p className="text-xs text-muted-foreground">{item.quantity} unidades vendidas</p>
+          {/* Tables Column */}
+          <div className="space-y-8">
+            {/* Top Products Table */}
+            <div className="p-6 rounded-2xl bg-card border border-border shadow-sm">
+              <h3 className="text-lg font-bold mb-6 flex items-center gap-2"><Package className="h-5 w-5 text-primary" /> Curva ABC (Top 5)</h3>
+              <div className="space-y-4">
+                {data.top_products?.length > 0 ? data.top_products.map((item: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-background border border-border/50">
+                    <div>
+                      <p className="text-sm font-semibold line-clamp-1">{item.product_name}</p>
+                      <p className="text-xs text-muted-foreground">{item.quantity} unidades vendidas</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-primary">R$ {Number(item.revenue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-primary">R$ {Number(item.revenue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                )) : (
+                  <div className="text-sm text-muted-foreground text-center py-10">Nenhum produto vendido ainda.</div>
+                )}
+              </div>
+            </div>
+
+            {/* Most Viewed Table */}
+            <div className="p-6 rounded-2xl bg-card border border-border shadow-sm">
+              <h3 className="text-lg font-bold mb-6 flex items-center gap-2"><Eye className="h-5 w-5 text-blue-500" /> Anúncios Mais Visitados</h3>
+              <div className="space-y-4">
+                {data.most_viewed_products?.length > 0 ? data.most_viewed_products.map((item: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-background border border-border/50">
+                    <div>
+                      <p className="text-sm font-semibold line-clamp-1">{item.name}</p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1"><MousePointerClick className="h-3 w-3" /> {item.clicks_count} cliques</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-blue-500 flex items-center gap-1 justify-end"><Eye className="h-3 w-3" /> {item.views_count}</p>
+                    </div>
                   </div>
-                </div>
-              )) : (
-                <div className="text-sm text-muted-foreground text-center py-10">Nenhum produto vendido ainda.</div>
-              )}
+                )) : (
+                  <div className="text-sm text-muted-foreground text-center py-10">Nenhum acesso registrado ainda.</div>
+                )}
+              </div>
             </div>
           </div>
         </div>
