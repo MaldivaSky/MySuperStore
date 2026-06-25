@@ -159,7 +159,7 @@ class SellerUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Seller
-        fields = ["description", "logo", "banner", "banner2", "banner3", "pix_key", "max_installments"]
+        fields = ["store_name", "description", "logo", "banner", "banner2", "banner3", "pix_key", "max_installments"]
 
 
 from .models import ChatRoom, ChatMessage

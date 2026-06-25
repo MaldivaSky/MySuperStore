@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { api, returnsApi, catalogApi, chatApi, sellerDashboardApi, sellerOrdersApi } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { StoreSettingsTab } from "@/components/seller/StoreSettingsTab";
 
 export default function SellerPage() {
   return (
@@ -1636,43 +1637,9 @@ function SellerDashboard() {
 
         {/* Tab: Configurações */}
         {activeTab === "configuracoes" && (
-          <div className="space-y-8 relative z-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Informações Básicas */}
-              <div className="bg-[#0a0a14]/80 backdrop-blur-xl border border-white/[0.05] rounded-3xl p-8">
-                <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Store className="w-5 h-5 text-blue-500" /> Perfil da Loja</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-xs text-neutral-400 uppercase tracking-wider font-bold block mb-1">Nome da Loja</label>
-                    <input type="text" defaultValue={(user as any)?.seller_profile?.store_name || "Minha Loja Premium"} className="w-full bg-[#141420] border border-white/[0.05] rounded-xl px-4 py-2 text-sm text-white focus:border-blue-500 outline-none" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-neutral-400 uppercase tracking-wider font-bold block mb-1">Descrição</label>
-                    <textarea defaultValue={(user as any)?.seller_profile?.description || "Especialistas em produtos de alta qualidade com entrega expressa."} className="w-full bg-[#141420] border border-white/[0.05] rounded-xl px-4 py-2 text-sm text-white focus:border-blue-500 outline-none resize-none" rows={3}></textarea>
-                  </div>
-                </div>
-              </div>
-
-              {/* Premium Glassdoor */}
-              <div className="bg-gradient-to-br from-[#0a0a14] to-[#E6B53C]/10 backdrop-blur-xl border border-[#E6B53C]/20 rounded-3xl p-8 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-[#E6B53C]/20 rounded-full blur-[50px]"></div>
-                <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[#E6B53C] relative z-10"><Store className="w-5 h-5" /> Premium Glassdoor</h3>
-                <p className="text-sm text-neutral-300 mb-6 relative z-10">
-                  Sua loja possui uma vitrine exclusiva. Exiba seus produtos em um ambiente livre de concorrência com design premium.
-                </p>
-                <div className="space-y-4 relative z-10">
-                  <a 
-                    href={`/s/${(user as any)?.seller_profile?.slug}`} 
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#E6B53C] to-[#B38F25] text-black font-black py-3 rounded-xl hover:opacity-90 transition-opacity"
-                  >
-                    <Eye className="w-5 h-5" /> Acessar Minha Vitrine
-                  </a>
-                  <p className="text-xs text-neutral-500 text-center">Para alterar os 3 banners rotativos, entre em contato com o suporte provisoriamente.</p>
-                </div>
-              </div>
-              {/* Recebimentos */}
+          <StoreSettingsTab user={user} onUpdate={(updated) => useAuthStore.getState().setUser({...user, seller_profile: {...user?.seller_profile, ...updated}} as any)} />
+        )}
+        {/* Recebimentos */}
               <div className="bg-[#0a0a14]/80 backdrop-blur-xl border border-white/[0.05] rounded-3xl p-8 col-span-1 md:col-span-2">
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><DollarSign className="w-5 h-5 text-emerald-500" /> Recebimentos e Conta</h3>
                 <div className="space-y-4">
