@@ -8,7 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { sellerApi } from "@/lib/api";
 import { Header } from "@/components/Header";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Store, 
   CreditCard, 
@@ -23,7 +23,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   Settings,
-  X
+  X,
+  Loader2
 } from "lucide-react";
 
 function DashboardContent() {

@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Package, Loader2, X, DollarSign, Trash2, Eye, EyeOff, ImageOff, CheckCircle2, AlertTriangle, ArrowLeft, Edit } from "lucide-react";
+import { Plus, Package, Loader2, X, DollarSign, Trash2, Eye, EyeOff, ImageOff, CheckCircle2, AlertTriangle, ArrowLeft, Edit, Zap } from "lucide-react";
 import { Header } from "@/components/Header";
 import { sellerDashboardApi, catalogApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";

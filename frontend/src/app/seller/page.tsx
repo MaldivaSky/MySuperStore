@@ -1658,7 +1658,21 @@ function SellerDashboard() {
                   <p className="text-xs text-neutral-500 text-center">Para alterar os 3 banners rotativos, entre em contato com o suporte provisoriamente.</p>
                 </div>
               </div>
-
+              {/* Recebimentos */}
+              <div className="bg-[#0a0a14]/80 backdrop-blur-xl border border-white/[0.05] rounded-3xl p-8 col-span-1 md:col-span-2">
+                <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><DollarSign className="w-5 h-5 text-emerald-500" /> Recebimentos e Conta</h3>
+                <div className="space-y-4">
+                  {(user as any)?.seller_profile?.efi_account_id ? (
+                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center">
+                          <CheckCircle className="w-5 h-5 text-emerald-500" />
+                        </div>
+                        <div>
+                          <h4 className="text-emerald-500 font-bold">Conta Conectada</h4>
+                          <p className="text-xs text-emerald-500/70">Você está pronto para receber pagamentos e comissões.</p>
+                        </div>
+                      </div>
                     </div>
                   ) : (
                     <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
@@ -1672,20 +1686,20 @@ function SellerDashboard() {
                       <button 
                         onClick={async () => {
                           try {
-                            toast("Redirecionando para o Stripe...", "success");
+                            toast("Redirecionando para Efí Bank...", "success");
                             const res = await sellerDashboardApi.onboard(
-                              `${window.location.origin}/seller?stripe_callback=success`,
-                              `${window.location.origin}/seller?stripe_callback=refresh`
+                              `${window.location.origin}/seller?efi_callback=success`,
+                              `${window.location.origin}/seller?efi_callback=refresh`
                             );
                             window.location.href = res.data.onboarding_url;
                           } catch (err: any) {
                             console.error(err);
-                            toast("Erro ao iniciar conexão com o Stripe.", "error");
+                            toast("Erro ao iniciar conexão com a Efí Bank.", "error");
                           }
                         }}
-                        className="w-full bg-[#635BFF] hover:bg-[#635BFF]/90 text-white font-bold py-3 rounded-xl transition-all shadow-[0_0_15px_rgba(99,91,255,0.3)] flex items-center justify-center gap-2"
+                        className="w-full bg-[#F37021] hover:bg-[#F37021]/90 text-white font-bold py-3 rounded-xl transition-all shadow-[0_0_15px_rgba(243,112,33,0.3)] flex items-center justify-center gap-2"
                       >
-                        <CreditCard className="w-5 h-5" /> Conectar com Stripe
+                        <CreditCard className="w-5 h-5" /> Conectar com Efí Bank
                       </button>
                     </div>
                   )}

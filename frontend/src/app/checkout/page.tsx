@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState, useRef } from "react";
 import { Header } from "@/components/Header";
-import { cartApi, ordersApi, paymentsApi, PaymentMethodChoice, userApi } from "@/lib/api";
+import { cartApi, ordersApi, paymentsApi, PaymentMethodChoice, userApi, authApi } from "@/lib/api";
 import { Cart } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -15,8 +15,6 @@ import {
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import EfiPay from "payment-token-efi";
-
 type Method = PaymentMethodChoice;
 
 const brl = (v: number | string) =>
@@ -97,7 +95,7 @@ function CheckoutInner() {
         });
         setMaxInstallments(maxAllowed);
 
-        const meRes = await userApi.me().catch(() => null);
+        const meRes = await authApi.me().catch(() => null);
         if (meRes?.data) setUserEmail(meRes.data.email || "");
 
         try {
@@ -203,7 +201,9 @@ function CheckoutInner() {
         const accountId = process.env.NEXT_PUBLIC_EFI_ACCOUNT_IDENTIFIER;
         if (!accountId) throw new Error("Chave do Efí não configurada (NEXT_PUBLIC_EFI_ACCOUNT_IDENTIFIER)");
 
-        const efi = new EfiPay({ env: process.env.NEXT_PUBLIC_IS_DEBUG === 'true' ? 'sandbox' : 'production' });
+        const EfiModule = await import("payment-token-efi");
+        const EfiConstructor = EfiModule.default || EfiModule;
+        const efi = new (EfiConstructor as any)({ env: process.env.NEXT_PUBLIC_IS_DEBUG === 'true' ? 'sandbox' : 'production' });
         
         try {
           // A biblioteca exige identificar a conta, algumas versões exigem no construtor

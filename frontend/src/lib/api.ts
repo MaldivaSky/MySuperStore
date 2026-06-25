@@ -189,7 +189,7 @@ export const chatApi = {
 };
 
 export const sellerDashboardApi = {
-  apply: (data: { store_name: string; description: string; cpf_cnpj?: string }) => api.post("/sellers/apply/", data),
+  apply: (data: { store_name: string; description: string; cpf_cnpj?: string; person_type?: string; main_category?: string; origin_cep?: string; efi_payee_code?: string }) => api.post("/sellers/apply/", data),
   onboard: (success_url: string, refresh_url: string) => api.post("/sellers/me/onboard/", { success_url, refresh_url }),
   stripeCallback: () => api.post("/sellers/me/stripe/callback/"),
   getLeads: () => api.get("/sellers/me/leads/"),

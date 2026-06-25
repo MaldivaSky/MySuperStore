@@ -21,7 +21,7 @@ export function NotificationDropdown() {
     disconnectWebSocket 
   } = useNotificationStore();
   
-  const { isAuthenticated, accessToken } = useAuthStore();
+  const { isAuthenticated, accessToken, user } = useAuthStore();
 
   useEffect(() => {
     if (isAuthenticated && accessToken) {
