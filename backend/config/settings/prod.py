@@ -27,10 +27,4 @@ sentry_sdk.init(
     profiles_sample_rate=0.1,
 )
 
-# ── Armazenamento em Nuvem (Cloudinary) ───────────────────────────────────────
-if env("CLOUDINARY_URL", default=""):
-    INSTALLED_APPS.insert(0, "cloudinary_storage")
-    INSTALLED_APPS.insert(0, "cloudinary")
-    STORAGES["default"] = {
-        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
-    }
+# O armazenamento em nuvem (Cloudinary) agora é gerenciado diretamente no base.py

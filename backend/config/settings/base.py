@@ -133,6 +133,17 @@ if USE_S3:
         MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/"
     else:
         MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/"
+elif env("CLOUDINARY_URL", default=""):
+    INSTALLED_APPS.insert(0, "cloudinary_storage")
+    INSTALLED_APPS.insert(0, "cloudinary")
+    STORAGES = {
+        "default": {
+            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
 else:
     STORAGES = {
         "default": {

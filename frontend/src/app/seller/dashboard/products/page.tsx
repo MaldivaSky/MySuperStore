@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Package, Loader2, X, DollarSign, Trash2, Eye, EyeOff, ImageOff, CheckCircle2, AlertTriangle, ArrowLeft, Edit, Zap } from "lucide-react";
 import { Header } from "@/components/Header";
+import { BrandLoader } from "@/components/ui/BrandLoader";
 import { sellerDashboardApi, catalogApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { ProductMediaUploader, UploaderImage } from "@/components/seller/ProductMediaUploader";
@@ -250,7 +251,7 @@ export default function SellerProductsPage() {
 
         {/* Lista */}
         {loading ? (
-          <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+          <BrandLoader size="lg" text="Carregando catálogo..." />
         ) : products.length === 0 ? (
           <div className="text-center py-20 border border-dashed border-border/50 rounded-2xl">
             <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />

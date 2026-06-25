@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import {
   ImagePlus, Star, Trash2, Loader2, Film, X, AlertTriangle, Info, Video,
 } from "lucide-react";
@@ -36,6 +36,14 @@ export function ProductMediaUploader({
 }: Props) {
   const [images, setImages] = useState<UploaderImage[]>(initialImages);
   const [videoUrl, setVideoUrl] = useState<string | null>(initialVideoUrl);
+
+  useEffect(() => {
+    setImages(initialImages);
+  }, [initialImages]);
+
+  useEffect(() => {
+    setVideoUrl(initialVideoUrl);
+  }, [initialVideoUrl]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [busyImageId, setBusyImageId] = useState<string | null>(null);

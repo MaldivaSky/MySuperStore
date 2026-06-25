@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { sellerApi } from "@/lib/api";
 import { Header } from "@/components/Header";
+import { BrandLoader } from "@/components/ui/BrandLoader";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Store, 
@@ -130,7 +131,7 @@ function DashboardContent() {
   if (loading) {
     return (
       <div className="flex-grow flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <BrandLoader size="lg" text="Carregando informações..." />
       </div>
     );
   }
@@ -247,69 +248,43 @@ function DashboardContent() {
       {/* 3. PAINEL DE DADOS */}
       {store && (
         <div className="space-y-8">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border/40 pb-6">
-            <div>
-              <h1 className="text-3xl font-display font-black text-foreground">{store.store_name}</h1>
-              <p className="text-sm text-muted-foreground">Gerenciamento financeiro e catálogo do marketplace</p>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-border/10 pb-6">
+            <div className="space-y-3 w-full md:w-auto">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-display font-black text-foreground tracking-tight">{store.store_name}</h1>
+                <p className="text-sm text-muted-foreground mt-1">Gerenciamento financeiro e catálogo do marketplace</p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${
+                  store.status === "approved" 
+                    ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" 
+                    : "bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                }`}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${store.status === "approved" ? "bg-emerald-500" : "bg-amber-500"}`} />
+                  {store.status === "approved" ? "Loja Ativa" : "Pendente"}
+                </span>
+
+                <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${
+                  store.efi_payee_code 
+                    ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" 
+                    : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+                }`}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${store.efi_payee_code ? "bg-emerald-500" : "bg-rose-500"}`} />
+                  Efí Bank: {store.efi_payee_code ? "Vinculado" : "Pendente"}
+                </span>
+              </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase ${
-                store.status === "approved" 
-                  ? "bg-green-500/10 text-green-500 border border-green-500/20" 
-                  : "bg-amber-500/10 text-amber-500 border border-amber-500/20"
-              }`}>
-                Status: {store.status === "approved" ? "Ativo" : "Pendente de Aprovação"}
-              </span>
-
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase ${
-                store.efi_payee_code 
-                  ? "bg-green-500/10 text-green-500 border border-green-500/20" 
-                  : "bg-red-500/10 text-red-500 border border-red-500/20"
-              }`}>
-                Efí Bank: {store.efi_payee_code ? "Vinculado" : "Pendente"}
-              </span>
-
+            <div className="w-full md:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <button
                 onClick={() => window.open(`/s/${store.slug}`, '_blank')}
-                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-bold flex items-center gap-2 transition-colors text-sm shadow-md"
+                className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-bold flex items-center justify-center gap-2 transition-all text-sm shadow-md"
               >
                 <Store className="h-4 w-4" />
-                Ver Minha Loja
+                <span className="whitespace-nowrap">Ver Minha Loja</span>
               </button>
-
-              <button
-                onClick={() => router.push("/seller/dashboard/products")}
-                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-bold flex items-center gap-2 transition-colors text-sm shadow-md"
-              >
-                <Package className="h-4 w-4" />
-                Produtos
-              </button>
-
-              <button
-                onClick={() => router.push("/seller/dashboard/analytics")}
-                className="px-4 py-2 ml-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 font-bold flex items-center gap-2 transition-colors text-sm"
-              >
-                <Activity className="h-4 w-4" />
-                Analytics & KPIs
-              </button>
-
-              <button 
-                onClick={() => router.push("/seller/dashboard/reviews")}
-                className="px-4 py-2 ml-2 rounded-xl bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 font-bold flex items-center gap-2 transition-colors text-sm"
-              >
-                <Star className="h-4 w-4" />
-                Reputação
-              </button>
-
-              <button 
-                onClick={() => router.push("/seller/dashboard/chats")}
-                className="px-4 py-2 ml-2 rounded-xl bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 font-bold flex items-center gap-2 transition-colors text-sm"
-              >
-                <MessageCircle className="h-4 w-4" />
-                Mensagens
-              </button>
-
+              
               <button 
                 onClick={() => {
                   setStoreName(store.store_name || "");
@@ -317,10 +292,55 @@ function DashboardContent() {
                   setPixKey(store.pix_key || "");
                   setIsSettingsOpen(true);
                 }}
-                className="px-4 py-2 ml-2 rounded-xl bg-neutral-500/10 text-neutral-400 hover:bg-neutral-500/20 font-bold flex items-center gap-2 transition-colors text-sm"
+                className="px-5 py-2.5 rounded-xl bg-card border border-border/40 hover:bg-white/5 text-foreground font-semibold flex items-center justify-center gap-2 transition-all text-sm shadow-sm"
               >
-                <Settings className="h-4 w-4" />
-                Configurações
+                <Settings className="h-4 w-4 text-muted-foreground" />
+                <span className="whitespace-nowrap">Configurações</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Menu de Navegação Secundário */}
+          <div className="pb-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] -mx-4 px-4 sm:mx-0 sm:px-0">
+            <div className="flex items-center gap-3 min-w-max">
+              <button
+                onClick={() => router.push("/seller/dashboard/products")}
+                className="px-4 py-2.5 rounded-xl bg-card border border-border/40 hover:border-primary/50 hover:bg-primary/5 text-foreground font-medium flex items-center gap-2.5 transition-all text-sm group shadow-sm"
+              >
+                <div className="p-1.5 rounded-md bg-primary/10 text-primary group-hover:scale-110 transition-transform">
+                  <Package className="h-4 w-4" />
+                </div>
+                <span>Produtos</span>
+              </button>
+
+              <button
+                onClick={() => router.push("/seller/dashboard/analytics")}
+                className="px-4 py-2.5 rounded-xl bg-card border border-border/40 hover:border-amber-500/50 hover:bg-amber-500/5 text-foreground font-medium flex items-center gap-2.5 transition-all text-sm group shadow-sm"
+              >
+                <div className="p-1.5 rounded-md bg-amber-500/10 text-amber-500 group-hover:scale-110 transition-transform">
+                  <Activity className="h-4 w-4" />
+                </div>
+                <span>Analytics & KPIs</span>
+              </button>
+
+              <button 
+                onClick={() => router.push("/seller/dashboard/reviews")}
+                className="px-4 py-2.5 rounded-xl bg-card border border-border/40 hover:border-yellow-500/50 hover:bg-yellow-500/5 text-foreground font-medium flex items-center gap-2.5 transition-all text-sm group shadow-sm"
+              >
+                <div className="p-1.5 rounded-md bg-yellow-500/10 text-yellow-500 group-hover:scale-110 transition-transform">
+                  <Star className="h-4 w-4" />
+                </div>
+                <span>Reputação</span>
+              </button>
+
+              <button 
+                onClick={() => router.push("/seller/dashboard/chats")}
+                className="px-4 py-2.5 rounded-xl bg-card border border-border/40 hover:border-blue-500/50 hover:bg-blue-500/5 text-foreground font-medium flex items-center gap-2.5 transition-all text-sm group shadow-sm"
+              >
+                <div className="p-1.5 rounded-md bg-blue-500/10 text-blue-500 group-hover:scale-110 transition-transform">
+                  <MessageCircle className="h-4 w-4" />
+                </div>
+                <span>Mensagens</span>
               </button>
             </div>
           </div>
@@ -419,7 +439,7 @@ export default function SellerDashboardPage() {
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         <Suspense fallback={
           <div className="flex-grow flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <BrandLoader size="lg" text="Iniciando painel..." />
           </div>
         }>
           <DashboardContent />
