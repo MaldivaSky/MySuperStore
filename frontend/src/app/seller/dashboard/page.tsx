@@ -16,19 +16,20 @@ import {
   Layers, 
   ShoppingBag, 
   DollarSign, 
-  Loader2, 
   Send,
   Activity,
   Star,
   MessageCircle,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  Settings,
+  X
 } from "lucide-react";
 
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   
   const [loading, setLoading] = useState(true);
   const [store, setStore] = useState<any>(null);
@@ -45,6 +46,10 @@ function DashboardContent() {
   const [stripeLoading, setStripeLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error" | null>(null);
+
+  // Settings Modal
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsLoading, setSettingsLoading] = useState(false);
 
   const fetchStoreData = async () => {
     setLoading(true);
@@ -71,29 +76,12 @@ function DashboardContent() {
       router.push("/login");
       return;
     }
-    
-    // Verifica se voltou do Stripe Connect
-    const callback = searchParams.get("stripe_callback");
-    if (callback === "success") {
-      setToastType("success");
-      setToastMessage("Confirmando vinculação com o Stripe...");
-      sellerApi.stripeCallback()
-        .then(() => {
-          setToastMessage("Conta Stripe vinculada com sucesso!");
-          fetchStoreData();
-        })
-        .catch((err) => {
-          console.error(err);
-          setToastType("error");
-          setToastMessage("Falha ao confirmar vinculação com o Stripe.");
-        });
-    } else if (callback === "refresh") {
-      setToastType("error");
-      setToastMessage("O onboarding do Stripe foi interrompido. Tente novamente.");
+    if (isAuthenticated && user?.role !== "seller" && user?.role !== "admin") {
+      router.push("/");
+    } else if (isAuthenticated) {
+      fetchStoreData();
     }
-
-    fetchStoreData();
-  }, [isAuthenticated, searchParams]);
+  }, [isAuthenticated, user, router, searchParams]);
 
   const handleApply = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,22 +103,28 @@ function DashboardContent() {
     }
   };
 
-  const handleStripeOnboard = async () => {
-    setStripeLoading(true);
+  const handleUpdateSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSettingsLoading(true);
     try {
-      const returnUrl = `${window.location.origin}/seller/dashboard?stripe_callback=success`;
-      const refreshUrl = `${window.location.origin}/seller/dashboard?stripe_callback=refresh`;
-      
-      const { data } = await sellerApi.onboard(returnUrl, refreshUrl);
-      window.location.href = data.onboarding_url;
+      await sellerApi.update({
+        store_name: storeName,
+        description,
+        pix_key: pixKey,
+      });
+      await fetchStoreData();
+      setIsSettingsOpen(false);
+      setToastMessage("Loja atualizada com sucesso!");
+      setToastType("success");
+      setTimeout(() => setToastMessage(""), 3000);
     } catch (err: any) {
-      console.error(err);
-      setToastType("error");
-      setToastMessage(err.response?.data?.detail || "Erro ao gerar link do Stripe. Verifique se o Connect está ativo.");
+      alert("Erro ao atualizar loja.");
     } finally {
-      setStripeLoading(false);
+      setSettingsLoading(false);
     }
   };
+
+
 
   if (loading) {
     return (
@@ -268,12 +262,20 @@ function DashboardContent() {
               </span>
 
               <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase ${
-                store.stripe_authorized 
+                store.efi_payee_code 
                   ? "bg-green-500/10 text-green-500 border border-green-500/20" 
                   : "bg-red-500/10 text-red-500 border border-red-500/20"
               }`}>
-                Stripe: {store.stripe_authorized ? "Vinculado" : "Não Vinculado"}
+                Efí Bank: {store.efi_payee_code ? "Vinculado" : "Pendente"}
               </span>
+
+              <button
+                onClick={() => window.open(`/s/${store.slug}`, '_blank')}
+                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-bold flex items-center gap-2 transition-colors text-sm shadow-md"
+              >
+                <Store className="h-4 w-4" />
+                Ver Minha Loja
+              </button>
 
               <button
                 onClick={() => router.push("/seller/dashboard/products")}
@@ -306,39 +308,23 @@ function DashboardContent() {
                 <MessageCircle className="h-4 w-4" />
                 Mensagens
               </button>
+
+              <button 
+                onClick={() => {
+                  setStoreName(store.store_name || "");
+                  setDescription(store.description || "");
+                  setPixKey(store.pix_key || "");
+                  setIsSettingsOpen(true);
+                }}
+                className="px-4 py-2 ml-2 rounded-xl bg-neutral-500/10 text-neutral-400 hover:bg-neutral-500/20 font-bold flex items-center gap-2 transition-colors text-sm"
+              >
+                <Settings className="h-4 w-4" />
+                Configurações
+              </button>
             </div>
           </div>
 
-          {!store.stripe_authorized && (
-            <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="p-6 rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/10 via-amber-500/5 to-transparent flex flex-col md:flex-row justify-between items-start md:items-center gap-6"
-            >
-              <div className="space-y-1">
-                <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <CreditCard className="h-5 w-5 text-primary" />
-                  Configure seus Recebimentos Automáticos
-                </h3>
-                <p className="text-sm text-muted-foreground max-w-xl">
-                  Utilizamos o **Stripe Connect** para transferir o valor das suas vendas diretamente para sua conta bancária de forma automatizada. Complete o onboarding do Stripe para ativar seus anúncios.
-                </p>
-              </div>
-              
-              <button
-                onClick={handleStripeOnboard}
-                disabled={stripeLoading}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground hover:bg-primary/95 font-semibold text-sm rounded-xl transition-all shadow-md shadow-primary/10 hover:shadow-primary/20 shrink-0 disabled:opacity-50"
-              >
-                {stripeLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <CreditCard className="h-4 w-4" />
-                )}
-                Conectar Conta Stripe
-              </button>
-            </motion.div>
-          )}
+
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="p-6 rounded-2xl border border-border/40 bg-card/40 backdrop-blur-sm space-y-4">
@@ -389,6 +375,38 @@ function DashboardContent() {
           </div>
         </div>
       )}
+
+      {/* MODAL CONFIGURAÇÕES */}
+      <AnimatePresence>
+        {isSettingsOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsSettingsOpen(false)} />
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-[#0F0F1A] border border-white/10 rounded-2xl w-full max-w-lg p-6 shadow-2xl">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold flex items-center gap-2"><Settings className="w-5 h-5 text-primary" /> Editar Loja</h2>
+                <button onClick={() => setIsSettingsOpen(false)} className="text-neutral-500 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+              </div>
+              <form onSubmit={handleUpdateSettings} className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Nome da Loja</label>
+                  <input required value={storeName} onChange={(e) => setStoreName(e.target.value)} className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Descrição</label>
+                  <textarea rows={3} required value={description} onChange={(e) => setDescription(e.target.value)} className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors resize-none" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Chave PIX</label>
+                  <input required value={pixKey} onChange={(e) => setPixKey(e.target.value)} className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
+                </div>
+                <button type="submit" disabled={settingsLoading} className="w-full py-3 mt-4 rounded-xl bg-primary text-primary-foreground font-black hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50">
+                  {settingsLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Salvar Configurações"}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
