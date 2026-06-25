@@ -63,11 +63,11 @@ function HeaderInner() {
   };
 
   const navLinks = [
-    { name: "Loja", href: "/", icon: Store, show: true },
-    { name: "Vender Aqui", href: "/vender", icon: Store, show: true },
-    { name: "White-Label", href: "/white-label", icon: Zap, show: true },
-    { name: "Painel Lojista", href: "/seller", icon: LayoutDashboard, show: user?.has_store === true },
-    { name: "SuperAdmin", href: "/admin", icon: LayoutDashboard, show: user?.role === "admin" },
+    { name: "Loja", href: "/", icon: Store, show: true, hideOnDesktop: false },
+    { name: "Vender", href: "/seller/onboarding", icon: Store, show: !user?.is_seller, hideOnDesktop: true },
+    { name: "White-Label", href: "/white-label", icon: Zap, show: true, hideOnDesktop: false },
+    { name: "Painel Lojista", href: "/seller/dashboard", icon: LayoutDashboard, show: user?.is_seller === true, hideOnDesktop: true },
+    { name: "SuperAdmin", href: "/admin", icon: LayoutDashboard, show: user?.role === "admin", hideOnDesktop: false },
   ].filter(link => link.show);
 
   return (
@@ -80,7 +80,7 @@ function HeaderInner() {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-1">
-          {navLinks.map((link) => {
+          {navLinks.filter(link => !link.hideOnDesktop).map((link) => {
             const Icon = link.icon;
             const isActive = pathname === link.href;
             return (
@@ -106,6 +106,13 @@ function HeaderInner() {
             );
           })}
           {/* Action Buttons */}
+          <Link
+            href="/super-ofertas"
+            className="ml-2 relative flex items-center gap-1.5 text-xs font-black px-4 py-2 rounded-full transition-all duration-300 bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)] hover:scale-105 hover:shadow-[0_0_25px_rgba(239,68,68,0.7)] uppercase tracking-wider border border-white/20"
+          >
+            <Zap className="h-4 w-4 text-yellow-300 animate-pulse" />
+            Super Ofertas
+          </Link>
         </nav>
 
         {/* Search input desktop */}
@@ -154,12 +161,12 @@ function HeaderInner() {
             {isAuthenticated ? (
               <>
                 {user?.is_seller ? (
-                  <Link href="/seller/dashboard" className="hidden lg:flex items-center gap-2 px-4 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-sm font-semibold text-white transition-all">
+                  <Link href="/seller/dashboard" className="hidden md:flex items-center gap-2 px-4 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-sm font-semibold text-white transition-all">
                     <Store className="w-4 h-4 text-primary" />
                     Painel Lojista
                   </Link>
                 ) : (
-                  <Link href="/seller/onboarding" className="hidden lg:flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-primary to-[#B38F25] hover:scale-105 rounded-full text-sm font-black text-black transition-all shadow-[0_0_15px_rgba(230,181,60,0.3)]">
+                  <Link href="/seller/onboarding" className="hidden md:flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-primary to-[#B38F25] hover:scale-105 rounded-full text-sm font-black text-black transition-all shadow-[0_0_15px_rgba(230,181,60,0.3)]">
                     <Store className="w-4 h-4" />
                     Vender
                   </Link>

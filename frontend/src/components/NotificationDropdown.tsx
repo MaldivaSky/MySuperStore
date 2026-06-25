@@ -53,15 +53,22 @@ export function NotificationDropdown() {
 
   const handleNotificationClick = (type: string, id: string | null) => {
     setOpen(false);
-    if (type === "order") {
-      router.push(`/dashboard/orders`);
+    if (type === "order" || type === "seller_order") {
+      if (user?.role === "seller" || user?.role === "admin" || (typeof window !== "undefined" && window.location.pathname.includes("/seller"))) {
+        router.push(`/seller/dashboard/orders`);
+      } else {
+        router.push(`/dashboard/orders`);
+      }
     } else if (type === "chat") {
-      // Tenta redirecionar para a página correta
-      if (typeof window !== "undefined" && window.location.pathname.includes("/seller")) {
+      if (user?.role === "seller" || user?.role === "admin" || (typeof window !== "undefined" && window.location.pathname.includes("/seller"))) {
          router.push(`/seller/dashboard/chats`);
       } else {
-         router.push(`/dashboard/orders`); // Ou rota de chat do comprador futuramente
+         router.push(`/dashboard`);
       }
+    } else if (type === "promo") {
+      // id contém o slug do produto
+      if (id) router.push(`/product/${id}`);
+      else router.push(`/super-ofertas`);
     }
   };
 
