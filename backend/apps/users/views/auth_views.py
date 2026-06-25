@@ -23,15 +23,78 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        # Gera tokens direto no registro
+        # Dispara o e-mail de confirmação (não bloqueia o cadastro se o envio falhar).
+        from apps.users.emails import send_verification_email
+        email_sent = send_verification_email(user)
+
+        # Gera tokens direto no registro (a conta já navega/compra; só não vira loja
+        # enquanto o e-mail não for confirmado).
         refresh = RefreshToken.for_user(user)
         return Response(
             {
                 "user": UserProfileSerializer(user, context={"request": request}).data,
                 "refresh": str(refresh),
                 "access": str(refresh.access_token),
+                "email_verification_sent": email_sent,
             },
             status=status.HTTP_201_CREATED,
+        )
+
+
+class VerifyEmailView(APIView):
+    """POST /api/v1/auth/verify-email/ — confirma o e-mail a partir do token do link."""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        from django.core import signing
+        from django.utils import timezone
+
+        from apps.users.emails import verify_token
+
+        token = (request.data.get("token") or "").strip()
+        if not token:
+            return Response({"detail": "Token ausente."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            uid = verify_token(token)
+        except signing.SignatureExpired:
+            return Response(
+                {"detail": "Este link expirou. Solicite um novo e-mail de confirmação."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except signing.BadSignature:
+            return Response({"detail": "Link de confirmação inválido."}, status=status.HTTP_400_BAD_REQUEST)
+
+        from apps.users.serializers import User
+        user = User.objects.filter(pk=uid).first()
+        if not user:
+            return Response({"detail": "Conta não encontrada."}, status=status.HTTP_404_NOT_FOUND)
+
+        if user.email_verified_at:
+            return Response({"detail": "E-mail já confirmado. Você já pode abrir sua loja.", "already_verified": True})
+
+        user.email_verified_at = timezone.now()
+        user.is_active = True
+        user.save(update_fields=["email_verified_at", "is_active"])
+        return Response({"detail": "E-mail confirmado com sucesso! Sua conta está liberada."})
+
+
+class ResendVerificationView(APIView):
+    """POST /api/v1/auth/resend-verification/ — reenvia o link para o usuário logado."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from apps.users.emails import send_verification_email
+
+        user = request.user
+        if user.email_verified_at:
+            return Response({"detail": "Seu e-mail já está confirmado."})
+
+        if send_verification_email(user):
+            return Response({"detail": f"Enviamos um novo link de confirmação para {user.email}."})
+        return Response(
+            {"detail": "Não foi possível enviar o e-mail agora. Tente novamente em instantes."},
+            status=status.HTTP_502_BAD_GATEWAY,
         )
 
 

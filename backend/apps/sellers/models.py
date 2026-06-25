@@ -10,6 +10,11 @@ class SellerStatus(models.TextChoices):
     REJECTED = "rejected", "Rejeitado"
 
 
+class PersonType(models.TextChoices):
+    PF = "PF", "Pessoa Física"
+    PJ = "PJ", "Pessoa Jurídica"
+
+
 class Seller(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(
@@ -39,6 +44,11 @@ class Seller(models.Model):
     strike_count = models.PositiveIntegerField(default=0, help_text="Quantidade de infrações graves (produtos ilícitos).")
     
     status = models.CharField(max_length=20, choices=SellerStatus.choices, default=SellerStatus.PENDING)
+
+    # Identificação fiscal do lojista (KYC / repasse)
+    person_type = models.CharField(max_length=2, choices=PersonType.choices, default=PersonType.PF)
+    cpf_cnpj = models.CharField(max_length=18, blank=True, help_text="Somente dígitos. CPF (PF) ou CNPJ (PJ).")
+
     # Stripe Connect — preenchido após onboarding do vendedor
     stripe_account_id = models.CharField(max_length=100, blank=True)
     stripe_onboarding_complete = models.BooleanField(default=False)

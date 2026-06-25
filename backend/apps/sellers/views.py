@@ -28,6 +28,16 @@ class SellerApplyView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
+        # Gate: só abre loja quem confirmou o e-mail (double opt-in no nível da conta).
+        if not getattr(request.user, "email_verified_at", None):
+            return Response(
+                {
+                    "detail": "Confirme seu e-mail antes de abrir sua loja. "
+                              "Enviamos um link para a sua caixa de entrada.",
+                    "code": "email_not_verified",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
         if hasattr(request.user, "seller_profile"):
             return Response(
                 {"detail": "Voce ja possui uma loja cadastrada."},
@@ -36,12 +46,8 @@ class SellerApplyView(generics.CreateAPIView):
         return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
-        from apps.sellers.models import SellerStatus
-        seller = serializer.save(status=SellerStatus.PENDING)
-        user = self.request.user
-        if user.role != "seller":
-            user.role = "seller"
-            user.save(update_fields=["role"])
+        # O status (APPROVED no MVP) e o role são definidos dentro do serializer.
+        serializer.save()
 
 # -- Painel do vendedor --------------------------------------------------------
 
@@ -232,9 +238,21 @@ class SellerProductViewSet(viewsets.ModelViewSet):
             from rest_framework.exceptions import NotFound
             raise NotFound("Produto nao encontrado.")
 
+    MAX_IMAGES_PER_PRODUCT = 6
+    MAX_VIDEO_BYTES = 50 * 1024 * 1024  # 50 MB
+
     def upload_image(self, request, product_pk=None):
         from apps.catalog.serializers import ProductImageUploadSerializer
         product = self._get_product(product_pk)
+
+        # Regra de negócio: no máximo 6 fotos por produto.
+        if product.images.count() >= self.MAX_IMAGES_PER_PRODUCT:
+            return Response(
+                {"detail": f"Limite de {self.MAX_IMAGES_PER_PRODUCT} fotos por produto atingido. "
+                           "Remova uma foto para adicionar outra."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         serializer = ProductImageUploadSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -261,6 +279,45 @@ class SellerProductViewSet(viewsets.ModelViewSet):
             if next_img:
                 next_img.is_primary = True
                 next_img.save(update_fields=["is_primary"])
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # -- Vídeo (máx. 1 por produto) -------------------------------------------
+
+    def upload_video(self, request, product_pk=None):
+        product = self._get_product(product_pk)
+        video = request.FILES.get("video")
+        if not video:
+            return Response({"detail": "Nenhum vídeo enviado."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if video.size > self.MAX_VIDEO_BYTES:
+            return Response(
+                {"detail": "Vídeo excede o limite de 50 MB. Comprima ou use um clipe mais curto."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        content_type = (getattr(video, "content_type", "") or "")
+        if not content_type.startswith("video/"):
+            return Response(
+                {"detail": "O arquivo enviado não é um vídeo válido (use MP4, WebM ou MOV)."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Substitui o vídeo anterior, se houver (mantém o limite de 1).
+        if product.video:
+            product.video.delete(save=False)
+        product.video = video
+        product.save(update_fields=["video", "updated_at"])
+        return Response(
+            {"video_url": request.build_absolute_uri(product.video.url)},
+            status=status.HTTP_201_CREATED,
+        )
+
+    def delete_video(self, request, product_pk=None):
+        product = self._get_product(product_pk)
+        if product.video:
+            product.video.delete(save=False)
+        product.video = None
+        product.video_external = None
+        product.save(update_fields=["video", "video_external", "updated_at"])
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     # -- Variantes ------------------------------------------------------------

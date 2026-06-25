@@ -65,6 +65,12 @@ urlpatterns = [
         _products({"delete": "delete_image"}),
         name="seller-product-image-delete",
     ),
+    # Vídeo (máx. 1 por produto)
+    path(
+        "me/products/<uuid:product_pk>/video/",
+        _products({"post": "upload_video", "delete": "delete_video"}),
+        name="seller-product-video",
+    ),
     # Variantes
     path(
         "me/products/<uuid:product_pk>/variants/",

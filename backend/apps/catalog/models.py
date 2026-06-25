@@ -73,6 +73,11 @@ class Product(models.Model):
     promo_ends_at = models.DateTimeField(null=True, blank=True)
 
     is_available = models.BooleanField(default=False)
+
+    # Vídeo do produto (máx. 1 por produto). Upload local OU URL externa.
+    video = models.FileField(upload_to="products/videos/", blank=True, null=True)
+    video_external = models.URLField(max_length=500, blank=True, null=True)
+
     # SEO
     meta_title = models.CharField(max_length=70, blank=True)
     meta_description = models.CharField(max_length=160, blank=True)

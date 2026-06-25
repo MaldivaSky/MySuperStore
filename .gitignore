@@ -13,7 +13,14 @@
 .env.test.local
 .env.production.local
 *.pem
+*.p12
+*.pfx
+*.key
+*.crt
 secrets.json
+# Certificados e documentos sensíveis (Efí, etc.) — NUNCA versionar
+SuperStore/Documents/
+certs/
 # Mantém o arquivo de exemplo no repositório para referência de quem for clonar
 !.env.example
 

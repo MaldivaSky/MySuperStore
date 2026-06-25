@@ -8,21 +8,62 @@ import { useRouter } from "next/navigation";
 import { sellerDashboardApi, catalogApi } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { OfficialLogo } from "@/components/Brand";
-import { 
-  Rocket, Store, Image as ImageIcon, FileText, DollarSign, 
+import {
+  Rocket, Store, Image as ImageIcon, FileText, DollarSign,
   Clock, CheckCircle2, ChevronRight, UploadCloud, ShieldCheck, Zap,
-  Loader2, Play, Flame, ArrowRight, ArrowLeft
+  Loader2, Play, Flame, ArrowRight, ArrowLeft, MailCheck, RefreshCw
 } from "lucide-react";
 import Confetti from "react-confetti";
+import { authApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 
 export default function SellerOnboardingPage() {
   const router = useRouter();
   
-  const { updateUser } = useAuthStore();
-  
+  const { user, updateUser } = useAuthStore();
+
   // 0 = Criação da Loja, 1 = Regras, 2 = Fase 1 (Base), 3 = Fase 2 (Booster)
   const [phase, setPhase] = useState(0);
+
+  // Gate de verificação de e-mail (double opt-in no nível da conta)
+  const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendMsg, setResendMsg] = useState("");
+
+  // Se a conta logada ainda não confirmou o e-mail, bloqueia antes do formulário.
+  useEffect(() => {
+    if (user && user.email_verified === false) {
+      setNeedsEmailVerification(true);
+    }
+  }, [user]);
+
+  const handleResendVerification = async () => {
+    setResending(true);
+    setResendMsg("");
+    try {
+      const res = await authApi.resendVerification();
+      setResendMsg(res.data?.detail || "Link reenviado! Confira sua caixa de entrada.");
+    } catch (err: any) {
+      setResendMsg(err.response?.data?.detail || "Não foi possível reenviar agora. Tente em instantes.");
+    } finally {
+      setResending(false);
+    }
+  };
+
+  const handleAlreadyConfirmed = async () => {
+    try {
+      const res = await authApi.me();
+      updateUser(res.data);
+      if (res.data?.email_verified) {
+        setNeedsEmailVerification(false);
+        setResendMsg("");
+      } else {
+        setResendMsg("Ainda não detectamos a confirmação. Clique no link do e-mail e tente de novo.");
+      }
+    } catch {
+      setResendMsg("Não foi possível verificar o status agora. Tente novamente.");
+    }
+  };
   
   const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
   const [isLoadingCats, setIsLoadingCats] = useState(true);
@@ -95,6 +136,10 @@ export default function SellerOnboardingPage() {
       setPhase(1); // Vai para as Regras do Jogo
     } catch (err: any) {
       console.error(err);
+      if (err.response?.status === 403 && err.response?.data?.code === "email_not_verified") {
+        setNeedsEmailVerification(true);
+        return;
+      }
       alert(err.response?.data?.detail || "Erro ao criar loja. O nome pode já estar em uso.");
     } finally {
       setIsSubmittingStore(false);
@@ -181,6 +226,50 @@ export default function SellerOnboardingPage() {
       </header>
 
       <main className="flex-grow flex items-center justify-center p-6 relative z-10">
+        {needsEmailVerification ? (
+          <motion.div
+            key="email-gate"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-md w-full bg-[#0A0A15] border border-white/10 rounded-3xl p-8 md:p-10 text-center shadow-2xl relative overflow-hidden"
+          >
+            <div className="w-16 h-16 rounded-full bg-[#E6B53C]/10 border border-[#E6B53C]/30 flex items-center justify-center mx-auto mb-5">
+              <MailCheck className="w-9 h-9 text-[#E6B53C]" />
+            </div>
+            <h2 className="text-2xl font-black text-white mb-2">Confirme seu e-mail</h2>
+            <p className="text-neutral-400 mb-1">
+              Para abrir sua loja, confirme o e-mail enviado para
+            </p>
+            <p className="text-white font-bold mb-6 break-all">{user?.email}</p>
+            <p className="text-sm text-neutral-500 mb-8">
+              Abra o link que enviamos (verifique também o spam). Assim que confirmar,
+              clique em <strong className="text-neutral-300">"Já confirmei"</strong> para continuar.
+            </p>
+
+            {resendMsg && (
+              <div className="mb-5 text-sm px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-neutral-300">
+                {resendMsg}
+              </div>
+            )}
+
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={handleAlreadyConfirmed}
+                className="w-full py-4 rounded-xl bg-gradient-to-r from-[#E6B53C] to-[#B38F25] text-black font-black hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 className="w-5 h-5" /> Já confirmei
+              </button>
+              <button
+                onClick={handleResendVerification}
+                disabled={resending}
+                className="w-full py-3.5 rounded-xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {resending ? <Loader2 className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
+                {resending ? "Reenviando..." : "Reenviar e-mail"}
+              </button>
+            </div>
+          </motion.div>
+        ) : (
         <AnimatePresence mode="wait">
           
           {/* FASE 0: FUNDAÇÃO DA LOJA */}
@@ -524,6 +613,7 @@ export default function SellerOnboardingPage() {
           )}
 
         </AnimatePresence>
+        )}
       </main>
     </div>
   );

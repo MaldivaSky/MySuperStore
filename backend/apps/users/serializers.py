@@ -78,6 +78,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     is_seller = serializers.SerializerMethodField()
     stripe_account_id = serializers.SerializerMethodField()
     stripe_onboarding_complete = serializers.SerializerMethodField()
+    email_verified = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -85,13 +86,16 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "id", "email", "person_type", "cpf_cnpj", "first_name", "last_name",
             "phone", "role", "full_name", "avatar_url", "has_store", "has_products",
             "is_seller", "stripe_account_id", "stripe_onboarding_complete",
-            "is_active", "date_joined",
+            "email_verified", "is_active", "date_joined",
         ]
         read_only_fields = [
             "id", "email", "person_type", "cpf_cnpj", "role",
             "has_store", "has_products", "is_seller", "stripe_account_id",
-            "stripe_onboarding_complete", "is_active", "date_joined",
+            "stripe_onboarding_complete", "email_verified", "is_active", "date_joined",
         ]
+
+    def get_email_verified(self, obj):
+        return bool(getattr(obj, "email_verified_at", None))
 
     def get_avatar_url(self, obj):
         request = self.context.get("request")

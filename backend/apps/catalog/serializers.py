@@ -311,12 +311,21 @@ class ProductDetailSerializer(ProductListSerializer):
     specifications = ProductSpecificationSerializer(many=True, read_only=True)
     variants = serializers.SerializerMethodField()
     reviews = serializers.SerializerMethodField()
+    video_url = serializers.SerializerMethodField()
 
     class Meta(ProductListSerializer.Meta):
         fields = ProductListSerializer.Meta.fields + [
             "description", "images", "specifications", "variants", "reviews",
-            "meta_title", "meta_description", "approval_status", "updated_at",
+            "video_url", "meta_title", "meta_description", "approval_status", "updated_at",
         ]
+
+    def get_video_url(self, obj):
+        request = self.context.get("request")
+        if getattr(obj, "video_external", None):
+            return obj.video_external
+        if obj.video and request:
+            return request.build_absolute_uri(obj.video.url)
+        return None
 
     def get_variants(self, obj):
         variants = getattr(obj, "active_variants", None)

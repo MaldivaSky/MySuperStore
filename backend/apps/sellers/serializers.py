@@ -70,17 +70,30 @@ class SellerPublicSerializer(serializers.ModelSerializer):
 class SellerApplySerializer(serializers.ModelSerializer):
     """Candidatura para se tornar vendedor."""
 
+    cpf_cnpj = serializers.CharField(required=False, allow_blank=True)
+    person_type = serializers.ChoiceField(
+        choices=Seller._meta.get_field("person_type").choices, required=False
+    )
+
     class Meta:
         model = Seller
-        fields = ["store_name", "description", "pix_key"]
+        fields = ["store_name", "description", "pix_key", "cpf_cnpj", "person_type"]
 
     def validate_store_name(self, value):
         if Seller.objects.filter(store_name=value).exists():
             raise serializers.ValidationError("Este nome de loja já está em uso.")
         return value
 
+    def validate_cpf_cnpj(self, value):
+        # Mantém somente dígitos (o frontend envia formatado)
+        return "".join(c for c in (value or "") if c.isdigit())
+
     def create(self, validated_data):
         user = self.context["request"].user
+        # Ignora qualquer `status` injetado via serializer.save(status=...) para
+        # evitar conflito de argumento duplicado em Seller.objects.create().
+        validated_data.pop("status", None)
+
         slug = slugify(validated_data["store_name"])
         # Garante slug único
         base_slug = slug
@@ -89,10 +102,12 @@ class SellerApplySerializer(serializers.ModelSerializer):
             slug = f"{base_slug}-{n}"
             n += 1
 
+        # MVP: lojista é aprovado na criação para já operar o painel e publicar.
+        # A moderação de conteúdo acontece no nível do produto (approval_status).
         seller = Seller.objects.create(
             user=user,
             slug=slug,
-            status=SellerStatus.PENDING,
+            status=SellerStatus.APPROVED,
             **validated_data,
         )
         # Atualiza role do usuário

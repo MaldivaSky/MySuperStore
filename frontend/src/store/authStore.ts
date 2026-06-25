@@ -17,6 +17,7 @@ export interface User {
   is_seller?: boolean;
   stripe_account_id?: string;
   stripe_onboarding_complete?: boolean;
+  email_verified?: boolean;
 }
 
 interface AuthState {

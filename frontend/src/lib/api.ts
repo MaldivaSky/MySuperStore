@@ -61,6 +61,8 @@ export const authApi = {
   updateProfile: (data: any) => api.patch("/users/me/", data),
   changePassword: (payload: { old_password: string; new_password: string; new_password_confirm: string }) =>
     api.post("/auth/change-password/", payload),
+  verifyEmail: (token: string) => api.post("/auth/verify-email/", { token }),
+  resendVerification: () => api.post("/auth/resend-verification/"),
 };
 
 // Perfil estendido: endereços, survey demográfico
@@ -199,9 +201,15 @@ export const sellerDashboardApi = {
       api.post(`/sellers/me/products/${productId}/images/`, formData, {
         headers: { "Content-Type": "multipart/form-data" }
       }),
-    deleteImage: (productId: string, imageId: string) => 
+    deleteImage: (productId: string, imageId: string) =>
       api.delete(`/sellers/me/products/${productId}/images/${imageId}/`),
-    createVariant: (productId: string, data: any) => 
+    uploadVideo: (productId: string, formData: FormData) =>
+      api.post(`/sellers/me/products/${productId}/video/`, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      }),
+    deleteVideo: (productId: string) =>
+      api.delete(`/sellers/me/products/${productId}/video/`),
+    createVariant: (productId: string, data: any) =>
       api.post(`/sellers/me/products/${productId}/variants/`, data),
     deleteVariant: (productId: string, variantId: string) => 
       api.delete(`/sellers/me/products/${productId}/variants/${variantId}/`),
