@@ -52,9 +52,14 @@ class ProductImageSerializer(serializers.ModelSerializer):
         return get_clean_image_url(obj.image, self.context.get("request"), getattr(obj, "external_url", None))
 
 class ProductImageUploadSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
     class Meta:
         model = ProductImage
         fields = ["id", "image", "is_primary", "order"]
+
+    def get_image(self, obj):
+        return get_clean_image_url(obj.image, self.context.get("request"), getattr(obj, "external_url", None))
 
 
 # -- Especificacoes ------------------------------------------------------------

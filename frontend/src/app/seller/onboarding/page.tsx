@@ -74,6 +74,11 @@ export default function SellerOnboardingPage() {
   const [storeDescription, setStoreDescription] = useState("");
   const [personType, setPersonType] = useState("PF");
   const [storeCpfCnpj, setStoreCpfCnpj] = useState("");
+  const [mainCategory, setMainCategory] = useState("outros");
+  const [bankCode, setBankCode] = useState("");
+  const [bankAgency, setBankAgency] = useState("");
+  const [bankAccount, setBankAccount] = useState("");
+  const [bankAccountType, setBankAccountType] = useState("corrente");
   const [isSubmittingStore, setIsSubmittingStore] = useState(false);
 
   const formatCpfCnpj = (value: string, type: string) => {
@@ -132,7 +137,13 @@ export default function SellerOnboardingPage() {
       await sellerDashboardApi.apply({
         store_name: storeName,
         description: storeDescription,
-        cpf_cnpj: storeCpfCnpj.replace(/\D/g, '')
+        cpf_cnpj: storeCpfCnpj.replace(/\D/g, ''),
+        person_type: personType,
+        main_category: mainCategory,
+        bank_code: bankCode,
+        bank_agency: bankAgency,
+        bank_account: bankAccount,
+        bank_account_type: bankAccountType,
       });
       // Refresh user role via authApi.me ou atualiza Zustand manualmente
       updateUser({ is_seller: true, role: "seller" });
@@ -357,6 +368,87 @@ export default function SellerOnboardingPage() {
                     placeholder={personType === "PF" ? "000.000.000-00" : "00.000.000/0001-00"}
                   />
                 </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Modalidade / Categoria Principal</label>
+                  <select 
+                    required 
+                    value={mainCategory}
+                    onChange={e => setMainCategory(e.target.value)}
+                    className="w-full mt-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] outline-none transition-colors appearance-none cursor-pointer"
+                  >
+                    <option value="eletronicos" className="bg-[#0A0A15]">Eletrônicos</option>
+                    <option value="moda" className="bg-[#0A0A15]">Moda (Geral)</option>
+                    <option value="roupas" className="bg-[#0A0A15]">Roupas</option>
+                    <option value="calcados" className="bg-[#0A0A15]">Calçados</option>
+                    <option value="bolsas" className="bg-[#0A0A15]">Bolsas e Acessórios</option>
+                    <option value="moda_fit" className="bg-[#0A0A15]">Moda Fit</option>
+                    <option value="moda_esportiva" className="bg-[#0A0A15]">Moda Esportiva</option>
+                    <option value="casa" className="bg-[#0A0A15]">Artigos para Casa</option>
+                    <option value="ferramentas" className="bg-[#0A0A15]">Ferramentas</option>
+                    <option value="alimentos" className="bg-[#0A0A15]">Alimentos</option>
+                    <option value="outros" className="bg-[#0A0A15]">Outros</option>
+                  </select>
+                </div>
+                
+                {/* DADOS BANCÁRIOS */}
+                <div className="pt-6 border-t border-white/10">
+                  <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-[#E6B53C]" /> Dados para Repasse (Efí Bank)
+                  </h3>
+                  <p className="text-sm text-neutral-400 mb-6">
+                    A MySuperStore utiliza a Efí Bank para dividir o pagamento das vendas de forma automática (Split Nativo). 
+                    Informe uma conta bancária vinculada ao mesmo CPF/CNPJ acima para criarmos o seu código recebedor seguro.
+                  </p>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Código do Banco</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={bankCode}
+                        onChange={e => setBankCode(e.target.value)}
+                        className="w-full mt-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] outline-none transition-colors"
+                        placeholder="Ex: 341 (Itaú), 260 (Nubank)"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Tipo de Conta</label>
+                      <select 
+                        required 
+                        value={bankAccountType}
+                        onChange={e => setBankAccountType(e.target.value)}
+                        className="w-full mt-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] outline-none transition-colors appearance-none"
+                      >
+                        <option value="corrente" className="bg-[#0A0A15]">Conta Corrente</option>
+                        <option value="poupanca" className="bg-[#0A0A15]">Conta Poupança</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Agência (sem dígito)</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={bankAgency}
+                        onChange={e => setBankAgency(e.target.value)}
+                        className="w-full mt-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] outline-none transition-colors"
+                        placeholder="Ex: 0001"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Conta (com dígito)</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={bankAccount}
+                        onChange={e => setBankAccount(e.target.value)}
+                        className="w-full mt-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] outline-none transition-colors"
+                        placeholder="Ex: 12345-6"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="pt-4">
                   <button 
                     type="submit"

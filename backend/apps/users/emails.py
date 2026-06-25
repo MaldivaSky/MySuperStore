@@ -53,23 +53,26 @@ def send_verification_email(user) -> bool:
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Ative sua Conta - MySuperStore</title>
         <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-            body {{ font-family: 'Inter', Arial, sans-serif; background-color: #0e0e1a; color: #ffffff; margin: 0; padding: 0; }}
-            .container {{ max-width: 600px; margin: 40px auto; background: #1a1a2e; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); }}
-            .header {{ background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 30px; text-align: center; }}
-            .header h1 {{ margin: 0; color: #ffffff; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }}
-            .content {{ padding: 40px 30px; }}
-            .content h2 {{ color: #ffffff; font-size: 22px; margin-top: 0; font-weight: 600; }}
-            .content p {{ color: #94a3b8; font-size: 16px; line-height: 1.6; margin-bottom: 24px; }}
-            .cta-button {{ display: inline-block; background: #10b981; color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-weight: 600; font-size: 16px; text-align: center; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }}
-            .cta-button:hover {{ background: #059669; transform: translateY(-2px); }}
-            .benefits {{ background: #0f172a; padding: 24px; border-radius: 12px; margin-bottom: 30px; border: 1px solid rgba(255,255,255,0.05); }}
+            @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap');
+            body {{ font-family: 'Outfit', sans-serif; background-color: #050510; color: #f5f5f5; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }}
+            .container {{ max-width: 600px; margin: 40px auto; background: #0A0A15; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid rgba(230, 181, 60, 0.15); }}
+            .header {{ background: linear-gradient(135deg, #050510 0%, #100A05 100%); padding: 50px 40px; text-align: center; border-bottom: 1px solid rgba(230, 181, 60, 0.2); position: relative; overflow: hidden; }}
+            .header::before {{ content: ''; position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: rgba(230, 181, 60, 0.1); filter: blur(40px); border-radius: 50%; }}
+            .header h1 {{ margin: 0; color: #E6B53C; font-size: 32px; font-weight: 900; letter-spacing: -1px; text-transform: uppercase; }}
+            .content {{ padding: 50px 40px; }}
+            .content h2 {{ color: #ffffff; font-size: 24px; margin-top: 0; font-weight: 800; line-height: 1.3; }}
+            .content p {{ color: #a3a3a3; font-size: 16px; line-height: 1.7; margin-bottom: 30px; font-weight: 300; }}
+            .cta-button {{ display: inline-block; background: linear-gradient(90deg, #E6B53C 0%, #B38F25 100%); color: #000000 !important; text-decoration: none; padding: 18px 40px; border-radius: 14px; font-weight: 800; font-size: 16px; text-align: center; transition: all 0.3s ease; box-shadow: 0 10px 25px rgba(230, 181, 60, 0.25); text-transform: uppercase; letter-spacing: 0.5px; }}
+            .cta-button:hover {{ transform: translateY(-2px); box-shadow: 0 15px 30px rgba(230, 181, 60, 0.4); }}
+            .benefits {{ background: #0e0e1a; padding: 30px; border-radius: 16px; margin-bottom: 40px; border: 1px solid rgba(255,255,255,0.03); }}
+            .benefits p.title {{ color: #E6B53C; font-weight: 800; margin-bottom: 20px; margin-top: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }}
             .benefits ul {{ list-style: none; padding: 0; margin: 0; }}
-            .benefits li {{ color: #cbd5e1; margin-bottom: 12px; font-size: 15px; display: flex; align-items: center; }}
-            .benefits li::before {{ content: '✓'; color: #10b981; font-weight: bold; margin-right: 10px; font-size: 18px; }}
-            .footer {{ background: #0b0f19; padding: 30px; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); }}
-            .footer p {{ color: #64748b; font-size: 13px; margin: 5px 0; }}
-            .footer a {{ color: #10b981; text-decoration: none; }}
+            .benefits li {{ color: #d4d4d4; margin-bottom: 16px; font-size: 15px; display: flex; align-items: flex-start; line-height: 1.5; font-weight: 400; }}
+            .benefits li::before {{ content: '✦'; color: #E6B53C; font-weight: 900; margin-right: 12px; font-size: 16px; }}
+            .benefits li strong {{ color: #ffffff; font-weight: 600; }}
+            .footer {{ background: #050510; padding: 30px; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); }}
+            .footer p {{ color: #525252; font-size: 12px; margin: 5px 0; font-weight: 300; }}
+            .footer a {{ color: #E6B53C; text-decoration: none; }}
         </style>
     </head>
     <body>
@@ -78,33 +81,34 @@ def send_verification_email(user) -> bool:
                 <h1>MySuperStore</h1>
             </div>
             <div class="content">
-                <h2>Seja bem-vindo(a) ao Futuro do E-commerce, {first_name}! 🚀</h2>
-                <p>Estamos muito felizes em ter você conosco. Você acaba de dar o primeiro passo para escalar suas vendas e fazer parte de um marketplace robusto, seguro e inovador.</p>
+                <h2>O futuro do seu E-commerce começa agora, {first_name}. 🚀</h2>
+                <p>Nós não criamos apenas um marketplace; construímos uma máquina de vendas de alta performance. Estamos prontos para escalar o seu negócio de forma segura, inteligente e sem fricções.</p>
                 
                 <div class="benefits">
-                    <p style="color: #ffffff; font-weight: 600; margin-bottom: 16px; margin-top: 0;">Por que vender na MySuperStore?</p>
+                    <p class="title">O que aguarda você</p>
                     <ul>
-                        <li><strong>Split de Pagamento Nativo:</strong> Receba sua parte automaticamente no momento da venda (via PIX ou Cartão).</li>
-                        <li><strong>Taxas Transparentes:</strong> Sem surpresas. Você sabe exatamente o que paga e o que recebe.</li>
-                        <li><strong>Dashboard Poderoso:</strong> Controle total sobre seu estoque, pedidos e relatórios de vendas.</li>
-                        <li><strong>Tecnologia de Ponta:</strong> Plataforma ultrarrápida projetada para maximizar sua conversão.</li>
+                        <li><strong>Split Nativo Efí Bank:</strong> Divisão automática no PIX e Cartão. Receba exatamente o que é seu na hora da venda, direto na sua conta.</li>
+                        <li><strong>Booster Algorítmico:</strong> Ferramentas nativas de Ofertas Relâmpago e ranqueamento inteligente para explodir suas conversões.</li>
+                        <li><strong>Painel Lojista:</strong> Controle financeiro, métricas avançadas e gestão de produtos com UI imersiva e responsiva.</li>
                     </ul>
                 </div>
 
-                <p>Para ativar sua conta e desbloquear a criação da sua loja, clique no botão abaixo:</p>
+                <p style="text-align: center; margin-bottom: 40px; color: #e5e5e5; font-weight: 600;">
+                    Para validar sua identidade e destravar todas as ferramentas, confirme seu e-mail:
+                </p>
                 
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="{link}" class="cta-button">Ativar Minha Conta</a>
+                <div style="text-align: center; margin-bottom: 40px;">
+                    <a href="{link}" class="cta-button">Ativar Minha Conta Agora</a>
                 </div>
 
-                <p style="font-size: 14px; color: #64748b;">Se o botão não funcionar, copie e cole este link no seu navegador:<br>
-                <a href="{link}" style="color: #10b981; word-break: break-all;">{link}</a></p>
-                
-                <p>Prepare-se para transformar seu negócio.<br><strong>Equipe MySuperStore</strong></p>
+                <p style="font-size: 13px; color: #737373; text-align: center;">
+                    Se o botão não funcionar, copie este link:<br>
+                    <a href="{link}" style="color: #E6B53C; word-break: break-all; margin-top: 5px; display: inline-block;">{link}</a>
+                </p>
             </div>
             <div class="footer">
-                <p>Este link expira em 48 horas por questões de segurança.</p>
-                <p>Se você não se cadastrou em nossa plataforma, por favor ignore este e-mail.</p>
+                <p>Este link é exclusivo para você e expira em 48 horas.</p>
+                <p>Se você não solicitou acesso, por favor desconsidere este e-mail.</p>
                 <p>&copy; 2026 MySuperStore. Todos os direitos reservados.</p>
             </div>
         </div>

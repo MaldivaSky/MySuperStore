@@ -41,10 +41,17 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
-        # Em dev: ativa automaticamente (email backend = console)
-        # Em prod: descomente o envio de e-mail de verificação
-        user.is_active = True
-        user.save(update_fields=["is_active"])
+        # Em dev: ativa e verifica automaticamente
+        # Em prod: descomente/mantenha o envio de e-mail de verificação real
+        from django.conf import settings
+        if settings.DEBUG:
+            from django.utils import timezone
+            user.is_active = True
+            user.email_verified_at = timezone.now()
+            user.save(update_fields=["is_active", "email_verified_at"])
+        else:
+            user.is_active = True
+            user.save(update_fields=["is_active"])
         return user
 
 
@@ -76,8 +83,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     has_store = serializers.SerializerMethodField()
     has_products = serializers.SerializerMethodField()
     is_seller = serializers.SerializerMethodField()
-    stripe_account_id = serializers.SerializerMethodField()
-    stripe_onboarding_complete = serializers.SerializerMethodField()
+    efi_payee_code = serializers.SerializerMethodField()
     email_verified = serializers.SerializerMethodField()
 
     class Meta:
@@ -85,13 +91,13 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = [
             "id", "email", "person_type", "cpf_cnpj", "first_name", "last_name",
             "phone", "role", "full_name", "avatar_url", "has_store", "has_products",
-            "is_seller", "stripe_account_id", "stripe_onboarding_complete",
+            "is_seller", "efi_payee_code",
             "email_verified", "is_active", "date_joined",
         ]
         read_only_fields = [
             "id", "email", "person_type", "cpf_cnpj", "role",
-            "has_store", "has_products", "is_seller", "stripe_account_id",
-            "stripe_onboarding_complete", "email_verified", "is_active", "date_joined",
+            "has_store", "has_products", "is_seller", "efi_payee_code",
+            "email_verified", "is_active", "date_joined",
         ]
 
     def get_email_verified(self, obj):
@@ -118,13 +124,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
     def get_is_seller(self, obj):
         return obj.role == "seller"
 
-    def get_stripe_account_id(self, obj):
+    def get_efi_payee_code(self, obj):
         seller = getattr(obj, "seller_profile", None)
-        return seller.stripe_account_id if seller else None
-
-    def get_stripe_onboarding_complete(self, obj):
-        seller = getattr(obj, "seller_profile", None)
-        return seller.stripe_onboarding_complete if seller else False
+        return seller.efi_payee_code if seller else None
 
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):

@@ -15,6 +15,23 @@ class PersonType(models.TextChoices):
     PJ = "PJ", "Pessoa Jurídica"
 
 
+class StoreCategory(models.TextChoices):
+    ELETRONICOS = "eletronicos", "Eletrônicos"
+    MODA = "moda", "Moda (Geral)"
+    ROUPAS = "roupas", "Roupas"
+    CALCADOS = "calcados", "Calçados"
+    BOLSAS = "bolsas", "Bolsas e Acessórios"
+    MODA_FIT = "moda_fit", "Moda Fit"
+    MODA_ESPORTIVA = "moda_esportiva", "Moda Esportiva"
+    CASA = "casa", "Artigos para Casa"
+    FERRAMENTAS = "ferramentas", "Ferramentas"
+    ALIMENTOS = "alimentos", "Alimentos"
+    OUTROS = "outros", "Outros"
+
+class BankAccountType(models.TextChoices):
+    CORRENTE = "corrente", "Conta Corrente"
+    POUPANCA = "poupanca", "Conta Poupança"
+
 class Seller(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(
@@ -23,6 +40,7 @@ class Seller(models.Model):
     store_name = models.CharField(max_length=150, unique=True)
     slug = models.SlugField(max_length=160, unique=True)
     description = models.TextField(blank=True)
+    main_category = models.CharField(max_length=50, choices=StoreCategory.choices, default=StoreCategory.OUTROS)
     logo = models.ImageField(upload_to="sellers/logos/", blank=True, null=True)
     logo_external = models.URLField(max_length=500, blank=True, null=True)
     
@@ -48,6 +66,12 @@ class Seller(models.Model):
     # Identificação fiscal do lojista (KYC / repasse)
     person_type = models.CharField(max_length=2, choices=PersonType.choices, default=PersonType.PF)
     cpf_cnpj = models.CharField(max_length=18, blank=True, help_text="Somente dígitos. CPF (PF) ou CNPJ (PJ).")
+
+    # Dados Bancários (Para criação do Efí Payee)
+    bank_code = models.CharField(max_length=10, blank=True, help_text="Código do Banco (ex: 341 para Itaú)")
+    bank_agency = models.CharField(max_length=20, blank=True, help_text="Agência sem o dígito")
+    bank_account = models.CharField(max_length=30, blank=True, help_text="Número da conta com o dígito")
+    bank_account_type = models.CharField(max_length=20, choices=BankAccountType.choices, blank=True)
 
     # Identificador de conta Efí para Split Nativo (payee_code)
     efi_payee_code = models.CharField(max_length=100, blank=True, help_text="Identificador de conta Efí para repasse (Split)")

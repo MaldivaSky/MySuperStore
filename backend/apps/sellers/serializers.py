@@ -74,10 +74,22 @@ class SellerApplySerializer(serializers.ModelSerializer):
     person_type = serializers.ChoiceField(
         choices=Seller._meta.get_field("person_type").choices, required=False
     )
+    main_category = serializers.ChoiceField(
+        choices=Seller._meta.get_field("main_category").choices, required=False
+    )
+    bank_code = serializers.CharField(required=False, allow_blank=True)
+    bank_agency = serializers.CharField(required=False, allow_blank=True)
+    bank_account = serializers.CharField(required=False, allow_blank=True)
+    bank_account_type = serializers.ChoiceField(
+        choices=Seller._meta.get_field("bank_account_type").choices, required=False
+    )
 
     class Meta:
         model = Seller
-        fields = ["store_name", "description", "pix_key", "cpf_cnpj", "person_type"]
+        fields = [
+            "store_name", "description", "pix_key", "cpf_cnpj", "person_type",
+            "main_category", "bank_code", "bank_agency", "bank_account", "bank_account_type"
+        ]
 
     def validate_store_name(self, value):
         if Seller.objects.filter(store_name=value).exists():
@@ -90,27 +102,28 @@ class SellerApplySerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = self.context["request"].user
-        # Ignora qualquer `status` injetado via serializer.save(status=...) para
-        # evitar conflito de argumento duplicado em Seller.objects.create().
         validated_data.pop("status", None)
 
         slug = slugify(validated_data["store_name"])
-        # Garante slug único
         base_slug = slug
         n = 1
         while Seller.objects.filter(slug=slug).exists():
             slug = f"{base_slug}-{n}"
             n += 1
 
-        # MVP: lojista é aprovado na criação para já operar o painel e publicar.
-        # A moderação de conteúdo acontece no nível do produto (approval_status).
+        # INTEGRAÇÃO EFÍ BANK: Aqui enviaríamos os dados bancários (bank_code, bank_agency, etc) 
+        # para a API de Criação de Recebedores da Efí Bank.
+        # Simulando o retorno com um identificador de conta gerado:
+        if validated_data.get("bank_account") and validated_data.get("bank_code"):
+            import uuid
+            validated_data["efi_payee_code"] = f"efi_{uuid.uuid4().hex[:12]}"
+
         seller = Seller.objects.create(
             user=user,
             slug=slug,
             status=SellerStatus.APPROVED,
             **validated_data,
         )
-        # Atualiza role do usuário
         user.role = "seller"
         user.save(update_fields=["role"])
         return seller
@@ -119,8 +132,6 @@ class SellerApplySerializer(serializers.ModelSerializer):
 class SellerDashboardSerializer(serializers.ModelSerializer):
     """Dados do painel do próprio vendedor (autenticado)."""
 
-    # stripe_authorized é @property no model — precisa ser declarado explicitamente
-    stripe_authorized = serializers.BooleanField(read_only=True)
     total_products = serializers.SerializerMethodField()
     available_products = serializers.SerializerMethodField()
     total_orders = serializers.SerializerMethodField()
@@ -130,7 +141,7 @@ class SellerDashboardSerializer(serializers.ModelSerializer):
         model = Seller
         fields = [
             "id", "store_name", "slug", "status", "commission_rate",
-            "stripe_authorized", "stripe_onboarding_complete", "pix_key",
+            "efi_payee_code", "pix_key",
             "strike_count", "max_installments",
             "total_products", "available_products",
             "total_orders", "pending_payout",
