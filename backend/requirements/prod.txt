@@ -2,3 +2,5 @@
 
 gunicorn==23.0.0
 whitenoise==6.8.2
+django-cloudinary-storage==0.3.0
+cloudinary==1.41.0
