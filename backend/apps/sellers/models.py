@@ -49,10 +49,9 @@ class Seller(models.Model):
     person_type = models.CharField(max_length=2, choices=PersonType.choices, default=PersonType.PF)
     cpf_cnpj = models.CharField(max_length=18, blank=True, help_text="Somente dígitos. CPF (PF) ou CNPJ (PJ).")
 
-    # Stripe Connect — preenchido após onboarding do vendedor
-    stripe_account_id = models.CharField(max_length=100, blank=True)
-    stripe_onboarding_complete = models.BooleanField(default=False)
-    # Dados bancários para repasse manual (fallback se Stripe não autorizado)
+    # Identificador de conta Efí para Split Nativo (payee_code)
+    efi_payee_code = models.CharField(max_length=100, blank=True, help_text="Identificador de conta Efí para repasse (Split)")
+    # Dados bancários para repasse manual (fallback)
     pix_key = models.CharField(max_length=150, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -70,8 +69,8 @@ class Seller(models.Model):
         return self.status == SellerStatus.APPROVED
 
     @property
-    def stripe_authorized(self):
-        return bool(self.stripe_account_id and self.stripe_onboarding_complete)
+    def efi_authorized(self):
+        return bool(self.efi_payee_code)
 
 
 class ChatRoom(models.Model):

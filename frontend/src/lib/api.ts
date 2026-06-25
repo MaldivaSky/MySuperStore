@@ -123,9 +123,8 @@ export const ordersApi = {
 export type PaymentMethodChoice = "pix" | "credit_card" | "debit_card";
 
 export const paymentsApi = {
-  createIntent: (orderId: string, method: PaymentMethodChoice) =>
-    api.post("/payments/create-intent/", { order_id: orderId, payment_method: method }),
-  confirm: (paymentId: string) => api.post(`/payments/${paymentId}/confirm/`),
+  processPayment: (payload: { order_id: string, payment_method: PaymentMethodChoice, payment_token?: string, installments?: number, billing_address?: any, customer?: any }) =>
+    api.post("/payments/process/", payload),
   confirmPix: (paymentId: string) => api.post(`/payments/${paymentId}/confirm-pix/`),
   simulatePix: (paymentId: string) => api.post(`/payments/${paymentId}/simulate-pix/`),
   cancel: (paymentId: string) => api.post(`/payments/${paymentId}/cancel/`),

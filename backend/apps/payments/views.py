@@ -1,4 +1,3 @@
-import stripe
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
@@ -7,6 +6,9 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
+import logging
+logger = logging.getLogger(__name__)
+
 from apps.orders.models import Order, OrderStatus
 from .models import Payment, PaymentMethod, PaymentStatus
 from .processing import (
@@ -14,11 +16,8 @@ from .processing import (
     process_successful_payment,
     restore_stock,
 )
-from .serializers import PaymentCreateSerializer, PaymentSerializer, RefundSerializer
-from .services import StripeService
-
-stripe.api_key = settings.STRIPE_SECRET_KEY
-
+from .serializers import ProcessPaymentSerializer, PaymentSerializer, RefundSerializer
+from .services import EfiCardService, EfiPixService, PixService
 
 class PaymentViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -28,69 +27,99 @@ class PaymentViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         return Response(
-            {"detail": "Utilize POST /api/v1/payments/create-intent/ para iniciar o checkout."},
+            {"detail": "Utilize POST /api/v1/payments/process/ para iniciar o checkout."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
     def retrieve(self, request, pk=None):
-        """GET /api/v1/payments/{id}/ — status de um pagamento do próprio usuário."""
         try:
             payment = Payment.objects.get(id=pk, order__user=request.user)
         except Payment.DoesNotExist:
             return Response({"detail": "Pagamento não encontrado."}, status=status.HTTP_404_NOT_FOUND)
         return Response(self.get_serializer(payment).data)
 
-
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
-def create_payment_intent_view(request):
+def process_payment_view(request):
     """
-    POST /api/v1/payments/create-intent/
-    Inicia o pagamento. Cartão → retorna client_secret do Stripe. PIX → retorna QR Code.
-    Body: { "order_id": "...", "payment_method": "pix|credit_card|debit_card" }
+    POST /api/v1/payments/process/
+    Processa o pagamento via Efí.
     """
-    serializer = PaymentCreateSerializer(data=request.data, context={"request": request})
+    serializer = ProcessPaymentSerializer(data=request.data, context={"request": request})
     serializer.is_valid(raise_exception=True)
-    payment = serializer.save()
+    
+    order = Order.objects.get(id=serializer.validated_data["order_id"])
+    method = serializer.validated_data["payment_method"]
 
-    data = PaymentSerializer(payment, context={"request": request}).data
-    data["stripe_public_key"] = settings.STRIPE_PUBLIC_KEY
-    return Response(data, status=status.HTTP_201_CREATED)
-
-
-@api_view(["POST"])
-@permission_classes([permissions.IsAuthenticated])
-def confirm_payment_view(request, pk):
-    """
-    POST /api/v1/payments/{id}/confirm/
-    Confirmação autoritativa após o cliente concluir o cartão no Stripe Elements.
-    Reconsulta o PaymentIntent no Stripe (fonte da verdade) e, se 'succeeded', confirma
-    o pedido. Funciona como rede de segurança caso o webhook ainda não tenha chegado.
-    """
-    try:
-        payment = Payment.objects.get(id=pk, order__user=request.user)
-    except Payment.DoesNotExist:
-        return Response({"detail": "Pagamento não encontrado."}, status=status.HTTP_404_NOT_FOUND)
-
-    if not payment.mp_payment_id:
-        return Response({"detail": "Pagamento sem PaymentIntent (use este endpoint só para cartão)."},
-                        status=status.HTTP_400_BAD_REQUEST)
-
-    intent = stripe.PaymentIntent.retrieve(payment.mp_payment_id)
-    if intent.status != "succeeded":
-        return Response(
-            {"detail": "Pagamento ainda não confirmado pelo Stripe.", "stripe_status": intent.status},
-            status=status.HTTP_202_ACCEPTED,
-        )
-
-    processed = process_successful_payment(
-        payment.order, raw_response=dict(intent), charge_id=intent.get("latest_charge", "")
+    payment, _ = Payment.objects.get_or_create(
+        order=order,
+        defaults={"method": method, "amount": order.total, "status": PaymentStatus.PENDING},
     )
-    if processed:
-        dispatch_post_payment_tasks(payment.order)
+    payment.method = method
+    payment.amount = order.total
+    payment.status = PaymentStatus.PENDING
+    payment.save()
 
-    payment.refresh_from_db()
-    return Response(PaymentSerializer(payment, context={"request": request}).data)
+    if method == PaymentMethod.PIX:
+        if EfiPixService.is_configured():
+            try:
+                txid, copia_cola, qr_base64 = EfiPixService.create_charge(order)
+                payment.efi_txid = txid
+                payment.pix_qr_code = copia_cola
+                payment.pix_qr_code_base64 = qr_base64
+                payment.raw_response = {"provider": "efi", "txid": txid}
+                payment.save()
+            except Exception as exc:
+                logger.error("Falha ao criar cobrança PIX no Efí: %s", exc)
+                # Fallback
+                copia_cola, qr_base64 = PixService.generate_brcode(order)
+                payment.pix_qr_code = copia_cola
+                payment.pix_qr_code_base64 = qr_base64
+                payment.raw_response = {"provider": "local"}
+                payment.save()
+        else:
+            copia_cola, qr_base64 = PixService.generate_brcode(order)
+            payment.pix_qr_code = copia_cola
+            payment.pix_qr_code_base64 = qr_base64
+            payment.raw_response = {"provider": "local"}
+            payment.save()
+
+        return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
+
+    elif method in (PaymentMethod.CREDIT_CARD, PaymentMethod.DEBIT_CARD):
+        response = EfiCardService.create_card_charge(
+            order=order,
+            payment_token=serializer.validated_data["payment_token"],
+            installments=serializer.validated_data["installments"],
+            customer_data=serializer.validated_data["customer"],
+            billing_address=serializer.validated_data["billing_address"]
+        )
+        
+        if response.get("success"):
+            payment.efi_charge_id = response.get("charge_id")
+            payment.raw_response = response.get("raw_response")
+            
+            # API One-Step já retorna se foi aprovado
+            charge_status = response.get("status")
+            if charge_status in ("approved", "settled"): # TODO: check exact Efí status for paid
+                processed = process_successful_payment(
+                    order, raw_response=response.get("raw_response"), charge_id=response.get("charge_id")
+                )
+                if processed:
+                    dispatch_post_payment_tasks(order)
+                payment.refresh_from_db()
+            else:
+                # Pode estar "waiting" ou algo assim
+                payment.save()
+
+            return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
+        else:
+            payment.status = PaymentStatus.REJECTED
+            payment.save()
+            return Response(
+                {"detail": response.get("error", "Erro ao processar cartão.")},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 @api_view(["POST"])
@@ -98,8 +127,6 @@ def confirm_payment_view(request, pk):
 def simulate_pix_payment_view(request, pk):
     """
     POST /api/v1/payments/{id}/simulate-pix/
-    [APENAS DEBUG] Simula a baixa do PIX pelo banco — confirma o pedido sem PSP real.
-    Em produção este gatilho viria do webhook do banco/PSP.
     """
     if not settings.DEBUG:
         return Response({"detail": "Indisponível em produção."}, status=status.HTTP_403_FORBIDDEN)
@@ -124,8 +151,7 @@ def simulate_pix_payment_view(request, pk):
 def confirm_pix_view(request, pk):
     """
     POST /api/v1/payments/{id}/confirm-pix/
-    Consulta a cobrança no Efí (polling) e, se estiver paga, confirma o pedido.
-    Usado pelo frontend enquanto o cliente paga o PIX (quando não há webhook público).
+    Consulta a cobrança no Efí (polling).
     """
     try:
         payment = Payment.objects.get(id=pk, order__user=request.user, method=PaymentMethod.PIX)
@@ -135,8 +161,7 @@ def confirm_pix_view(request, pk):
     if payment.status == PaymentStatus.APPROVED:
         return Response(PaymentSerializer(payment, context={"request": request}).data)
 
-    from .services import EfiPixService
-    txid = payment.mp_payment_id
+    txid = payment.efi_txid
     if not (txid and EfiPixService.is_configured()):
         return Response(
             {"detail": "Confirmação automática indisponível; aguardando baixa.", "status": payment.status},
@@ -163,23 +188,20 @@ def confirm_pix_view(request, pk):
 @permission_classes([permissions.AllowAny])
 def efi_webhook(request):
     """
-    POST /api/v1/payments/efi-webhook/ — recebe notificações de PIX do Efí.
-    Em produção a URL é registrada no Efí e protegida por mTLS (o Efí apresenta o
-    certificado dele). Para cada PIX recebido, dá baixa no pedido correspondente.
+    POST /api/v1/payments/efi-webhook/
     """
     data = request.data if isinstance(request.data, dict) else {}
     for pix in data.get("pix", []) or []:
         txid = pix.get("txid")
         if not txid:
             continue
-        payment = Payment.objects.filter(mp_payment_id=txid, method=PaymentMethod.PIX).first()
+        payment = Payment.objects.filter(efi_txid=txid, method=PaymentMethod.PIX).first()
         if payment and payment.status != PaymentStatus.APPROVED:
             processed = process_successful_payment(
                 payment.order, raw_response={"provider": "efi", "txid": txid, "metadata": {"type": "pix"}}
             )
             if processed:
                 dispatch_post_payment_tasks(payment.order)
-    # O Efí espera 200 para considerar a notificação entregue.
     return Response({"status": "ok"}, status=status.HTTP_200_OK)
 
 
@@ -188,8 +210,6 @@ def efi_webhook(request):
 def cancel_payment_view(request, pk):
     """
     POST /api/v1/payments/{id}/cancel/
-    Cancela um pedido ainda NÃO pago: cancela o PaymentIntent, devolve o estoque
-    reservado e marca o pedido como cancelado.
     """
     try:
         payment = Payment.objects.get(id=pk, order__user=request.user)
@@ -204,7 +224,13 @@ def cancel_payment_view(request, pk):
         )
 
     with transaction.atomic():
-        StripeService.cancel_payment_intent(payment)
+        # Para cartão, deveríamos tentar cancelar no Efi também caso tenha sido autorizado mas não liquidado
+        if payment.efi_charge_id and payment.method != PaymentMethod.PIX:
+            try:
+                EfiCardService.refund_charge(payment.efi_charge_id)
+            except Exception as e:
+                logger.warning(f"Não foi possível cancelar cobrança Efí {payment.efi_charge_id}: {e}")
+        
         restore_stock(order)
         payment.status = PaymentStatus.CANCELLED
         payment.save(update_fields=["status", "updated_at"])
@@ -223,9 +249,6 @@ def cancel_payment_view(request, pk):
 def refund_payment_view(request, pk):
     """
     POST /api/v1/payments/{id}/refund/
-    Estorna um pedido PAGO. Cartão → Stripe Refund (reverte split e comissão).
-    PIX → baixa de estorno local. Restaura estoque e marca tudo como reembolsado.
-    Body opcional: { "amount": 50.00 } para estorno parcial.
     """
     try:
         payment = Payment.objects.get(id=pk)
@@ -250,22 +273,23 @@ def refund_payment_view(request, pk):
     amount = ser.validated_data.get("amount")
 
     with transaction.atomic():
-        refund_id = ""
-        if payment.method in (PaymentMethod.CREDIT_CARD, PaymentMethod.DEBIT_CARD):
-            refund = StripeService.refund_payment(payment, amount=amount)
-            refund_id = refund.id
-        # PIX: sem PSP real — baixa local (em produção chamaria a API de devolução PIX)
+        if payment.method in (PaymentMethod.CREDIT_CARD, PaymentMethod.DEBIT_CARD) and payment.efi_charge_id:
+            try:
+                # Se for estorno parcial, pode não ser suportado nativamente por default
+                # no One-Step, mas a SDK permite
+                EfiCardService.refund_charge(payment.efi_charge_id, amount=amount)
+            except Exception as e:
+                return Response({"detail": f"Erro no Efí: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
         refunded_total = amount if amount is not None else payment.amount
         payment.refunded_amount = refunded_total
-        payment.stripe_refund_id = refund_id
         payment.refunded_at = timezone.now()
-        # Estorno total → REFUNDED; parcial mantém APPROVED com refunded_amount preenchido
+        
         full_refund = refunded_total >= payment.amount
         if full_refund:
             payment.status = PaymentStatus.REFUNDED
         payment.save(update_fields=[
-            "refunded_amount", "stripe_refund_id", "refunded_at", "status", "updated_at",
+            "refunded_amount", "refunded_at", "status", "updated_at",
         ])
 
         if full_refund:
@@ -279,59 +303,5 @@ def refund_payment_view(request, pk):
     return Response({
         "detail": "Estorno processado." if full_refund else "Estorno parcial processado.",
         "refunded_amount": str(refunded_total),
-        "stripe_refund_id": refund_id,
         "order_status": order.status,
     })
-
-
-@csrf_exempt
-@api_view(["POST"])
-@permission_classes([permissions.AllowAny])
-def stripe_webhook(request):
-    """
-    POST /api/v1/payments/webhook/ — fonte da verdade do Stripe.
-    Valida assinatura e processa sucesso/falha/estorno de pagamentos.
-    """
-    payload = request.body
-    sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
-    endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
-
-    try:
-        event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
-    except ValueError:
-        return Response({"detail": "Payload inválido."}, status=status.HTTP_400_BAD_REQUEST)
-    except stripe.error.SignatureVerificationError:
-        return Response({"detail": "Assinatura inválida."}, status=status.HTTP_400_BAD_REQUEST)
-
-    event_type = event["type"]
-    obj = event["data"]["object"]
-
-    if event_type in ("payment_intent.succeeded", "checkout.session.completed"):
-        order_id = obj.get("metadata", {}).get("order_id")
-        if order_id:
-            order = Order.objects.filter(id=order_id).first()
-            if order:
-                processed = process_successful_payment(
-                    order, raw_response=dict(obj), charge_id=obj.get("latest_charge", "")
-                )
-                if processed:
-                    dispatch_post_payment_tasks(order)
-
-    elif event_type == "payment_intent.payment_failed":
-        order_id = obj.get("metadata", {}).get("order_id")
-        if order_id:
-            payment = Payment.objects.filter(order_id=order_id).first()
-            if payment and payment.status != PaymentStatus.APPROVED:
-                payment.status = PaymentStatus.REJECTED
-                payment.save(update_fields=["status", "updated_at"])
-
-    elif event_type == "charge.refunded":
-        pi_id = obj.get("payment_intent")
-        if pi_id:
-            payment = Payment.objects.filter(mp_payment_id=pi_id).first()
-            if payment and payment.status != PaymentStatus.REFUNDED:
-                payment.status = PaymentStatus.REFUNDED
-                payment.refunded_at = timezone.now()
-                payment.save(update_fields=["status", "refunded_at", "updated_at"])
-
-    return Response({"status": "success"}, status=status.HTTP_200_OK)

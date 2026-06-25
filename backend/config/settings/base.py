@@ -211,11 +211,6 @@ EMAIL_HOST_PASSWORD = env("MAIL_PASSWORD", default="")
 EMAIL_USE_TLS = env.bool("MAIL_USE_TLS", default=True)
 DEFAULT_FROM_EMAIL = env("MAIL_DEFAULT_SENDER", default=EMAIL_HOST_USER)
 
-# ── Stripe Connect ────────────────────────────────────────────────────────────
-STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
-STRIPE_PUBLIC_KEY = env("STRIPE_PUBLIC_KEY", default="")
-STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
-
 # ── Meilisearch ──────────────────────────────────────────────────────────────
 MEILI_HOST = env("MEILI_HOST", default="http://localhost:7700")
 MEILI_MASTER_KEY = env("MEILI_MASTER_KEY", default="devmasterkey")

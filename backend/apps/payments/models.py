@@ -22,15 +22,15 @@ class Payment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     order = models.OneToOneField("orders.Order", on_delete=models.PROTECT, related_name="payment")
     method = models.CharField(max_length=20, choices=PaymentMethod.choices)
-    # ID do PaymentIntent no Stripe (cartão). Mantido o nome legado mp_payment_id por compat de migração.
-    mp_payment_id = models.CharField(max_length=100, blank=True, db_index=True)
-    # ID do charge/cobrança usado para estornos e transfers
-    stripe_charge_id = models.CharField(max_length=100, blank=True, db_index=True)
+    # ID da transação no Efí (txid para PIX, charge_id para cartão)
+    efi_txid = models.CharField(max_length=100, blank=True, db_index=True)
+    # ID adicional (ex: número da transação de split, charge_id)
+    efi_charge_id = models.CharField(max_length=100, blank=True, db_index=True)
     status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     # Valor já estornado (parcial ou total)
     refunded_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    stripe_refund_id = models.CharField(max_length=100, blank=True)
+    efi_refund_id = models.CharField(max_length=100, blank=True)
     # PIX — payload "copia e cola" (EMV/BR Code) e QR em base64
     pix_qr_code = models.TextField(blank=True)
     pix_qr_code_base64 = models.TextField(blank=True)

@@ -2,12 +2,8 @@ from rest_framework import serializers
 
 from apps.orders.models import Order, OrderStatus
 from .models import Payment, PaymentMethod, PaymentStatus
-from .services import PixService, StripeService
-
 
 class PaymentSerializer(serializers.ModelSerializer):
-    client_secret = serializers.SerializerMethodField()
-
     class Meta:
         model = Payment
         fields = [
@@ -17,7 +13,6 @@ class PaymentSerializer(serializers.ModelSerializer):
             "status",
             "amount",
             "refunded_amount",
-            "client_secret",
             "pix_qr_code",
             "pix_qr_code_base64",
             "expires_at",
@@ -26,14 +21,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             "created_at",
         ]
 
-    def get_client_secret(self, obj):
-        # client_secret do Stripe Elements vive dentro da raw_response do PaymentIntent (cartão)
-        if isinstance(obj.raw_response, dict):
-            return obj.raw_response.get("client_secret")
-        return None
-
-
-class PaymentCreateSerializer(serializers.Serializer):
+class ProcessPaymentSerializer(serializers.Serializer):
     order_id = serializers.UUIDField()
     payment_method = serializers.ChoiceField(
         choices=[
@@ -43,6 +31,11 @@ class PaymentCreateSerializer(serializers.Serializer):
         ],
         default=PaymentMethod.CREDIT_CARD,
     )
+    # Campos específicos de cartão (API Cobranças Efí - One-Step)
+    payment_token = serializers.CharField(required=False, allow_blank=True)
+    installments = serializers.IntegerField(required=False, default=1)
+    customer = serializers.JSONField(required=False, help_text="Dados do cliente: name, cpf, email, phone_number, birth")
+    billing_address = serializers.JSONField(required=False, help_text="Endereço de cobrança: street, number, neighborhood, zipcode, city, state")
 
     def validate_order_id(self, value):
         user = self.context["request"].user
@@ -57,51 +50,16 @@ class PaymentCreateSerializer(serializers.Serializer):
             )
         return value
 
-    def create(self, validated_data):
-        order = Order.objects.get(id=validated_data["order_id"])
-        method = validated_data["payment_method"]
-
-        payment, _ = Payment.objects.get_or_create(
-            order=order,
-            defaults={"method": method, "amount": order.total, "status": PaymentStatus.PENDING},
-        )
-        payment.method = method
-        payment.amount = order.total
-        payment.status = PaymentStatus.PENDING
-
-        if method == PaymentMethod.PIX:
-            from .services import EfiPixService
-            import logging
-            logger = logging.getLogger(__name__)
-
-            if EfiPixService.is_configured():
-                try:
-                    txid, copia_cola, qr_base64 = EfiPixService.create_charge(order)
-                    payment.mp_payment_id = txid  # correlação para webhook/polling
-                    payment.pix_qr_code = copia_cola
-                    payment.pix_qr_code_base64 = qr_base64
-                    payment.raw_response = {"provider": "efi", "txid": txid}
-                    payment.save()
-                    return payment
-                except Exception as exc:  # noqa: BLE001
-                    # Não derruba o checkout: cai no BR Code local e registra o problema.
-                    logger.error("Falha ao criar cobrança PIX no Efí: %s", exc)
-
-            # Fallback: BR Code local (Copia e Cola + QR). Baixa via endpoint de confirmação.
-            copia_cola, qr_base64 = PixService.generate_brcode(order)
-            payment.pix_qr_code = copia_cola
-            payment.pix_qr_code_base64 = qr_base64
-            payment.raw_response = {"provider": "local"}
-            payment.save()
-        else:
-            # Cartão de crédito/débito → PaymentIntent no Stripe
-            intent = StripeService.create_payment_intent(order)
-            payment.mp_payment_id = intent.id
-            payment.raw_response = intent
-            payment.save()
-
-        return payment
-
+    def validate(self, data):
+        method = data.get("payment_method")
+        if method in (PaymentMethod.CREDIT_CARD, PaymentMethod.DEBIT_CARD):
+            if not data.get("payment_token"):
+                raise serializers.ValidationError({"payment_token": "Token do cartão é obrigatório para pagamento via cartão."})
+            if not data.get("customer"):
+                raise serializers.ValidationError({"customer": "Dados do titular do cartão são obrigatórios."})
+            if not data.get("billing_address"):
+                raise serializers.ValidationError({"billing_address": "Endereço de cobrança é obrigatório."})
+        return data
 
 class RefundSerializer(serializers.Serializer):
     """Estorno (total ou parcial) de um pagamento aprovado."""
