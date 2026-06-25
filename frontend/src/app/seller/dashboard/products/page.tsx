@@ -5,9 +5,8 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import {
   Plus, Package, Loader2, X, DollarSign, Trash2, Eye, EyeOff,
-  ImageOff, CheckCircle2, AlertTriangle, ArrowLeft,
+  ImageOff, CheckCircle2, AlertTriangle, ArrowLeft, Edit
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { sellerDashboardApi, catalogApi } from "@/lib/api";
@@ -18,8 +17,12 @@ interface SellerProduct {
   id: string;
   name: string;
   base_price: string | number;
+  promotional_price: string | number | null;
+  promo_ends_at: string | null;
   is_available: boolean;
+  is_boosted?: boolean;
   primary_image: string | null;
+  slug: string;
 }
 
 export default function SellerProductsPage() {
@@ -30,12 +33,17 @@ export default function SellerProductsPage() {
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
 
-  // Modal: "create" (formulário) → "media" (uploader); ou "media" direto p/ produto existente
-  const [modalStep, setModalStep] = useState<null | "create" | "media">(null);
+  // Modal: "create" (formulário) → "media" (uploader); "media" direto; "promo"; "edit"
+  const [modalStep, setModalStep] = useState<null | "create" | "media" | "promo" | "edit">(null);
   const [activeProductId, setActiveProductId] = useState<string | null>(null);
+  const [activeProduct, setActiveProduct] = useState<SellerProduct | null>(null);
   const [initialImages, setInitialImages] = useState<UploaderImage[]>([]);
   const [initialVideo, setInitialVideo] = useState<string | null>(null);
   const [mediaCount, setMediaCount] = useState(0);
+
+  // Promo Form
+  const [promoPrice, setPromoPrice] = useState("");
+  const [promoEndsAt, setPromoEndsAt] = useState("");
 
   // Form de criação
   const [name, setName] = useState("");
@@ -45,6 +53,7 @@ export default function SellerProductsPage() {
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+  const [specs, setSpecs] = useState<{attribute_name: string; attribute_value: string}[]>([]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -71,6 +80,7 @@ export default function SellerProductsPage() {
 
   const openCreate = () => {
     setName(""); setCategoryId(""); setBasePrice(""); setStock(""); setDescription("");
+    setSpecs([]);
     setFormError(""); setActiveProductId(null);
     setInitialImages([]); setInitialVideo(null); setMediaCount(0);
     setModalStep("create");
@@ -87,6 +97,7 @@ export default function SellerProductsPage() {
         base_price: parseFloat(basePrice),
         description,
         initial_stock: stock ? parseInt(stock, 10) : 0,
+        specifications: specs.filter(s => s.attribute_name.trim() && s.attribute_value.trim())
       });
       setActiveProductId(data.id);
       setInitialImages([]); setInitialVideo(null); setMediaCount(0);
@@ -143,6 +154,76 @@ export default function SellerProductsPage() {
     }
     setModalStep(null);
     fetchProducts();
+  };
+
+  const openEdit = async (p: SellerProduct) => {
+    setActiveProductId(p.id);
+    setName(p.name);
+    setBasePrice(p.base_price.toString());
+    setFormError("");
+    setModalStep("edit");
+    try {
+      const { data } = await sellerDashboardApi.products.get(p.id);
+      setCategoryId(data.category || "");
+      setDescription(data.description || "");
+      setStock(data.initial_stock !== undefined ? data.initial_stock.toString() : "");
+      setSpecs(data.specifications || []);
+    } catch {
+       /* fallback no if err */
+    }
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeProductId) return;
+    setSaving(true);
+    setFormError("");
+    try {
+      await sellerDashboardApi.products.update(activeProductId, {
+        name,
+        category: categoryId,
+        base_price: parseFloat(basePrice),
+        description,
+        initial_stock: stock ? parseInt(stock, 10) : 0,
+        specifications: specs.filter(s => s.attribute_name.trim() && s.attribute_value.trim())
+      });
+      setModalStep(null);
+      fetchProducts();
+    } catch (err: any) {
+      setFormError(err.response?.data?.detail || "Erro ao editar o produto.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openPromo = (p: SellerProduct) => {
+    setActiveProduct(p);
+    setPromoPrice(p.promotional_price ? p.promotional_price.toString() : "");
+    setPromoEndsAt(p.promo_ends_at ? new Date(p.promo_ends_at).toISOString().slice(0, 16) : "");
+    setFormError("");
+    setModalStep("promo");
+  };
+
+  const handleSavePromo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeProduct) return;
+    setSaving(true);
+    setFormError("");
+    try {
+      if (!promoPrice) {
+         // Cancel Promo
+         await catalogApi.setPromo(activeProduct.slug, { promotional_price: null, promo_ends_at: null });
+      } else {
+         const endIso = promoEndsAt ? new Date(promoEndsAt).toISOString() : new Date(Date.now() + 7*24*60*60*1000).toISOString();
+         await catalogApi.setPromo(activeProduct.slug, { promotional_price: parseFloat(promoPrice), promo_ends_at: endIso });
+      }
+      setModalStep(null);
+      fetchProducts();
+    } catch (err: any) {
+      setFormError(err.response?.data?.detail || "Erro ao definir promoção. Preço promocional deve ser menor que o original.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -212,7 +293,33 @@ export default function SellerProductsPage() {
                       onClick={() => openMedia(p.id)}
                       className="flex-grow text-sm font-semibold py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
                     >
-                      Gerenciar mídia
+                      Mídia
+                    </button>
+                    <button
+                      onClick={() => openEdit(p)}
+                      title="Editar Info"
+                      className="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 transition-colors"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => openPromo(p)}
+                      title="Promover Produto (Desconto)"
+                      className={`p-2 rounded-lg transition-colors ${p.promotional_price ? "bg-red-500/20 text-red-400 hover:bg-red-500/30" : "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20"}`}
+                    >
+                      <Zap className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          await sellerDashboardApi.products.toggleBoost(p.id);
+                          fetchProducts();
+                        } catch (err) { alert("Erro ao impulsionar"); }
+                      }}
+                      title={p.is_boosted ? "Remover Impulsionamento" : "Impulsionar Produto 🚀"}
+                      className={`p-2 rounded-lg transition-colors ${p.is_boosted ? "bg-purple-500 text-white shadow-[0_0_10px_rgba(168,85,247,0.5)]" : "bg-purple-500/10 text-purple-400 hover:bg-purple-500/20"}`}
+                    >
+                      🚀
                     </button>
                     <button
                       onClick={() => togglePublish(p)}
@@ -299,6 +406,22 @@ export default function SellerProductsPage() {
                         className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] outline-none resize-none"
                         placeholder="Detalhes, material, medidas, diferenciais..." />
                     </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2 flex justify-between items-center">
+                        Características Técnicas (Raio-X)
+                        <button type="button" onClick={() => setSpecs([...specs, {attribute_name: "", attribute_value: ""}])} className="text-[#E6B53C] hover:text-[#B38F25] flex items-center gap-1"><Plus className="w-3 h-3" /> Adicionar campo</button>
+                      </label>
+                      <div className="space-y-2 mt-1.5">
+                        {specs.map((s, idx) => (
+                          <div key={idx} className="flex gap-2">
+                            <input value={s.attribute_name} onChange={e => { const ns = [...specs]; ns[idx].attribute_name = e.target.value; setSpecs(ns); }} className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:border-[#E6B53C] outline-none" placeholder="Ex: Material" />
+                            <input value={s.attribute_value} onChange={e => { const ns = [...specs]; ns[idx].attribute_value = e.target.value; setSpecs(ns); }} className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:border-[#E6B53C] outline-none" placeholder="Ex: Couro legítimo" />
+                            <button type="button" onClick={() => setSpecs(specs.filter((_, i) => i !== idx))} className="p-2 text-red-400 hover:bg-red-400/10 rounded-xl"><Trash2 className="w-4 h-4" /></button>
+                          </div>
+                        ))}
+                        {specs.length === 0 && <p className="text-xs text-neutral-500 italic">Adicione detalhes técnicos para ajudar o comprador.</p>}
+                      </div>
+                    </div>
                     <button type="submit" disabled={saving}
                       className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#E6B53C] to-[#B38F25] text-black font-black hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50">
                       {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
@@ -330,6 +453,119 @@ export default function SellerProductsPage() {
                       <CheckCircle2 className="w-5 h-5" /> Publicar
                     </button>
                   </div>
+                </>
+              )}
+
+              {modalStep === "edit" && activeProductId && (
+                <>
+                  <h2 className="text-2xl font-black text-white mb-1">Editar Produto</h2>
+                  <p className="text-sm text-neutral-400 mb-6">Atualize os dados básicos do produto.</p>
+                  {formError && (
+                    <div className="mb-4 text-sm px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 shrink-0" /> {formError}
+                    </div>
+                  )}
+                  <form onSubmit={handleEdit} className="space-y-4">
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Nome do Produto</label>
+                      <input required value={name} onChange={(e) => setName(e.target.value)}
+                        className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] outline-none"
+                        placeholder="Ex: Bolsa de couro caramelo" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Categoria</label>
+                      <select required value={categoryId} onChange={(e) => setCategoryId(e.target.value)}
+                        className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] outline-none">
+                        <option value="" disabled className="bg-[#0A0A15]">Selecione...</option>
+                        {categories.map((c) => <option key={c.id} value={c.id} className="bg-[#0A0A15]">{c.name}</option>)}
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Preço (R$)</label>
+                        <div className="relative mt-1.5">
+                          <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500" />
+                          <input required type="number" step="0.01" value={basePrice} onChange={(e) => setBasePrice(e.target.value)}
+                            className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] outline-none font-mono"
+                            placeholder="0.00" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Estoque (Opcional)</label>
+                        <input type="number" min="0" value={stock} onChange={(e) => setStock(e.target.value)}
+                          className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] outline-none font-mono"
+                          placeholder="Mudar estoque base" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Descrição</label>
+                      <textarea rows={4} value={description} onChange={(e) => setDescription(e.target.value)}
+                        className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] outline-none resize-none"
+                        placeholder="Detalhes, material, medidas, diferenciais..." />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2 flex justify-between items-center">
+                        Características Técnicas (Raio-X)
+                        <button type="button" onClick={() => setSpecs([...specs, {attribute_name: "", attribute_value: ""}])} className="text-[#E6B53C] hover:text-[#B38F25] flex items-center gap-1"><Plus className="w-3 h-3" /> Adicionar campo</button>
+                      </label>
+                      <div className="space-y-2 mt-1.5">
+                        {specs.map((s, idx) => (
+                          <div key={idx} className="flex gap-2">
+                            <input value={s.attribute_name} onChange={e => { const ns = [...specs]; ns[idx].attribute_name = e.target.value; setSpecs(ns); }} className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:border-[#E6B53C] outline-none" placeholder="Ex: Material" />
+                            <input value={s.attribute_value} onChange={e => { const ns = [...specs]; ns[idx].attribute_value = e.target.value; setSpecs(ns); }} className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:border-[#E6B53C] outline-none" placeholder="Ex: Couro legítimo" />
+                            <button type="button" onClick={() => setSpecs(specs.filter((_, i) => i !== idx))} className="p-2 text-red-400 hover:bg-red-400/10 rounded-xl"><Trash2 className="w-4 h-4" /></button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <button type="submit" disabled={saving}
+                      className="w-full py-3.5 mt-2 rounded-xl bg-gradient-to-r from-[#E6B53C] to-[#B38F25] text-black font-black hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50">
+                      {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+                      {saving ? "Salvando..." : "Salvar Alterações"}
+                    </button>
+                  </form>
+                </>
+              )}
+
+              {modalStep === "promo" && activeProduct && (
+                <>
+                  <h2 className="text-2xl font-black text-white mb-1 flex items-center gap-2"><Zap className="text-yellow-400 w-6 h-6" /> Promover Produto</h2>
+                  <p className="text-sm text-neutral-400 mb-6">Ofereça um desconto de pelo menos 10% para que ele seja notificado aos clientes e listado nas <strong>SUPER OFERTAS</strong>!</p>
+                  
+                  {formError && (
+                    <div className="mb-4 text-sm px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 shrink-0" /> {formError}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSavePromo} className="space-y-4">
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Preço Original</label>
+                      <input disabled value={`R$ ${Number(activeProduct.base_price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-neutral-500 outline-none cursor-not-allowed" />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-yellow-500 flex items-center gap-1"><DollarSign className="w-3 h-3" /> Preço Promocional</label>
+                        <input type="number" step="0.01" value={promoPrice} onChange={(e) => setPromoPrice(e.target.value)}
+                          className="w-full mt-1.5 px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 font-black focus:border-red-500 outline-none"
+                          placeholder="Ex: 99.90 (Deixe vazio p/ cancelar)" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Fim da Promoção</label>
+                        <input type="datetime-local" value={promoEndsAt} onChange={(e) => setPromoEndsAt(e.target.value)}
+                          className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-[#E6B53C] outline-none" />
+                      </div>
+                    </div>
+
+                    <div className="mt-8 pt-5 border-t border-white/10 flex items-center justify-between gap-3">
+                      <button type="button" onClick={() => setModalStep(null)} className="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-semibold transition-colors">Cancelar</button>
+                      <button type="submit" disabled={saving} className="px-6 py-3 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-white font-black hover:opacity-90 flex items-center gap-2 disabled:opacity-50">
+                        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
+                        {promoPrice ? "Ativar Oferta!" : "Remover Oferta"}
+                      </button>
+                    </div>
+                  </form>
                 </>
               )}
             </motion.div>

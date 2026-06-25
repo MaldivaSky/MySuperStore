@@ -73,6 +73,7 @@ class Product(models.Model):
     promo_ends_at = models.DateTimeField(null=True, blank=True)
 
     is_available = models.BooleanField(default=False)
+    is_boosted = models.BooleanField(default=False, help_text="Produto impulsionado no catálogo")
 
     # Vídeo do produto (máx. 1 por produto). Upload local OU URL externa.
     video = models.FileField(upload_to="products/videos/", blank=True, null=True)

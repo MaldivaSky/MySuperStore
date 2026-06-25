@@ -242,6 +242,13 @@ class SellerProductViewSet(viewsets.ModelViewSet):
             from rest_framework.exceptions import NotFound
             raise NotFound("Produto nao encontrado.")
 
+    @action(detail=True, methods=["post"])
+    def toggle_boost(self, request, pk=None):
+        product = self.get_object()
+        product.is_boosted = not getattr(product, "is_boosted", False)
+        product.save(update_fields=["is_boosted"])
+        return Response({"is_boosted": product.is_boosted})
+
     # -- Imagens --------------------------------------------------------------
 
     def _get_product(self, pk):
@@ -619,6 +626,13 @@ class SellerAnalyticsView(APIView):
         total_orders = sub_orders.count()
         avg_ticket = (total_revenue / total_orders) if total_orders > 0 else 0
         
+        # 1.5 View KPIs
+        from apps.catalog.models import Product
+        seller_products = Product.objects.filter(seller=seller)
+        views_aggr = seller_products.aggregate(total_views=Sum("views_count"), total_clicks=Sum("clicks_count"))
+        total_views = views_aggr["total_views"] or 0
+        total_clicks = views_aggr["total_clicks"] or 0
+        
         # 2. Sales Over Time (Last 30 days)
         thirty_days_ago = timezone.now() - timedelta(days=30)
         sales_over_time = sub_orders.filter(created_at__gte=thirty_days_ago) \
@@ -633,6 +647,9 @@ class SellerAnalyticsView(APIView):
             .annotate(revenue=Sum("total"), quantity=Sum("quantity")) \
             .order_by("-revenue")[:5]
 
+        # 3.5 Most Viewed Products
+        most_viewed = seller_products.filter(views_count__gt=0).values("name", "views_count", "clicks_count", "slug").order_by("-views_count")[:5]
+
         # 4. Reputation
         from .models import SellerReview
         reviews = SellerReview.objects.filter(seller=seller)
@@ -644,9 +661,12 @@ class SellerAnalyticsView(APIView):
                 "total_revenue": total_revenue,
                 "total_orders": total_orders,
                 "avg_ticket": avg_ticket,
+                "total_views": total_views,
+                "total_clicks": total_clicks,
             },
             "sales_over_time": list(sales_over_time),
             "top_products": list(top_items),
+            "most_viewed_products": list(most_viewed),
             "reputation": {
                 "avg_rating": round(avg_rating, 1),
                 "review_count": review_count

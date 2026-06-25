@@ -104,6 +104,7 @@ export const cartApi = {
 
 export const sellerApi = {
   me: () => api.get("/sellers/me/"),
+  update: (data: any) => api.patch("/sellers/me/", data),
   apply: (data: { store_name: string; description: string; pix_key: string }) =>
     api.post("/sellers/apply/", data),
   onboard: (returnUrl: string, refreshUrl: string) =>
@@ -216,6 +217,7 @@ export const sellerDashboardApi = {
       api.post(`/sellers/me/products/${productId}/variants/`, data),
     deleteVariant: (productId: string, variantId: string) => 
       api.delete(`/sellers/me/products/${productId}/variants/${variantId}/`),
+    toggleBoost: (id: string) => api.post(`/sellers/me/products/${id}/toggle_boost/`),
   }
 };
 

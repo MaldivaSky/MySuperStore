@@ -257,6 +257,9 @@ class ProductListSerializer(serializers.ModelSerializer):
     discount_percentage = serializers.SerializerMethodField()
     time_remaining_seconds = serializers.SerializerMethodField()
     variants = ProductVariantSerializer(many=True, read_only=True)
+    is_demo = serializers.SerializerMethodField()
+    is_boosted = serializers.BooleanField(read_only=True)
+    carts_count = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = Product
@@ -270,7 +273,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             "avg_rating", "review_count",
             "is_available", "views_count", "clicks_count", "created_at",
             "variants", "is_free_shipping", "estimated_delivery_days",
-            "weight", "length", "width", "height"
+            "weight", "length", "width", "height", "is_demo", "carts_count", "is_boosted"
         ]
 
     def get_primary_image(self, obj):
@@ -309,6 +312,10 @@ class ProductListSerializer(serializers.ModelSerializer):
             secs = delta.total_seconds()
             return int(secs) if secs > 0 else 0
         return 0
+
+    def get_is_demo(self, obj):
+        seller_email = obj.seller.user.email if getattr(obj, "seller", None) else ""
+        return seller_email in ["loja@nike.com", "loja@samsung.com"]
 
 
 class ProductDetailSerializer(ProductListSerializer):
@@ -353,8 +360,14 @@ class ProductDetailSerializer(ProductListSerializer):
 
 # -- Produtos (escrita - vendedor) ---------------------------------------------
 
+class ProductSpecificationWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductSpecification
+        fields = ["attribute_name", "attribute_value"]
+
 class ProductCreateSerializer(serializers.ModelSerializer):
     slug = serializers.SlugField(required=False, allow_blank=True)
+    specifications = ProductSpecificationWriteSerializer(many=True, required=False)
 
     class Meta:
         model = Product
@@ -363,7 +376,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             "base_price", "is_available",
             "is_free_shipping", "estimated_delivery_days",
             "weight", "length", "width", "height",
-            "meta_title", "meta_description",
+            "meta_title", "meta_description", "specifications"
         ]
         read_only_fields = ["id"]
 
@@ -386,8 +399,17 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         data["slug"] = slug
         return data
 
+    def create(self, validated_data):
+        specs = validated_data.pop("specifications", [])
+        product = super().create(validated_data)
+        for spec in specs:
+            ProductSpecification.objects.create(product=product, **spec)
+        return product
+
 
 class ProductUpdateSerializer(serializers.ModelSerializer):
+    specifications = ProductSpecificationWriteSerializer(many=True, required=False)
+
     class Meta:
         model = Product
         fields = [
@@ -395,13 +417,22 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             "base_price", "is_available",
             "is_free_shipping", "estimated_delivery_days",
             "weight", "length", "width", "height",
-            "meta_title", "meta_description",
+            "meta_title", "meta_description", "specifications"
         ]
 
     def validate_base_price(self, value):
         if value <= 0:
             raise serializers.ValidationError("O preco deve ser maior que zero.")
         return value
+
+    def update(self, instance, validated_data):
+        specs = validated_data.pop("specifications", None)
+        instance = super().update(instance, validated_data)
+        if specs is not None:
+            instance.specifications.all().delete()
+            for spec in specs:
+                ProductSpecification.objects.create(product=instance, **spec)
+        return instance
 
 
 # -- Banners -------------------------------------------------------------------

@@ -79,6 +79,7 @@ export interface Product {
   avg_rating: number | null;
   review_count: number;
   is_available: boolean;
+  is_boosted?: boolean;
   approval_status?: string;
   specifications?: Array<{ attribute_name: string; attribute_value: string }>;
   created_at: string;

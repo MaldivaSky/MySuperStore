@@ -704,9 +704,19 @@ function StorePageContent() {
                   >
                     {/* Badge */}
                     <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 flex flex-col gap-1">
+                      {product.is_boosted && (
+                        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[9px] sm:text-xs font-extrabold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-lg shadow-purple-500/30 flex items-center gap-1 uppercase tracking-wider animate-pulse">
+                          🚀 PATROCINADO
+                        </div>
+                      )}
                       {product.is_flash_sale && (
                         <div className="bg-yellow-500 text-black text-[9px] sm:text-xs font-extrabold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-lg flex items-center gap-1 animate-pulse">
                           <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> RELÂMPAGO
+                        </div>
+                      )}
+                      {product.discount_percentage >= 10 && (
+                        <div className="bg-gradient-to-r from-red-500 to-rose-600 text-white text-[9px] sm:text-xs font-extrabold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-lg shadow-red-500/30 flex items-center gap-1 animate-pulse border border-white/20">
+                          <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-yellow-300" /> SUPER OFERTA
                         </div>
                       )}
                       {isLowStock && (
@@ -720,9 +730,11 @@ function StorePageContent() {
                         </div>
                       )}
                       {/* Tag genérica (Demo / Mais Pedido / Em Alta) */}
-                      <div className="bg-blue-600/90 backdrop-blur-md text-white text-[9px] sm:text-xs font-bold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-[0_0_15px_rgba(37,99,235,0.4)] border border-blue-400/30 uppercase tracking-wider">
-                        {product.custom_tag || "DEMO"}
-                      </div>
+                      {(product.custom_tag || product.is_demo) && (
+                        <div className="bg-blue-600/90 backdrop-blur-md text-white text-[9px] sm:text-xs font-bold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-[0_0_15px_rgba(37,99,235,0.4)] border border-blue-400/30 uppercase tracking-wider">
+                          {product.custom_tag || "DEMO"}
+                        </div>
+                      )}
                     </div>
 
                     {/* Wishlist — sempre visível no mobile (sem hover), aparece no hover no desktop */}

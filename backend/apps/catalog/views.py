@@ -83,7 +83,8 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             )
             .annotate(
                 avg_rating=Avg("reviews__rating", filter=Q(reviews__status="approved")),
-                review_count=Count("reviews", filter=Q(reviews__status="approved")),
+                review_count=Count("reviews", filter=Q(reviews__status="approved"), distinct=True),
+                carts_count=Count("variants__cartitem__cart", distinct=True),
             )
         )
         user = self.request.user
@@ -119,9 +120,13 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         if conditions:
             qs = qs.annotate(
                 relevance=Case(*conditions, default=Value(0), output_field=IntegerField())
-            ).order_by("-relevance", "-created_at")
+            )
+            ordering = self.request.query_params.get("ordering", "relevance")
+            if ordering == "relevance":
+                return qs.order_by("-is_boosted", "-relevance", "-created_at")
+            return qs.order_by("-created_at")
         else:
-            qs = qs.order_by("-created_at")
+            qs = qs.order_by("-is_boosted", "-created_at")
             
         return qs
 
@@ -231,6 +236,39 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             product.promo_ends_at = None
 
         product.save(update_fields=["promotional_price", "promo_starts_at", "promo_ends_at"])
+
+        # Notificar usuários que têm este produto na Wishlist!
+        if promo_price is not None:
+            from apps.users.models import Notification
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            
+            wishlist_users = [w.user for w in product.wishlists.select_related("user").all()]
+            channel_layer = get_channel_layer()
+            
+            for u in wishlist_users:
+                notif = Notification.objects.create(
+                    user=u,
+                    title="🔥 Oferta no seu Favorito!",
+                    message=f"O produto {product.name} que você favoritou acaba de entrar em Super Oferta! Aproveite.",
+                    type="promo",
+                    related_entity_id=product.slug
+                )
+                async_to_sync(channel_layer.group_send)(
+                    f"user_{u.id}_notifications",
+                    {
+                        "type": "send_notification",
+                        "data": {
+                            "id": str(notif.id),
+                            "title": notif.title,
+                            "message": notif.message,
+                            "type": notif.type,
+                            "related_entity_id": notif.related_entity_id,
+                            "is_read": False,
+                            "created_at": notif.created_at.isoformat()
+                        }
+                    }
+                )
         return Response(
             {
                 "detail": "Promocao atualizada.",
