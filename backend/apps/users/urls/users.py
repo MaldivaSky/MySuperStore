@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from apps.users.views.user_views import MeView, UserSurveyView, AddressViewSet, BuyerRecapView, NotificationViewSet
+from apps.users.views.user_views import MeView, UserSurveyView, AddressViewSet, BuyerRecapView, NotificationViewSet, PushSubscribeView
 
 router = DefaultRouter()
 router.register(r"addresses", AddressViewSet, basename="address")
@@ -10,6 +10,7 @@ urlpatterns = [
     path("me/", MeView.as_view(), name="user-me"),
     path("me/survey/", UserSurveyView.as_view(), name="user-survey"),
     path("me/recap/", BuyerRecapView.as_view(), name="user-recap"),
+    path("me/push/subscribe/", PushSubscribeView.as_view(), name="push-subscribe"),
     path("me/", include(router.urls)),
 ]
 

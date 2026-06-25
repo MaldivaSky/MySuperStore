@@ -81,6 +81,7 @@ class SubOrder(models.Model):
     seller_amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=OrderStatus.choices, default=OrderStatus.PENDING)
     tracking_code = models.CharField(max_length=50, blank=True)
+    invoice_link = models.URLField(max_length=500, blank=True, help_text="Link para a Nota Fiscal (PDF)")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

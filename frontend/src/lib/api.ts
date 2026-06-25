@@ -148,6 +148,13 @@ export const returnsApi = {
     }),
 };
 
+export const sellerOrdersApi = {
+  updateStatus: (subOrderId: string, status: string) =>
+    api.patch(`/orders/seller/orders/${subOrderId}/update_status/`, { status }),
+  uploadInvoice: (subOrderId: string, invoice_link: string) =>
+    api.post(`/orders/seller/orders/${subOrderId}/upload_invoice/`, { invoice_link }),
+};
+
 export const wishlistApi = {
   get: () => api.get("/catalog/wishlist/my/"),
   add: (product: any) => api.post("/catalog/wishlist/add/", { product_id: product.id }),
@@ -164,6 +171,7 @@ export const userApi = {
   getRecap: () => api.get("/users/me/recap/"),
   getSurvey: () => api.get("/users/me/survey/"),
   saveSurvey: (data: any) => api.post("/users/me/survey/", data),
+  subscribePush: (subscription: any) => api.post("/users/me/push/subscribe/", subscription),
   getAddresses: () => api.get("/users/me/addresses/"),
   createAddress: (data: any) => api.post("/users/me/addresses/", data),
   updateAddress: (id: string, data: any) => api.patch(`/users/me/addresses/${id}/`, data),

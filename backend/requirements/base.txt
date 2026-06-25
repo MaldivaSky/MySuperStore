@@ -40,3 +40,4 @@ sentry-sdk[django]==2.19.0
 
 # Utils
 django-extensions==3.2.3
+pywebpush==1.14.0

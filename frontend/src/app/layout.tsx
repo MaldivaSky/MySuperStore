@@ -31,6 +31,7 @@ export const metadata: Metadata = {
     template: "%s | MySuperStore",
   },
   description: "Explore um universo multi-vendedor com split financeiro automatizado e uma experiência de compra que transcende qualquer expectativa terrestre.",
+  manifest: "/manifest.json",
   openGraph: {
     type: "website",
     locale: "pt_BR",
@@ -57,6 +58,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import { BottomNav } from "@/components/BottomNav";
 import { AuthProvider } from "@/components/AuthProvider";
 import { SplashScreen } from "@/components/ui/SplashScreen";
+import { PWARegistry } from "@/components/PWARegistry";
 
 export default function RootLayout({
   children,
@@ -81,6 +83,7 @@ export default function RootLayout({
                 </div>
                 <BottomNav />
                 <SplashScreen />
+                <PWARegistry />
               </AuthProvider>
             </ToastProvider>
           </GoogleOAuthProvider>

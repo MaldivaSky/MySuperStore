@@ -278,6 +278,21 @@ export default function OrdersPage() {
                         </div>
                       </div>
 
+                      {/* Botão da Nota Fiscal */}
+                      {sub.invoice_link && (
+                        <div className="flex justify-end mt-2 px-2">
+                          <a 
+                            href={sub.invoice_link} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="text-xs flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 transition-colors font-bold shadow-[0_0_10px_rgba(230,181,60,0.15)]"
+                          >
+                            <Package className="h-3.5 w-3.5" />
+                            Baixar Nota Fiscal
+                          </a>
+                        </div>
+                      )}
+
                       {/* Lista de Itens */}
                       <div className="space-y-3 mt-4 border-t border-border/20 pt-4">
                       {sub.items.map((item: any) => (

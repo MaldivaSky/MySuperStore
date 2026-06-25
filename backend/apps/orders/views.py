@@ -66,39 +66,28 @@ class SellerSubOrderViewSet(viewsets.ModelViewSet):
         sub_order.status = new_status
         sub_order.save()
         
-        # Disparar Notificação para o Comprador
-        from apps.users.models import Notification
-        from channels.layers import get_channel_layer
-        from asgiref.sync import async_to_sync
-        
-        status_display = dict(OrderStatus.choices).get(new_status, new_status)
-        notif = Notification.objects.create(
-            user=sub_order.order.user,
-            title=f"Atualização do Pedido #{sub_order.order.order_number[-6:]}",
-            message=f"Seu pedido na loja {sub_order.seller.store_name} mudou para: {status_display}.",
-            type="order",
-            related_entity_id=str(sub_order.id)
-        )
-        
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"user_{sub_order.order.user.id}_notifications",
-            {
-                "type": "send_notification",
-                "data": {
-                    "id": str(notif.id),
-                    "title": notif.title,
-                    "message": notif.message,
-                    "type": notif.type,
-                    "related_entity_id": notif.related_entity_id,
-                    "is_read": False,
-                    "created_at": notif.created_at.isoformat()
-                }
-            }
-        )
+        # Disparar Notificação + E-mail para o Comprador
+        from apps.users.notifications import notify_order_status_update
+        notify_order_status_update(sub_order)
         
         serializer = self.get_serializer(sub_order)
         return Response(serializer.data)
+
+    @action(detail=True, methods=["post"])
+    def upload_invoice(self, request, pk=None):
+        sub_order = self.get_object()
+        invoice_link = request.data.get("invoice_link")
+        
+        if not invoice_link:
+            return Response({"error": "O campo invoice_link é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        sub_order.invoice_link = invoice_link
+        sub_order.save(update_fields=["invoice_link"])
+        
+        from apps.users.notifications import notify_invoice_available
+        notify_invoice_available(sub_order)
+        
+        return Response({"detail": "Nota Fiscal anexada com sucesso."})
 
 
 class ReturnRequestViewSet(viewsets.ModelViewSet):

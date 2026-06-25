@@ -148,3 +148,31 @@ class NotificationViewSet(viewsets.ModelViewSet):
         self.get_queryset().update(is_read=True)
         return Response({"status": "success"})
 
+
+from apps.users.models import WebPushSubscription
+
+class PushSubscribeView(APIView):
+    """POST /api/v1/users/me/push/subscribe/ — salva token do Web Push."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        subscription_info = request.data
+        endpoint = subscription_info.get("endpoint")
+        keys = subscription_info.get("keys", {})
+        p256dh = keys.get("p256dh")
+        auth = keys.get("auth")
+
+        if not endpoint or not p256dh or not auth:
+            return Response({"error": "Dados de inscrição incompletos."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Upsert baseado no endpoint
+        sub, created = WebPushSubscription.objects.update_or_create(
+            endpoint=endpoint,
+            defaults={
+                "user": request.user,
+                "p256dh": p256dh,
+                "auth": auth
+            }
+        )
+        return Response({"status": "success", "created": created})
+

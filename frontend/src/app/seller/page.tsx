@@ -11,7 +11,7 @@ import {
   CheckCircle, Clock, RefreshCcw, Loader2, Zap, MessageSquare, Users, Trash2, Edit2, 
   Eye, Check, X, Send, Upload, ChevronRight, AlertTriangle, TrendingUp, Award
 } from "lucide-react";
-import { api, returnsApi, catalogApi, chatApi, sellerDashboardApi } from "@/lib/api";
+import { api, returnsApi, catalogApi, chatApi, sellerDashboardApi, sellerOrdersApi } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 
 export default function SellerPage() {
@@ -237,11 +237,23 @@ function SellerDashboard() {
 
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
     try {
-      await api.patch(`/orders/seller/${orderId}/update_status/`, { status: newStatus });
+      await sellerOrdersApi.updateStatus(orderId, newStatus);
       toast("Status do pedido atualizado com sucesso!", "success");
       fetchOrders();
     } catch (err) {
       toast("Erro ao atualizar status. Verifique se a transição é válida.", "error");
+    }
+  };
+
+  const handleUploadInvoice = async (orderId: string) => {
+    const link = prompt("Cole o link (URL) da Nota Fiscal em PDF:");
+    if (!link) return;
+    try {
+      await sellerOrdersApi.uploadInvoice(orderId, link);
+      toast("Nota Fiscal anexada e cliente notificado!", "success");
+      fetchOrders();
+    } catch (err) {
+      toast("Erro ao anexar Nota Fiscal.", "error");
     }
   };
 
@@ -1474,6 +1486,14 @@ function SellerDashboard() {
                             )}
                             {order.status === 'shipped' && (
                               <button onClick={() => handleUpdateStatus(order.id, 'delivered')} className="bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-400 text-xs px-2.5 py-1.5 rounded-lg transition-colors font-bold">Entregar</button>
+                            )}
+                            {!order.invoice_link && (
+                              <button onClick={() => handleUploadInvoice(order.id)} className="bg-neutral-500/20 border border-neutral-500/40 hover:bg-neutral-500/30 text-white text-xs px-2.5 py-1.5 rounded-lg transition-colors font-bold">Anexar NF</button>
+                            )}
+                            {order.invoice_link && (
+                              <a href={order.invoice_link} target="_blank" rel="noreferrer" className="bg-primary/20 border border-primary/40 hover:bg-primary/30 text-primary text-xs px-2.5 py-1.5 rounded-lg transition-colors font-bold flex items-center gap-1">
+                                Ver NF
+                              </a>
                             )}
                           </div>
                         </td>
