@@ -40,6 +40,7 @@ export function ProductMediaUploader({
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [busyImageId, setBusyImageId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [externalUrlInput, setExternalUrlInput] = useState("");
 
   const photoInput = useRef<HTMLInputElement>(null);
   const videoInput = useRef<HTMLInputElement>(null);
@@ -48,6 +49,30 @@ export function ProductMediaUploader({
 
   const emit = (imgs: UploaderImage[], vid: string | null) => {
     onChange?.({ images: imgs, videoUrl: vid });
+  };
+
+  const handleAddExternalUrl = async () => {
+    if (!externalUrlInput.trim()) return;
+    if (images.length >= MAX_PHOTOS) {
+      setError(`Você pode adicionar no máximo ${MAX_PHOTOS} fotos.`);
+      return;
+    }
+    setError("");
+    setUploadingPhotos(true);
+    try {
+      const fd = new FormData();
+      fd.append("external_url", externalUrlInput.trim());
+      fd.append("order", String(images.length));
+      const { data } = await sellerDashboardApi.products.uploadImage(productId, fd);
+      const newImages = [...images, { id: data.id, image: data.image_url || data.external_url, is_primary: data.is_primary, order: data.order }];
+      setImages(newImages);
+      emit(newImages, videoUrl);
+      setExternalUrlInput("");
+    } catch (err: any) {
+      setError(err.response?.data?.detail || "Falha ao adicionar a foto por URL.");
+    } finally {
+      setUploadingPhotos(false);
+    }
   };
 
   const handleAddPhotos = async (fileList: FileList | null) => {
@@ -76,7 +101,7 @@ export function ProductMediaUploader({
         fd.append("image", file);
         fd.append("order", String(current.length));
         const { data } = await sellerDashboardApi.products.uploadImage(productId, fd);
-        current = [...current, { id: data.id, image: data.image, is_primary: data.is_primary, order: data.order }];
+        current = [...current, { id: data.id, image: data.image_url || data.image, is_primary: data.is_primary, order: data.order }];
         setImages(current);
         emit(current, videoUrl);
       } catch (err: any) {
@@ -176,7 +201,7 @@ export function ProductMediaUploader({
           <Info className="w-3.5 h-3.5" /> Até 6 fotos. A 1ª é a <strong className="text-neutral-300">capa</strong>. Ideal: 1080×1080, fundo claro, boa luz.
         </p>
 
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-4">
           {images.map((img) => (
             <div
               key={img.id}
@@ -232,12 +257,33 @@ export function ProductMediaUploader({
               ) : (
                 <>
                   <ImagePlus className="w-6 h-6" />
-                  <span className="text-[11px] font-semibold">Adicionar</span>
+                  <span className="text-[11px] font-semibold text-center leading-tight">Enviar<br/>Arquivo</span>
                 </>
               )}
             </button>
           )}
         </div>
+
+        {images.length < MAX_PHOTOS && (
+          <div className="flex items-center gap-2 mb-2">
+            <input 
+              type="url" 
+              placeholder="Ou cole uma URL externa (ex: Imgur, Google) p/ evitar perda" 
+              value={externalUrlInput} 
+              onChange={e => setExternalUrlInput(e.target.value)} 
+              className="flex-1 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:border-[#E6B53C] outline-none" 
+            />
+            <button 
+              type="button" 
+              onClick={handleAddExternalUrl} 
+              disabled={!externalUrlInput.trim() || uploadingPhotos} 
+              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-sm transition-colors disabled:opacity-50"
+            >
+              Adicionar Link
+            </button>
+          </div>
+        )}
+
         <input
           ref={photoInput}
           type="file"

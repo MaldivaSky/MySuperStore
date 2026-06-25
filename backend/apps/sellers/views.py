@@ -274,7 +274,7 @@ class SellerProductViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        serializer = ProductImageUploadSerializer(data=request.data)
+        serializer = ProductImageUploadSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
 
         # Primeira imagem vira primaria automaticamente; nova primaria desbanca a anterior
