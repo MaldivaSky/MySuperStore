@@ -213,6 +213,7 @@ export const chatApi = {
 
 export const sellerDashboardApi = {
   apply: (data: { store_name: string; description: string; cpf_cnpj?: string; person_type?: string; main_category?: string; origin_cep?: string; efi_payee_code?: string }) => api.post("/sellers/apply/", data),
+  onboard: (return_url: string, refresh_url: string) => api.post("/sellers/onboard/", { return_url, refresh_url }),
   updateProfile: (data: FormData) => api.patch("/sellers/me/", data, { headers: { "Content-Type": "multipart/form-data" } }),
 
   getLeads: () => api.get("/sellers/me/leads/"),

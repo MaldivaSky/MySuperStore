@@ -29,7 +29,7 @@ export function InstallAppButton() {
   return (
     <button
       onClick={handleInstallClick}
-      className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 hover:border-primary/40 transition-colors rounded-full text-xs font-bold"
+      className="flex w-full justify-center items-center gap-1.5 px-4 py-3 bg-gradient-to-r from-primary/20 to-amber-600/20 hover:from-primary/30 hover:to-amber-600/30 text-primary border border-primary/20 hover:border-primary/40 transition-colors rounded-xl text-sm font-bold shadow-[0_0_10px_rgba(230,181,60,0.1)]"
       title="Instalar App"
     >
       <Download className="w-3.5 h-3.5" />

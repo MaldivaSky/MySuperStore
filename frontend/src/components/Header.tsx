@@ -320,6 +320,9 @@ function HeaderInner() {
                     </Link>
                   </div>
                 )}
+                <div className="mt-2 flex justify-center">
+                  <InstallAppButton />
+                </div>
               </div>
             </div>
           </motion.div>
