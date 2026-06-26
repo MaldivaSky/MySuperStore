@@ -84,7 +84,6 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             .annotate(
                 avg_rating=Avg("reviews__rating", filter=Q(reviews__status="approved")),
                 review_count=Count("reviews", filter=Q(reviews__status="approved"), distinct=True),
-                carts_count=Count("variants__cartitem__cart", distinct=True),
             )
         )
         user = self.request.user
