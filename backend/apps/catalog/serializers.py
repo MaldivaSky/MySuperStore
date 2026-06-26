@@ -328,12 +328,22 @@ class ProductDetailSerializer(ProductListSerializer):
     variants = serializers.SerializerMethodField()
     reviews = serializers.SerializerMethodField()
     video_url = serializers.SerializerMethodField()
+    initial_stock = serializers.SerializerMethodField()
 
     class Meta(ProductListSerializer.Meta):
         fields = ProductListSerializer.Meta.fields + [
             "description", "images", "specifications", "variants", "reviews",
             "video_url", "meta_title", "meta_description", "approval_status", "updated_at",
+            "initial_stock",
         ]
+
+    def get_initial_stock(self, obj):
+        # Estoque exibido no formulário simples do vendedor. Para produtos de uma
+        # única variante (fluxo padrão do painel), reflete o estoque atual.
+        variants = getattr(obj, "active_variants", None)
+        if variants is None:
+            variants = list(obj.variants.filter(is_active=True))
+        return sum(v.stock for v in variants)
 
     def get_video_url(self, obj):
         request = self.context.get("request")

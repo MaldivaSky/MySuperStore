@@ -234,16 +234,25 @@ export default function PremiumGlassdoorPage() {
               )}
             </div>
             
-            {seller.video_url && (
-              <div className="w-full md:w-80 h-44 rounded-2xl overflow-hidden border border-white/10 shrink-0">
-                <iframe 
-                  src={seller.video_url.replace("watch?v=", "embed/")} 
+            {seller.presentation_video_url ? (
+              <div className="w-full md:w-80 h-44 rounded-2xl overflow-hidden border border-white/10 shrink-0 bg-black">
+                <video
+                  src={seller.presentation_video_url}
                   className="w-full h-full object-cover"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                  controls
+                  playsInline
+                />
+              </div>
+            ) : seller.video_url ? (
+              <div className="w-full md:w-80 h-44 rounded-2xl overflow-hidden border border-white/10 shrink-0">
+                <iframe
+                  src={seller.video_url.replace("watch?v=", "embed/")}
+                  className="w-full h-full object-cover"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
               </div>
-            )}
+            ) : null}
           </div>
         </section>
 

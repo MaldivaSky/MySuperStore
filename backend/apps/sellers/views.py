@@ -143,6 +143,34 @@ class SellerProductViewSet(viewsets.ModelViewSet):
                 is_active=True,
             )
 
+    def perform_update(self, serializer):
+        product = serializer.save()
+        # Aplica o estoque enviado pelo formulário simples do vendedor. Sem isto,
+        # editar a quantidade não surtia efeito (o estoque vive na variante, não no
+        # Product). Só atua em produtos de variante única — produtos com múltiplas
+        # variantes são geridos pelos endpoints de variante.
+        if "initial_stock" not in self.request.data:
+            return
+        from apps.catalog.models import ProductVariant
+        try:
+            stock = max(0, int(self.request.data.get("initial_stock") or 0))
+        except (TypeError, ValueError):
+            stock = 0
+        variants = list(product.variants.all())
+        if len(variants) <= 1:
+            variant = variants[0] if variants else None
+            if variant:
+                variant.stock = stock
+                variant.is_active = True
+                variant.save(update_fields=["stock", "is_active"])
+            else:
+                ProductVariant.objects.create(
+                    product=product,
+                    sku=f"{product.slug[:40]}-{str(product.id)[:8]}",
+                    stock=stock,
+                    is_active=True,
+                )
+
     def destroy(self, request, *args, **kwargs):
         product = self.get_object()
         # Impede exclusao se houver pedidos associados

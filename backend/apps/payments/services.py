@@ -236,6 +236,38 @@ class EfiPixService:
         return txid, copia_e_cola, qr_base64
 
     @classmethod
+    def send_to_seller(cls, pix_key: str, amount, id_envio: str, info: str = "") -> dict:
+        """
+        Envia PIX (Pix Envio — `pix_send` /v3/gn/pix/:idEnvio) do caixa master da
+        plataforma para a chave PIX do lojista. É assim que liquidamos o repasse de
+        lojistas SEM conta Efí (sem split nativo): o valor cai na conta master no
+        pagamento e depois é repassado por PIX à chave do lojista.
+
+        `id_envio` é a chave de idempotência (alfanumérica, até 35 chars): reenvios
+        com o mesmo id não duplicam o pagamento.
+        """
+        efi = cls._client()
+        body = {
+            "valor": f"{Decimal(str(amount)):.2f}",
+            "pagador": {
+                "chave": settings.EFI_PIX_KEY,
+                "infoPagador": (info or "Repasse MySuperStore")[:140],
+            },
+            "favorecido": {
+                "chave": pix_key,
+            },
+        }
+        # idEnvio: só alfanumérico, máx. 35 chars.
+        clean_id = "".join(c for c in id_envio if c.isalnum())[:35]
+        return efi.pix_send(params={"idEnvio": clean_id}, body=body)
+
+    @classmethod
+    def get_balance(cls) -> dict:
+        """Consulta o saldo da conta master (GET /v2/gn/saldo)."""
+        efi = cls._client()
+        return efi.get_account_balance(params={})
+
+    @classmethod
     def config_webhook(cls, webhook_url: str) -> dict:
         """
         Registra a URL do webhook PIX na chave recebedora (PUT /v2/webhook/:chave).

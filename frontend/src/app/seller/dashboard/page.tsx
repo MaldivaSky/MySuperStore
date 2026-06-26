@@ -29,6 +29,34 @@ import {
   Loader2
 } from "lucide-react";
 
+// Paleta fixa de cores da loja — precisa bater com STORE_COLORS no backend.
+const STORE_COLORS: { name: string; hex: string }[] = [
+  { name: "Azul", hex: "#3B82F6" },
+  { name: "Vermelho", hex: "#EF4444" },
+  { name: "Marrom", hex: "#92400E" },
+  { name: "Roxo", hex: "#8B5CF6" },
+  { name: "Amarelo", hex: "#EAB308" },
+  { name: "Laranja", hex: "#F97316" },
+  { name: "Branco", hex: "#FFFFFF" },
+  { name: "Preto", hex: "#000000" },
+  { name: "Verde", hex: "#22C55E" },
+];
+
+const MAX_VIDEO_BYTES = 30 * 1024 * 1024; // 30 MB
+
+// Escolhe texto preto ou branco conforme a luminância da cor de fundo (WCAG).
+// Garante legibilidade em cores claras (branco/amarelo) e escuras (preto/roxo).
+function pickReadableText(hex: string): string {
+  const h = hex.replace("#", "");
+  if (h.length !== 6) return "#FFFFFF";
+  const r = parseInt(h.slice(0, 2), 16) / 255;
+  const g = parseInt(h.slice(2, 4), 16) / 255;
+  const b = parseInt(h.slice(4, 6), 16) / 255;
+  const lin = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  const luminance = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  return luminance > 0.5 ? "#0A0A12" : "#FFFFFF";
+}
+
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -46,6 +74,8 @@ function DashboardContent() {
   const [originCep, setOriginCep] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#E6B53C");
   const [videoUrl, setVideoUrl] = useState("");
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoError, setVideoError] = useState("");
   const [physicalAddress, setPhysicalAddress] = useState("");
   const [businessHours, setBusinessHours] = useState("");
   
@@ -130,7 +160,7 @@ function DashboardContent() {
       formData.append("pix_key", pixKey);
       formData.append("efi_payee_code", efiPayeeCode);
       formData.append("primary_color", primaryColor);
-      formData.append("video_url", videoUrl);
+      if (videoFile) formData.append("presentation_video", videoFile);
       formData.append("physical_address", physicalAddress);
       formData.append("business_hours", businessHours);
       
@@ -211,7 +241,7 @@ function DashboardContent() {
               <ul className="list-disc pl-5 space-y-1">
                 <li>Todo lojista precisa ter uma conta digital gratuita no <strong>Efí Bank</strong>.</li>
                 <li>No exato momento em que o cliente paga, o sistema divide automaticamente o dinheiro. Sua parte cai direto na sua conta Efí.</li>
-                <li>Você precisa nos informar o seu <strong>Identificador de Conta (Payee Code)</strong> gerado no painel Efí para receber.</li>
+                <li>Você precisa nos informar o <strong>número da sua conta Efí Bank</strong> para receber.</li>
                 <li><em>A Chave PIX que pedimos serve apenas como fallback de segurança.</em></li>
               </ul>
             </div>
@@ -260,11 +290,11 @@ function DashboardContent() {
 
             <div className="space-y-1">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                Identificador de Conta Efí (Payee Code)
+                Número da Conta Efí Bank
               </label>
               <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl mb-2">
                 <p className="text-xs text-blue-400">
-                  <strong className="font-bold">O que é isso?</strong> Para receber os pagamentos automaticamente, você precisa abrir uma conta grátis na <a href="https://sejaefi.com.br" target="_blank" rel="noreferrer" className="underline hover:text-blue-300">Efí Bank</a>. No painel da Efí, acesse <strong>API (Para Devs) {'->'} Split de Pagamento</strong> e copie o seu "Identificador de Conta" (Payee Code).
+                  <strong className="font-bold">O que é isso?</strong> Para receber os pagamentos automaticamente, você precisa abrir uma conta grátis na <a href="https://sejaefi.com.br" target="_blank" rel="noreferrer" className="underline hover:text-blue-300">Efí Bank</a>. Abra o app ou site da Efí, vá em <strong>Configurações de conta {'->'} Dados da conta</strong> e copie o <strong>número da sua conta</strong> (com o traço).
                 </p>
               </div>
               <input
@@ -272,7 +302,7 @@ function DashboardContent() {
                 required
                 value={efiPayeeCode}
                 onChange={(e) => setEfiPayeeCode(e.target.value)}
-                placeholder="Identificador da sua conta Efí"
+                placeholder="Ex: 1234567-8"
                 className="w-full px-4 py-2.5 rounded-lg border border-border/60 bg-background/50 text-foreground placeholder-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm"
               />
             </div>
@@ -374,7 +404,9 @@ function DashboardContent() {
                   setEfiPayeeCode(store.efi_payee_code || "");
                   
                   setPrimaryColor(store.primary_color || "#E6B53C");
-                  setVideoUrl(store.video_url || "");
+                  setVideoUrl(store.presentation_video_url || "");
+                  setVideoFile(null);
+                  setVideoError("");
                   setPhysicalAddress(store.physical_address || "");
                   setBusinessHours(store.business_hours || "");
                   setLogoFile(null);
@@ -514,24 +546,93 @@ function DashboardContent() {
                     <input required value={pixKey} onChange={(e) => setPixKey(e.target.value)} className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Payee Code (Efí)</label>
-                    <input value={efiPayeeCode} onChange={(e) => setEfiPayeeCode(e.target.value)} className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
+                    <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Número da Conta Efí Bank</label>
+                    <input value={efiPayeeCode} onChange={(e) => setEfiPayeeCode(e.target.value)} placeholder="Ex: 1234567-8" className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
+                    <p className="mt-1.5 text-[11px] text-neutral-500 leading-snug">Número da sua conta digital na Efí Bank (com o traço). Usado para receber suas vendas via PIX e cartão.</p>
                   </div>
                 </div>
 
                 <div className="pt-4 border-t border-white/10">
                   <h3 className="text-sm font-bold text-white mb-3">Aparência da Loja</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-5">
                     <div>
-                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Cor Principal (Hex)</label>
-                      <div className="flex items-center gap-3 mt-1.5">
-                        <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-0 p-0" />
-                        <input value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="flex-1 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Cor Principal</label>
+                        <span className="text-[11px] font-semibold text-neutral-400">
+                          {STORE_COLORS.find((c) => c.hex === primaryColor.toUpperCase())?.name || "Personalizada"}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2.5 mt-2">
+                        {STORE_COLORS.map((c) => {
+                          const selected = primaryColor.toUpperCase() === c.hex;
+                          return (
+                            <button
+                              key={c.hex}
+                              type="button"
+                              onClick={() => setPrimaryColor(c.hex)}
+                              title={c.name}
+                              aria-label={c.name}
+                              aria-pressed={selected}
+                              className={`w-9 h-9 rounded-full border transition-all ${selected ? "ring-2 ring-offset-2 ring-offset-[#0F0F1A] ring-white scale-110 border-white/40" : "border-white/20 hover:scale-105"}`}
+                              style={{ backgroundColor: c.hex }}
+                            />
+                          );
+                        })}
+                      </div>
+
+                      {/* Preview ao vivo da vitrine com a cor escolhida */}
+                      <div className="mt-4">
+                        <p className="text-[11px] text-neutral-500 mb-2">Prévia da sua loja:</p>
+                        <div className="rounded-2xl overflow-hidden border border-white/10 bg-[#0A0A12]">
+                          {/* Banner */}
+                          <div className="h-20 relative flex items-end p-3" style={{ background: `linear-gradient(135deg, ${primaryColor}22, ${primaryColor}66)` }}>
+                            <div className="flex items-center gap-2">
+                              <div className="w-9 h-9 rounded-lg flex items-center justify-center font-black text-sm shadow-lg" style={{ backgroundColor: primaryColor, color: pickReadableText(primaryColor) }}>
+                                {(storeName || "L").charAt(0).toUpperCase()}
+                              </div>
+                              <span className="font-black text-white text-sm drop-shadow">{storeName || "Minha Loja"}</span>
+                            </div>
+                            <span className="absolute top-2 right-2 text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: primaryColor, color: pickReadableText(primaryColor) }}>OFERTA</span>
+                          </div>
+                          {/* Card de produto */}
+                          <div className="p-3 flex gap-3">
+                            <div className="w-14 h-14 rounded-lg bg-white/5 border border-white/10 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="h-2.5 w-3/4 rounded bg-white/15 mb-1.5" />
+                              <div className="font-black text-sm" style={{ color: primaryColor }}>R$ 199,90</div>
+                              <button type="button" className="mt-1.5 text-[10px] font-bold px-3 py-1 rounded-lg" style={{ backgroundColor: primaryColor, color: pickReadableText(primaryColor) }}>
+                                Comprar
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                     <div>
                       <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Vídeo de Apresentação</label>
-                      <input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="Link do YouTube" className="w-full mt-1.5 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors text-sm" />
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0] || null;
+                          if (f && f.size > MAX_VIDEO_BYTES) {
+                            setVideoError("O vídeo excede 30 MB. Escolha um arquivo menor.");
+                            setVideoFile(null);
+                            e.target.value = "";
+                            return;
+                          }
+                          setVideoError("");
+                          setVideoFile(f);
+                        }}
+                        className="w-full mt-1.5 text-sm text-neutral-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-white/10 file:text-white hover:file:bg-white/20 cursor-pointer"
+                      />
+                      <p className="mt-1.5 text-[11px] text-neutral-500 leading-snug">Envie um arquivo de vídeo (MP4, MOV...) de até 30 MB.</p>
+                      {videoError && <p className="mt-1 text-[11px] text-red-400">{videoError}</p>}
+                      {videoFile ? (
+                        <p className="mt-1 text-[11px] text-emerald-400">Novo vídeo: {videoFile.name}</p>
+                      ) : videoUrl ? (
+                        <a href={videoUrl} target="_blank" rel="noreferrer" className="mt-1 inline-block text-[11px] text-primary underline">Ver vídeo atual</a>
+                      ) : null}
                     </div>
                   </div>
                 </div>

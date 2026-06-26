@@ -14,4 +14,9 @@ app.conf.beat_schedule = {
         "task": "apps.orders.tasks.check_pending_pix_orders_task",
         "schedule": crontab(minute="*/5"),
     },
+    # Reprocessa repasses pendentes (lojistas sem split nativo) via Pix Envio.
+    "settle-pending-payouts-every-30-minutes": {
+        "task": "apps.payments.tasks.settle_pending_payouts_task",
+        "schedule": crontab(minute="*/30"),
+    },
 }

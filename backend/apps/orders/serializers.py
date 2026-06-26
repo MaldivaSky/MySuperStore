@@ -181,6 +181,7 @@ class OrderCreateSerializer(serializers.ModelSerializer):
 
             coupon_code = validated_data.pop("coupon_code", None)
             discount = 0
+            coupon = None
             if coupon_code:
                 from apps.orders.models import Coupon
                 coupon = Coupon.objects.get(code=coupon_code)
@@ -216,8 +217,38 @@ class OrderCreateSerializer(serializers.ModelSerializer):
                     items_by_seller[seller] = []
                 items_by_seller[seller].append(item)
 
-            for seller, items in items_by_seller.items():
-                sub_subtotal = sum(item.subtotal for item in items)
+            # 5a. Rateia o desconto do cupom por vendedor para conservar o valor:
+            # a soma dos seller_amount + comissões precisa bater com o total pago.
+            # - Cupom de loja: o desconto recai só sobre os itens daquela loja.
+            # - Cupom da plataforma: rateado proporcionalmente ao subtotal de cada loja
+            #   (a sobra de arredondamento vai para o último vendedor, fechando exato).
+            from decimal import Decimal, ROUND_HALF_UP
+            seller_groups = list(items_by_seller.items())
+            discount_dec = Decimal(str(discount or 0))
+            discount_by_seller = {}
+            if discount_dec > 0 and subtotal > 0:
+                if coupon and coupon.seller:
+                    for seller, items in seller_groups:
+                        discount_by_seller[seller] = discount_dec if seller == coupon.seller else Decimal("0")
+                else:
+                    running = Decimal("0")
+                    last_idx = len(seller_groups) - 1
+                    for idx, (seller, items) in enumerate(seller_groups):
+                        if idx == last_idx:
+                            alloc = discount_dec - running
+                        else:
+                            s_sub = Decimal(str(sum(item.subtotal for item in items)))
+                            alloc = (discount_dec * s_sub / Decimal(str(subtotal))).quantize(
+                                Decimal("0.01"), rounding=ROUND_HALF_UP
+                            )
+                            running += alloc
+                        discount_by_seller[seller] = alloc
+
+            for seller, items in seller_groups:
+                gross_subtotal = sum(item.subtotal for item in items)
+                alloc = discount_by_seller.get(seller, Decimal("0"))
+                # Subtotal efetivo = o que o cliente realmente pagou por esta loja.
+                sub_subtotal = max(Decimal("0"), Decimal(str(gross_subtotal)) - alloc)
                 # Calcula comissão da plataforma baseado na taxa do vendedor
                 commission = round(sub_subtotal * seller.commission_rate, 2)
                 seller_amount = sub_subtotal - commission

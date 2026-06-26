@@ -16,14 +16,23 @@ class SellerPublicSerializer(serializers.ModelSerializer):
     banner3_url = serializers.SerializerMethodField()
     product_count = serializers.SerializerMethodField()
     avg_rating = serializers.SerializerMethodField()
+    presentation_video_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Seller
         fields = [
             "id", "store_name", "slug", "description",
             "logo_url", "banner_url", "banner2_url", "banner3_url", "product_count", "avg_rating", "created_at",
-            "primary_color", "video_url", "physical_address", "business_hours",
+            "primary_color", "video_url", "presentation_video_url", "physical_address", "business_hours",
         ]
+
+    def get_presentation_video_url(self, obj):
+        request = self.context.get("request")
+        if obj.presentation_video and request:
+            return request.build_absolute_uri(obj.presentation_video.url)
+        if obj.presentation_video:
+            return obj.presentation_video.url
+        return None
 
     def get_logo_url(self, obj):
         request = self.context.get("request")
@@ -131,6 +140,7 @@ class SellerDashboardSerializer(serializers.ModelSerializer):
     banner_url = serializers.SerializerMethodField()
     banner2_url = serializers.SerializerMethodField()
     banner3_url = serializers.SerializerMethodField()
+    presentation_video_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Seller
@@ -138,11 +148,19 @@ class SellerDashboardSerializer(serializers.ModelSerializer):
             "id", "store_name", "slug", "description", "status", "commission_rate",
             "efi_payee_code", "pix_key",
             "strike_count", "max_installments",
-            "primary_color", "video_url", "physical_address", "business_hours",
+            "primary_color", "video_url", "presentation_video_url", "physical_address", "business_hours",
             "logo_url", "banner_url", "banner2_url", "banner3_url",
             "total_products", "available_products",
             "total_orders", "pending_payout",
         ]
+
+    def get_presentation_video_url(self, obj):
+        request = self.context.get("request")
+        if obj.presentation_video and request:
+            return request.build_absolute_uri(obj.presentation_video.url)
+        if obj.presentation_video:
+            return obj.presentation_video.url
+        return None
 
     def _img_url(self, obj, field):
         external = getattr(obj, f"{field}_external", None)
@@ -187,16 +205,42 @@ class SellerDashboardSerializer(serializers.ModelSerializer):
 class SellerUpdateSerializer(serializers.ModelSerializer):
     """Atualização do perfil da loja pelo próprio vendedor."""
 
+    # Paleta fixa de cores da loja (rótulo -> hex). Mantém o storefront consistente
+    # e evita que o lojista escolha cores ilegíveis/fora do tema.
+    STORE_COLORS = {
+        "#3B82F6",  # azul
+        "#EF4444",  # vermelho
+        "#92400E",  # marrom
+        "#8B5CF6",  # roxo
+        "#EAB308",  # amarelo
+        "#F97316",  # laranja
+        "#FFFFFF",  # branco
+        "#000000",  # preto
+        "#22C55E",  # verde
+        "#E6B53C",  # dourado (padrão da plataforma)
+    }
+    MAX_VIDEO_BYTES = 30 * 1024 * 1024  # 30 MB
+
     class Meta:
         model = Seller
         fields = [
             "store_name", "description", "pix_key", "max_installments", "efi_payee_code",
-            "primary_color", "video_url", "physical_address", "business_hours",
+            "primary_color", "video_url", "presentation_video", "physical_address", "business_hours",
             "logo", "logo_external",
             "banner", "banner_external",
             "banner2", "banner2_external",
             "banner3", "banner3_external",
         ]
+
+    def validate_primary_color(self, value):
+        if value and value.upper() not in self.STORE_COLORS:
+            raise serializers.ValidationError("Cor inválida. Escolha uma das cores disponíveis.")
+        return value.upper() if value else value
+
+    def validate_presentation_video(self, value):
+        if value and value.size > self.MAX_VIDEO_BYTES:
+            raise serializers.ValidationError("O vídeo excede o limite de 30 MB. Use um clipe mais curto ou comprima.")
+        return value
 
 
 from .models import ChatRoom, ChatMessage

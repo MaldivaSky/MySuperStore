@@ -190,30 +190,32 @@ function CheckoutInner() {
         const [month, yearRaw] = cardExp.split("/");
         const year = yearRaw?.length === 2 ? `20${yearRaw}` : yearRaw;
 
-        const cardData = {
-          brand: getEfiBrand(cardNum),
-          number: cardNum.replace(/\D/g, ""),
-          cvv: cardCvv.replace(/\D/g, ""),
-          expirationMonth: month,
-          expirationYear: year
-        };
-
         const accountId = process.env.NEXT_PUBLIC_EFI_ACCOUNT_IDENTIFIER;
-        if (!accountId) throw new Error("Chave do Efí não configurada (NEXT_PUBLIC_EFI_ACCOUNT_IDENTIFIER)");
+        if (!accountId) throw new Error("Identificador de Conta do Efí não configurado (NEXT_PUBLIC_EFI_ACCOUNT_IDENTIFIER)");
 
+        // payment-token-efi v3.x usa o builder EfiPay.CreditCard.setAccount()...
         const EfiModule = await import("payment-token-efi");
-        const EfiConstructor = EfiModule.default || EfiModule;
-        const efi = new (EfiConstructor as any)({ env: process.env.NEXT_PUBLIC_IS_DEBUG === 'true' ? 'sandbox' : 'production' });
-        
+        const EfiPay = (EfiModule as any).default || EfiModule;
+
         try {
-          // A biblioteca exige identificar a conta, algumas versões exigem no construtor
-          // Vamos tentar injetar se a lib exigir
-          (efi as any).options = { ...((efi as any).options || {}), account_id: accountId };
-          const tokenRes = await efi.getPaymentToken(cardData, accountId);
-          paymentToken = tokenRes.payment_token;
+          const result = await EfiPay.CreditCard
+            .setAccount(accountId)
+            .setEnvironment(process.env.NEXT_PUBLIC_IS_DEBUG === 'true' ? 'sandbox' : 'production')
+            .setCreditCardData({
+              brand: getEfiBrand(cardNum),
+              number: cardNum.replace(/\D/g, ""),
+              cvv: cardCvv.replace(/\D/g, ""),
+              expirationMonth: month,
+              expirationYear: year,
+              holderName: cardName,
+              holderDocument: customerCpf.replace(/\D/g, ""),
+              reuse: false,
+            })
+            .getPaymentToken();
+          paymentToken = result.payment_token;
         } catch (tokenErr: any) {
           console.error("Erro na tokenização", tokenErr);
-          throw new Error("Falha ao gerar token de segurança do cartão. Verifique os dados.");
+          throw new Error(tokenErr?.error_description || "Falha ao gerar token de segurança do cartão. Verifique os dados.");
         }
       }
 

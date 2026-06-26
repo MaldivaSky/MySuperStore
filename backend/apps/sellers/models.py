@@ -46,7 +46,8 @@ class Seller(models.Model):
     
     # Storefront customization
     primary_color = models.CharField(max_length=7, default="#E6B53C", help_text="Cor principal da loja (Hexadecimal)")
-    video_url = models.URLField(max_length=500, blank=True, null=True, help_text="Link para vídeo de apresentação (YouTube, Vimeo, etc)")
+    video_url = models.URLField(max_length=500, blank=True, null=True, help_text="Link para vídeo de apresentação (YouTube, Vimeo, etc) - legado")
+    presentation_video = models.FileField(upload_to="sellers/videos/", blank=True, null=True, help_text="Vídeo de apresentação enviado pelo lojista (até 30 MB)")
     physical_address = models.TextField(blank=True, help_text="Endereço da loja física ou galpão de distribuição")
     business_hours = models.CharField(max_length=255, blank=True, help_text="Horário de funcionamento (ex: Seg a Sex, 08:00 as 18:00)")
     
