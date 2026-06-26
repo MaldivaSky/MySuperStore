@@ -526,6 +526,39 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
             message=msg_text
         )
         room.save(update_fields=["updated_at"])
+        
+        # Disparar notificação para a outra parte
+        target_user = room.customer if request.user.id == room.seller.user.id else room.seller.user
+        from apps.users.models import Notification
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        
+        notif = Notification.objects.create(
+            user=target_user,
+            title=f"Nova mensagem de {request.user.first_name or request.user.email}",
+            message=msg_text[:50] + ("..." if len(msg_text) > 50 else ""),
+            type="chat",
+            related_entity_id=str(room.id)
+        )
+        
+        channel_layer = get_channel_layer()
+        if channel_layer:
+            async_to_sync(channel_layer.group_send)(
+                f"user_{target_user.id}_notifications",
+                {
+                    "type": "send_notification",
+                    "data": {
+                        "id": str(notif.id),
+                        "title": notif.title,
+                        "message": notif.message,
+                        "type": notif.type,
+                        "related_entity_id": notif.related_entity_id,
+                        "is_read": False,
+                        "created_at": notif.created_at.isoformat()
+                    }
+                }
+            )
+
         return Response(ChatMessageSerializer(message).data, status=status.HTTP_201_CREATED)
 
 

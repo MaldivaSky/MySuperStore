@@ -42,6 +42,10 @@ function DashboardContent() {
   const [description, setDescription] = useState("");
   const [pixKey, setPixKey] = useState("");
   const [efiPayeeCode, setEfiPayeeCode] = useState("");
+  const [logoExternal, setLogoExternal] = useState("");
+  const [bannerExternal, setBannerExternal] = useState("");
+  const [banner2External, setBanner2External] = useState("");
+  const [banner3External, setBanner3External] = useState("");
   const [originCep, setOriginCep] = useState("");
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
@@ -116,6 +120,11 @@ function DashboardContent() {
         store_name: storeName,
         description,
         pix_key: pixKey,
+        efi_payee_code: efiPayeeCode,
+        logo_external: logoExternal,
+        banner_external: bannerExternal,
+        banner2_external: banner2External,
+        banner3_external: banner3External,
       });
       await fetchStoreData();
       setIsSettingsOpen(false);
@@ -309,14 +318,23 @@ function DashboardContent() {
                   {store.status === "approved" ? "Loja Ativa" : "Pendente"}
                 </span>
 
-                <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${
-                  store.efi_payee_code 
-                    ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" 
-                    : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
-                }`}>
-                  <div className={`w-1.5 h-1.5 rounded-full ${store.efi_payee_code ? "bg-emerald-500" : "bg-rose-500"}`} />
-                  Efí Bank: {store.efi_payee_code ? "Vinculado" : "Pendente"}
-                </span>
+                {store.efi_payee_code ? (
+                  <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold shadow-sm bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    Efí Bank Ativo
+                  </span>
+                ) : (
+                  <a 
+                    href="https://sejaefi.com.br/abrir-conta" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold shadow-sm bg-rose-500/10 text-rose-500 border border-rose-500/20 animate-pulse hover:bg-rose-500/20 transition-colors"
+                    title="Clique para abrir sua conta"
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                    Sem conta no Efí Bank (Abrir)
+                  </a>
+                )}
               </div>
             </div>
 
@@ -334,6 +352,14 @@ function DashboardContent() {
                   setStoreName(store.store_name || "");
                   setDescription(store.description || "");
                   setPixKey(store.pix_key || "");
+                  setEfiPayeeCode(store.efi_payee_code || "");
+                  
+                  // Recupera os links de imagens salvos (usando as propriedades expostas no serializer)
+                  setLogoExternal(store.logo_url || "");
+                  setBannerExternal(store.banner_url || "");
+                  setBanner2External(store.banner2_url || "");
+                  setBanner3External(store.banner3_url || "");
+                  
                   setIsSettingsOpen(true);
                 }}
                 className="px-5 py-2.5 rounded-xl bg-card border border-border/40 hover:bg-white/5 text-foreground font-semibold flex items-center justify-center gap-2 transition-all text-sm shadow-sm"
@@ -463,6 +489,26 @@ function DashboardContent() {
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Chave PIX</label>
                   <input required value={pixKey} onChange={(e) => setPixKey(e.target.value)} className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Identificador Efí (Payee Code)</label>
+                  <input value={efiPayeeCode} onChange={(e) => setEfiPayeeCode(e.target.value)} placeholder="Cole aqui seu Identificador Efí" className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Link da Logo</label>
+                  <input value={logoExternal} onChange={(e) => setLogoExternal(e.target.value)} placeholder="https://..." className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Link do Banner 1</label>
+                  <input value={bannerExternal} onChange={(e) => setBannerExternal(e.target.value)} placeholder="https://..." className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Link do Banner 2</label>
+                  <input value={banner2External} onChange={(e) => setBanner2External(e.target.value)} placeholder="https://..." className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Link do Banner 3</label>
+                  <input value={banner3External} onChange={(e) => setBanner3External(e.target.value)} placeholder="https://..." className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
                 </div>
                 <button type="submit" disabled={settingsLoading} className="w-full py-3 mt-4 rounded-xl bg-primary text-primary-foreground font-black hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50">
                   {settingsLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Salvar Configurações"}
