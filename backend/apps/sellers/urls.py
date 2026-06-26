@@ -71,6 +71,12 @@ urlpatterns = [
         _products({"post": "upload_video", "delete": "delete_video"}),
         name="seller-product-video",
     ),
+    # Impulsionar Produto
+    path(
+        "me/products/<uuid:pk>/toggle_boost/",
+        _products({"post": "toggle_boost"}),
+        name="seller-product-toggle-boost",
+    ),
     # Variantes
     path(
         "me/products/<uuid:product_pk>/variants/",

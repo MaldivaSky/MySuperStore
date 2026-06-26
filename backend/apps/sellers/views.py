@@ -250,10 +250,13 @@ class SellerProductViewSet(viewsets.ModelViewSet):
                 {"detail": "Vídeo excede o limite de 50 MB. Comprima ou use um clipe mais curto."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        content_type = (getattr(video, "content_type", "") or "")
-        if not content_type.startswith("video/"):
+        content_type = (getattr(video, "content_type", "") or "").lower()
+        ext = video.name.split('.')[-1].lower() if video.name else ""
+        
+        # Muitas vezes o Safari no iOS manda videos como application/octet-stream
+        if not content_type.startswith("video/") and ext not in ["mp4", "mov", "webm", "avi", "mkv"]:
             return Response(
-                {"detail": "O arquivo enviado não é um vídeo válido (use MP4, WebM ou MOV)."},
+                {"detail": f"O arquivo enviado não parece ser um vídeo válido. (Tipo: {content_type}, Extensão: {ext})"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

@@ -11,6 +11,8 @@ import { BrandLoader } from "@/components/ui/BrandLoader";
 import { sellerDashboardApi, catalogApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { ProductMediaUploader, UploaderImage } from "@/components/seller/ProductMediaUploader";
+import { useToast } from "@/components/ui/Toast";
+import Confetti from "react-confetti";
 
 interface SellerProduct {
   id: string;
@@ -27,10 +29,12 @@ interface SellerProduct {
 export default function SellerProductsPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
+  const { toast } = useToast();
 
   const [products, setProducts] = useState<SellerProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   // Modal: "create" (formulário) → "media" (uploader); "media" direto; "promo"; "edit"
   const [modalStep, setModalStep] = useState<null | "create" | "media" | "promo" | "edit">(null);
@@ -212,21 +216,31 @@ export default function SellerProductsPage() {
       if (!promoPrice) {
          // Cancel Promo
          await catalogApi.setPromo(activeProduct.slug, { promotional_price: null, promo_ends_at: null });
+         toast("Promoção removida.", "info");
       } else {
          const endIso = promoEndsAt ? new Date(promoEndsAt).toISOString() : new Date(Date.now() + 7*24*60*60*1000).toISOString();
          await catalogApi.setPromo(activeProduct.slug, { promotional_price: parseFloat(promoPrice), promo_ends_at: endIso });
+         setShowConfetti(true);
+         toast("Produto promovido com sucesso!", "success");
+         setTimeout(() => setShowConfetti(false), 5000);
       }
       setModalStep(null);
       fetchProducts();
     } catch (err: any) {
       setFormError(err.response?.data?.detail || "Erro ao definir promoção. Preço promocional deve ser menor que o original.");
+      toast("Falha ao promover produto.", "error");
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
+      {showConfetti && (
+        <div className="fixed inset-0 z-[100] pointer-events-none">
+          <Confetti width={typeof window !== 'undefined' ? window.innerWidth : 1200} height={typeof window !== 'undefined' ? window.innerHeight : 800} recycle={false} numberOfPieces={300} />
+        </div>
+      )}
       <Header />
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Topo */}
@@ -312,8 +326,15 @@ export default function SellerProductsPage() {
                       onClick={async () => {
                         try {
                           await sellerDashboardApi.products.toggleBoost(p.id);
+                          toast(p.is_boosted ? "Impulsionamento desativado." : "Produto Impulsionado com Sucesso! 🚀", "success");
+                          if (!p.is_boosted) {
+                            setShowConfetti(true);
+                            setTimeout(() => setShowConfetti(false), 5000);
+                          }
                           fetchProducts();
-                        } catch (err) { alert("Erro ao impulsionar"); }
+                        } catch (err) { 
+                          toast("Erro ao impulsionar o produto.", "error"); 
+                        }
                       }}
                       title={p.is_boosted ? "Remover Impulsionamento" : "Impulsionar Produto 🚀"}
                       className={`p-2 rounded-lg transition-colors ${p.is_boosted ? "bg-purple-500 text-white shadow-[0_0_10px_rgba(168,85,247,0.5)]" : "bg-purple-500/10 text-purple-400 hover:bg-purple-500/20"}`}
