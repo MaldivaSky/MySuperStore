@@ -280,6 +280,8 @@ def refund_payment_view(request, pk):
     ser.is_valid(raise_exception=True)
     amount = ser.validated_data.get("amount")
 
+    refund_value = amount if amount is not None else payment.amount
+
     with transaction.atomic():
         if payment.method in (PaymentMethod.CREDIT_CARD, PaymentMethod.DEBIT_CARD) and payment.efi_charge_id:
             try:
@@ -288,6 +290,14 @@ def refund_payment_view(request, pk):
                 EfiCardService.refund_charge(payment.efi_charge_id, amount=amount)
             except Exception as e:
                 return Response({"detail": f"Erro no Efí: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        elif payment.method == PaymentMethod.PIX and payment.efi_txid and EfiPixService.is_configured():
+            try:
+                # Devolução do PIX no Efí (pix_devolution). idempotente pelo id da devolução.
+                EfiPixService.refund_pix(
+                    payment.efi_txid, refund_value, devolution_id=f"dev{payment.id}",
+                )
+            except Exception as e:
+                return Response({"detail": f"Erro ao devolver PIX no Efí: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
         refunded_total = amount if amount is not None else payment.amount
         payment.refunded_amount = refunded_total

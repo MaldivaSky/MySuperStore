@@ -268,6 +268,28 @@ class EfiPixService:
         return efi.get_account_balance(params={})
 
     @classmethod
+    def refund_pix(cls, txid: str, amount, devolution_id: str) -> dict:
+        """
+        Estorna (devolve) um PIX recebido — `pix_devolution`
+        (PUT /v2/pix/:e2eId/devolucao/:id). A devolução exige o endToEndId do PIX
+        recebido, que obtemos consultando a cobrança pelo txid.
+
+        Suporta estorno parcial (amount < valor pago). `devolution_id` é a chave de
+        idempotência (alfanumérica, até 35 chars).
+        """
+        efi = cls._client()
+        charge = efi.pix_detail_charge(params={"txid": txid})
+        pix_list = charge.get("pix", []) if isinstance(charge, dict) else []
+        if not pix_list:
+            raise RuntimeError("PIX recebido não encontrado para estorno (cobrança ainda não paga?).")
+        e2e = pix_list[0].get("endToEndId")
+        if not e2e:
+            raise RuntimeError("endToEndId ausente na cobrança — não é possível estornar.")
+        clean_id = "".join(c for c in devolution_id if c.isalnum())[:35]
+        body = {"valor": f"{Decimal(str(amount)):.2f}"}
+        return efi.pix_devolution(params={"e2eId": e2e, "id": clean_id}, body=body)
+
+    @classmethod
     def config_webhook(cls, webhook_url: str) -> dict:
         """
         Registra a URL do webhook PIX na chave recebedora (PUT /v2/webhook/:chave).

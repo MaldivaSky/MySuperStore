@@ -226,3 +226,42 @@ class PayoutSettlementTest(TestCase):
         ok = settle_payout(self.payout)
         self.assertFalse(ok)
         mock_send.assert_not_called()
+
+
+class PixRefundTest(TestCase):
+    """Estorno (devolução) de pagamento PIX via pix_devolution."""
+
+    def setUp(self):
+        from apps.orders.models import Order, OrderStatus
+        self.buyer = User.objects.create(email="b@t.com", first_name="B", last_name="X", is_active=True)
+        self.order = Order.objects.create(
+            user=self.buyer, order_number="20260626-7777",
+            subtotal=Decimal("50.00"), total=Decimal("50.00"), status=OrderStatus.CONFIRMED,
+            address_recipient="x", address_cep="01001000", address_logradouro="r",
+            address_numero="1", address_bairro="c", address_cidade="SP", address_uf="SP",
+        )
+        self.payment = Payment.objects.create(
+            order=self.order, method=PaymentMethod.PIX, amount=Decimal("50.00"),
+            status=PaymentStatus.APPROVED, efi_txid="txid123",
+        )
+
+    @mock.patch("apps.payments.services.EfiPixService.is_configured", return_value=True)
+    @mock.patch("apps.payments.services.EfiPixService.refund_pix")
+    def test_estorno_pix_integral(self, mock_refund, _cfg):
+        from rest_framework.test import APIClient
+        from apps.orders.models import OrderStatus
+        mock_refund.return_value = {"status": "DEVOLVIDO", "id": "dev1"}
+
+        client = APIClient()
+        client.force_authenticate(user=self.buyer)
+        resp = client.post(f"/api/v1/payments/{self.payment.id}/refund/", {}, format="json")
+        self.assertEqual(resp.status_code, 200, resp.content)
+
+        # Acionou a devolução no Efí com o txid do pagamento.
+        mock_refund.assert_called_once()
+        self.assertEqual(mock_refund.call_args.args[0], "txid123")
+
+        self.payment.refresh_from_db()
+        self.order.refresh_from_db()
+        self.assertEqual(self.payment.status, PaymentStatus.REFUNDED)
+        self.assertEqual(self.order.status, OrderStatus.REFUNDED)
