@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
 import { sellerApi } from "@/lib/api";
 import { Header } from "@/components/Header";
@@ -371,47 +372,47 @@ function DashboardContent() {
           </div>
 
           {/* Menu de Navegação Secundário */}
-          <div className="pb-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] -mx-4 px-4 sm:mx-0 sm:px-0">
-            <div className="flex items-center gap-3 min-w-max">
-              <button
-                onClick={() => router.push("/seller/dashboard/products")}
-                className="px-4 py-2.5 rounded-xl bg-card border border-border/40 hover:border-primary/50 hover:bg-primary/5 text-foreground font-medium flex items-center gap-2.5 transition-all text-sm group shadow-sm"
+          <div className="w-full mt-4">
+            <div className="grid grid-cols-2 sm:flex sm:flex-row sm:items-center gap-3 w-full">
+              <Link
+                href="/seller/dashboard/products"
+                className="px-4 py-3 sm:py-2.5 rounded-xl bg-card border border-border/40 hover:border-primary/50 hover:bg-primary/5 text-foreground font-medium flex flex-col sm:flex-row items-center sm:justify-start justify-center gap-2 sm:gap-2.5 transition-all text-sm group shadow-sm text-center"
               >
                 <div className="p-1.5 rounded-md bg-primary/10 text-primary group-hover:scale-110 transition-transform">
-                  <Package className="h-4 w-4" />
+                  <Package className="h-5 w-5 sm:h-4 sm:w-4" />
                 </div>
                 <span>Produtos</span>
-              </button>
+              </Link>
 
-              <button
-                onClick={() => router.push("/seller/dashboard/analytics")}
-                className="px-4 py-2.5 rounded-xl bg-card border border-border/40 hover:border-amber-500/50 hover:bg-amber-500/5 text-foreground font-medium flex items-center gap-2.5 transition-all text-sm group shadow-sm"
+              <Link
+                href="/seller/dashboard/analytics"
+                className="px-4 py-3 sm:py-2.5 rounded-xl bg-card border border-border/40 hover:border-amber-500/50 hover:bg-amber-500/5 text-foreground font-medium flex flex-col sm:flex-row items-center sm:justify-start justify-center gap-2 sm:gap-2.5 transition-all text-sm group shadow-sm text-center"
               >
                 <div className="p-1.5 rounded-md bg-amber-500/10 text-amber-500 group-hover:scale-110 transition-transform">
-                  <Activity className="h-4 w-4" />
+                  <Activity className="h-5 w-5 sm:h-4 sm:w-4" />
                 </div>
                 <span>Analytics & KPIs</span>
-              </button>
+              </Link>
 
-              <button 
-                onClick={() => router.push("/seller/dashboard/reviews")}
-                className="px-4 py-2.5 rounded-xl bg-card border border-border/40 hover:border-yellow-500/50 hover:bg-yellow-500/5 text-foreground font-medium flex items-center gap-2.5 transition-all text-sm group shadow-sm"
+              <Link 
+                href="/seller/dashboard/reviews"
+                className="px-4 py-3 sm:py-2.5 rounded-xl bg-card border border-border/40 hover:border-yellow-500/50 hover:bg-yellow-500/5 text-foreground font-medium flex flex-col sm:flex-row items-center sm:justify-start justify-center gap-2 sm:gap-2.5 transition-all text-sm group shadow-sm text-center"
               >
                 <div className="p-1.5 rounded-md bg-yellow-500/10 text-yellow-500 group-hover:scale-110 transition-transform">
-                  <Star className="h-4 w-4" />
+                  <Star className="h-5 w-5 sm:h-4 sm:w-4" />
                 </div>
                 <span>Reputação</span>
-              </button>
+              </Link>
 
-              <button 
-                onClick={() => router.push("/seller/dashboard/chats")}
-                className="px-4 py-2.5 rounded-xl bg-card border border-border/40 hover:border-blue-500/50 hover:bg-blue-500/5 text-foreground font-medium flex items-center gap-2.5 transition-all text-sm group shadow-sm"
+              <Link 
+                href="/seller/dashboard/chats"
+                className="px-4 py-3 sm:py-2.5 rounded-xl bg-card border border-border/40 hover:border-blue-500/50 hover:bg-blue-500/5 text-foreground font-medium flex flex-col sm:flex-row items-center sm:justify-start justify-center gap-2 sm:gap-2.5 transition-all text-sm group shadow-sm text-center"
               >
                 <div className="p-1.5 rounded-md bg-blue-500/10 text-blue-500 group-hover:scale-110 transition-transform">
-                  <MessageCircle className="h-4 w-4" />
+                  <MessageCircle className="h-5 w-5 sm:h-4 sm:w-4" />
                 </div>
                 <span>Mensagens</span>
-              </button>
+              </Link>
             </div>
           </div>
 
