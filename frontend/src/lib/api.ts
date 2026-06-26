@@ -135,12 +135,7 @@ export const sellerApi = {
   update: (data: any) => api.patch("/sellers/me/", data),
   apply: (data: { store_name: string; description: string; pix_key: string }) =>
     api.post("/sellers/apply/", data),
-  onboard: (returnUrl: string, refreshUrl: string) =>
-    api.post<{ onboarding_url: string }>("/sellers/me/stripe-onboard/", {
-      return_url: returnUrl,
-      refresh_url: refreshUrl,
-    }),
-  stripeCallback: () => api.get("/sellers/me/stripe-callback/"),
+
 };
 
 export const ordersApi = {
@@ -219,8 +214,7 @@ export const chatApi = {
 export const sellerDashboardApi = {
   apply: (data: { store_name: string; description: string; cpf_cnpj?: string; person_type?: string; main_category?: string; origin_cep?: string; efi_payee_code?: string }) => api.post("/sellers/apply/", data),
   updateProfile: (data: FormData) => api.patch("/sellers/me/", data, { headers: { "Content-Type": "multipart/form-data" } }),
-  onboard: (success_url: string, refresh_url: string) => api.post("/sellers/me/onboard/", { success_url, refresh_url }),
-  stripeCallback: () => api.post("/sellers/me/stripe/callback/"),
+
   getLeads: () => api.get("/sellers/me/leads/"),
   getMentor: () => api.get("/sellers/me/mentor/"),
   triggerMentorAction: (action: string, productSlug: string) => 

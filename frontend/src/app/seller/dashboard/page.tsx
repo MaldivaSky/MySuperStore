@@ -41,11 +41,12 @@ function DashboardContent() {
   const [storeName, setStoreName] = useState("");
   const [description, setDescription] = useState("");
   const [pixKey, setPixKey] = useState("");
+  const [efiPayeeCode, setEfiPayeeCode] = useState("");
+  const [originCep, setOriginCep] = useState("");
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
 
-  // Stripe onboarding state
-  const [stripeLoading, setStripeLoading] = useState(false);
+
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error" | null>(null);
 
@@ -95,6 +96,8 @@ function DashboardContent() {
         store_name: storeName,
         description,
         pix_key: pixKey,
+        efi_payee_code: efiPayeeCode,
+        origin_cep: originCep,
       });
       await fetchStoreData();
     } catch (err: any) {
@@ -177,6 +180,19 @@ function DashboardContent() {
           )}
 
           <form onSubmit={handleApply} className="space-y-4">
+            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-sm text-muted-foreground mb-4 space-y-2">
+              <h4 className="font-bold text-foreground flex items-center gap-2">
+                <Store className="w-4 h-4 text-primary" /> Como você recebe suas vendas? (Split Efí)
+              </h4>
+              <p>Para garantir transparência, não bitributação e repasse imediato, nós utilizamos o <strong>Split Nativo do Efí Bank</strong>.</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Todo lojista precisa ter uma conta digital gratuita no <strong>Efí Bank</strong>.</li>
+                <li>No exato momento em que o cliente paga, o sistema divide automaticamente o dinheiro. Sua parte cai direto na sua conta Efí.</li>
+                <li>Você precisa nos informar o seu <strong>Identificador de Conta (Payee Code)</strong> gerado no painel Efí para receber.</li>
+                <li><em>A Chave PIX que pedimos serve apenas como fallback de segurança.</em></li>
+              </ul>
+            </div>
+            
             <div className="space-y-1">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Nome da Loja
@@ -207,7 +223,7 @@ function DashboardContent() {
 
             <div className="space-y-1">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Chave PIX
+                Chave PIX (Fallback)
               </label>
               <input
                 type="text"
@@ -215,6 +231,34 @@ function DashboardContent() {
                 value={pixKey}
                 onChange={(e) => setPixKey(e.target.value)}
                 placeholder="CPF, CNPJ, E-mail ou Aleatória"
+                className="w-full px-4 py-2.5 rounded-lg border border-border/60 bg-background/50 text-foreground placeholder-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Identificador de Conta Efí (Payee Code)
+              </label>
+              <input
+                type="text"
+                required
+                value={efiPayeeCode}
+                onChange={(e) => setEfiPayeeCode(e.target.value)}
+                placeholder="Identificador da sua conta Efí"
+                className="w-full px-4 py-2.5 rounded-lg border border-border/60 bg-background/50 text-foreground placeholder-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                CEP de Origem (Postagem)
+              </label>
+              <input
+                type="text"
+                required
+                value={originCep}
+                onChange={(e) => setOriginCep(e.target.value)}
+                placeholder="00000-000"
                 className="w-full px-4 py-2.5 rounded-lg border border-border/60 bg-background/50 text-foreground placeholder-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm"
               />
             </div>

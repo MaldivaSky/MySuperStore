@@ -103,7 +103,7 @@ function SellerDashboard() {
   }, [isAuthenticated, user, router]);
 
   useEffect(() => {
-    // Retirado o callback do Stripe
+
   }, [searchParams, router]);
 
   // Chat Polling

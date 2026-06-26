@@ -15,8 +15,7 @@ export interface User {
   has_store?: boolean;
   has_products?: boolean;
   is_seller?: boolean;
-  stripe_account_id?: string;
-  stripe_onboarding_complete?: boolean;
+
   email_verified?: boolean;
 }
 

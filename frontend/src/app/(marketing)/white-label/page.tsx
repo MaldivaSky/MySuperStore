@@ -59,7 +59,7 @@ export default function WhiteLabelPage() {
     },
     {
       q: "Como funciona o repasse de pagamentos? Vou ter dor de cabeça?",
-      a: "Nenhuma. Nossa integração nativa com o Stripe Connect faz o 'Split de Pagamento' no exato milissegundo da compra. A sua comissão (take-rate) cai na sua conta, e o restante cai direto na conta do lojista. Risco zero de chargeback ou bitributação para você."
+      a: "Nenhuma. Nossa integração nativa com o Efí Bank faz o 'Split de Pagamento' no exato milissegundo da compra. A sua comissão (take-rate) cai na sua conta, e o restante cai direto na conta do lojista. Risco zero de chargeback ou bitributação para você."
     },
     {
       q: "A plataforma aguenta tráfego pesado? E na Black Friday?",

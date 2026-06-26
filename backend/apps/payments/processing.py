@@ -1,6 +1,6 @@
 """
 Lógica de negócio do ciclo de vida do pagamento, compartilhada entre o webhook do
-Stripe, o endpoint de confirmação autoritativa e a simulação de PIX.
+Efí e a simulação de PIX.
 
 Mantida fora de views.py/services.py para ser idempotente, testável e livre de
 dependências de request HTTP.
@@ -16,7 +16,7 @@ from .models import CommissionEntry, Payment, PaymentStatus, Payout, PayoutStatu
 def process_successful_payment(order: Order, raw_response: dict | None = None, charge_id: str = "") -> bool:
     """
     Confirma um pedido pago: marca Payment/Order/SubOrders como confirmados, registra
-    comissões, executa o split (Connect destination ou separate transfers) e cria os
+    comissões, executa o split e cria os
     Payouts. Idempotente — chamadas repetidas para um pedido já confirmado são no-op.
 
     Retorna True se processou agora, False se já estava confirmado.
@@ -55,29 +55,15 @@ def process_successful_payment(order: Order, raw_response: dict | None = None, c
             )
 
     # 3. Split de pagamento + Payouts
-    charge_type = raw_response.get("metadata", {}).get("type") if raw_response else None
-    transfers = []
-    if charge_type == "separate_transfers" and charge_id:
-        from .services import StripeService
-        transfers = StripeService.execute_separate_transfers(order, charge_id)
-
     for sub_order in order.sub_orders.all():
         if hasattr(sub_order, "payout"):
             continue
         seller = sub_order.seller
-        transfer_id = ""
-        payout_status = PayoutStatus.PENDING
 
-        if charge_type == "separate_transfers":
-            if seller and seller.stripe_authorized:
-                match = next((t for t in transfers if t.destination == seller.stripe_account_id), None)
-                if match:
-                    transfer_id, payout_status = match.id, PayoutStatus.COMPLETED
-        else:
-            # PIX (liquidação na plataforma). O dinheiro cai na conta Master, então o repasse é PENDENTE.
-            transfer_id = raw_response.get("id", "") if raw_response else ""
-            is_pix = raw_response.get("metadata", {}).get("type") == "pix"
-            payout_status = PayoutStatus.PENDING if is_pix else PayoutStatus.COMPLETED
+        # PIX (liquidação na plataforma). O dinheiro cai na conta Master, então o repasse é PENDENTE.
+        transfer_id = raw_response.get("id", "") if raw_response else ""
+        is_pix = raw_response.get("metadata", {}).get("type") == "pix"
+        payout_status = PayoutStatus.PENDING if is_pix else PayoutStatus.COMPLETED
 
         Payout.objects.create(
             sub_order=sub_order,

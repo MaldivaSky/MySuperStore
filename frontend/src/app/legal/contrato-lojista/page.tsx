@@ -25,7 +25,7 @@ export default function ContratoLojistaPage() {
         <div className="prose prose-invert prose-neutral max-w-none space-y-8 text-neutral-300">
           <section>
             <h2 className="text-2xl font-bold text-white mb-4">Cláusula 1: Da Relação Comercial</h2>
-            <p>Este instrumento ("Contrato de Lojista") rege as obrigações entre a Plataforma MySuperStore e a Entidade Vendedora ("Lojista"). A Plataforma fornece licenciamento de uso de software, vitrine digital e infraestrutura de pagamentos (Stripe Connect). O Lojista detém inteira responsabilidade legal, fiscal e de fornecimento sobre os produtos físicos comercializados em seu painel.</p>
+            <p>Este instrumento ("Contrato de Lojista") rege as obrigações entre a Plataforma MySuperStore e a Entidade Vendedora ("Lojista"). A Plataforma fornece licenciamento de uso de software, vitrine digital e infraestrutura de pagamentos (Efí Bank). O Lojista detém inteira responsabilidade legal, fiscal e de fornecimento sobre os produtos físicos comercializados em seu painel.</p>
           </section>
 
           <section>

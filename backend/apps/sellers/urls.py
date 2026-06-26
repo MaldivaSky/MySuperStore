@@ -5,8 +5,6 @@ from .views import (
     SellerApplyView,
     SellerMeView,
     SellerProductViewSet,
-    SellerStripeCallbackView,
-    SellerStripeOnboardingView,
     SellerPublicViewSet,
     SellerMentorView,
     SellerLeadsView,
@@ -39,9 +37,6 @@ urlpatterns = [
     path("me/mentor/", SellerMentorView.as_view(), name="seller-mentor"),
     path("me/leads/", SellerLeadsView.as_view(), name="seller-leads"),
 
-    # Stripe Connect
-    path("me/stripe-onboard/", SellerStripeOnboardingView.as_view(), name="seller-stripe-onboard"),
-    path("me/stripe-callback/", SellerStripeCallbackView.as_view(), name="seller-stripe-callback"),
 
     # ---- CRUD de produtos do vendedor (Fase 3) ----
     path(

@@ -80,7 +80,7 @@ class AdminSellerViewSet(viewsets.ModelViewSet):
         
         send_mail(
             subject="Parabéns! Sua loja foi aprovada no MySuperStore",
-            message=f"Olá {seller.user.email},\n\nSua loja '{seller.store_name}' foi aprovada! Você já pode acessar seu painel e conectar sua conta Stripe para começar a vender.",
+            message=f"Olá {seller.user.email},\n\nSua loja '{seller.store_name}' foi aprovada! Você já pode acessar seu painel e configurar seus dados bancários para começar a vender.",
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[seller.user.email],
             fail_silently=True,

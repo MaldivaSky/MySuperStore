@@ -31,7 +31,7 @@ export default function TermsPage() {
               <ul className="list-disc pl-5 space-y-2">
                 <li>Você tem o direito inalienável ao <strong>Arrependimento de Compra (7 dias)</strong> contados a partir da data de recebimento do produto, conforme garantido por lei. Nosso sistema de devoluções (RMA) processa estornos integralmente após a devolução.</li>
                 <li>Avaliações passam por um <strong>sistema de moderação ativa e inteligência artificial</strong> para banir palavrões ou ofensas.</li>
-                <li>Seus dados de pagamento são criptografados de ponta-a-ponta via Stripe; o MySuperStore não armazena o número do seu cartão de crédito.</li>
+                <li>Seus dados de pagamento são criptografados de ponta-a-ponta via Efí Bank; o MySuperStore não armazena o número do seu cartão de crédito.</li>
               </ul>
             </section>
 
@@ -40,7 +40,7 @@ export default function TermsPage() {
               <ul className="list-disc pl-5 space-y-2">
                 <li>O cadastro de produtos com teor ilícito, pirataria, armamentos ou substâncias controladas é estritamente proibido. O sistema opera com <strong>Auditoria Ativa e NLP (Natural Language Processing)</strong>. A violação gera "Strikes".</li>
                 <li>O Lojista que acumular <strong>3 Strikes</strong> terá a sua conta sumariamente congelada e os repasses financeiros bloqueados.</li>
-                <li>A comissão padrão cobrada pelo MySuperStore é de <strong>15%</strong> (com possibilidade de negociação via Administrador por categorias de produtos específicas). O repasse é processado via Split Payment (Stripe Connect).</li>
+                <li>A comissão padrão cobrada pelo MySuperStore é de <strong>15%</strong> (com possibilidade de negociação via Administrador por categorias de produtos específicas). O repasse é processado via Split Payment (Efí Bank).</li>
               </ul>
             </section>
 

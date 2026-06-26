@@ -161,7 +161,7 @@ class ReturnRequestViewSet(viewsets.ModelViewSet):
         if new_status:
             rr.status = new_status
 
-            # Estorno do item: devolve o valor ao cliente (Stripe) e o estoque ao vendedor
+            # Estorno do item: devolve o valor ao cliente (Efí) e o estoque ao vendedor
             if new_status == "refunded":
                 self._process_item_refund(rr.order_item)
 
@@ -176,7 +176,7 @@ class ReturnRequestViewSet(viewsets.ModelViewSet):
         from django.db import transaction
         from apps.catalog.models import ProductVariant
         from apps.payments.models import Payment, PaymentMethod
-        from apps.payments.services import StripeService
+        from apps.payments.services import EfiService
 
         sub_order = order_item.sub_order
         order = sub_order.order
@@ -186,7 +186,7 @@ class ReturnRequestViewSet(viewsets.ModelViewSet):
             # 1. Estorna o valor do item no provedor (somente cartão; PIX = baixa local)
             if payment and payment.method in (PaymentMethod.CREDIT_CARD, PaymentMethod.DEBIT_CARD):
                 try:
-                    StripeService.refund_payment(payment, amount=order_item.total)
+                    EfiService.refund_payment(payment, amount=order_item.total)
                     payment.refunded_amount = (payment.refunded_amount or 0) + order_item.total
                     payment.save(update_fields=["refunded_amount", "updated_at"])
                 except Exception:

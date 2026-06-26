@@ -273,7 +273,7 @@ export default function VenderPage() {
                         </div>
                         <div>
                           <div className="text-green-400 font-bold text-xs tracking-[0.2em] uppercase mb-1">Fluxo de Caixa Livre</div>
-                          <div className="text-white text-3xl font-black tracking-tight">Split Financeiro Stripe</div>
+                          <div className="text-white text-3xl font-black tracking-tight">Split Financeiro Efí Bank</div>
                         </div>
                       </div>
                       <div className="bg-[#0A0A15] p-8 rounded-2xl border border-white/5 flex flex-col gap-6 relative z-10 shadow-inner">
@@ -300,7 +300,7 @@ export default function VenderPage() {
                   <div className="lg:w-1/2 order-1 lg:order-2">
                     <h3 className="text-4xl lg:text-5xl font-extrabold text-white mb-6 tracking-tight">O Fim das Planilhas: Dinheiro na Sua Mão, Na Hora.</h3>
                     <p className="text-xl text-neutral-400 font-light leading-relaxed mb-8">
-                      Ouvimos o grito de desespero dos lojistas sobre dinheiro preso. Acabamos com isso. Através da nossa integração profunda com o **Stripe Connect**, o dinheiro da venda cai no exato milissegundo em que o cartão é aprovado. A sua fatia de lucro voa direto para a sua conta bancária. Sem pedágio.
+                      Ouvimos o grito de desespero dos lojistas sobre dinheiro preso. Acabamos com isso. Através da nossa integração profunda com o **Efí Bank**, o dinheiro da venda cai no exato milissegundo em que o pagamento é aprovado. A sua fatia de lucro voa direto para a sua conta bancária. Sem pedágio.
                     </p>
                     <ul className="space-y-5">
                       <li className="flex items-center gap-4"><CheckCircle2 className="text-[#E6B53C] w-7 h-7 shrink-0"/> <span className="text-white text-lg font-medium">Acabe com a dependência de fluxo de caixa preso.</span></li>

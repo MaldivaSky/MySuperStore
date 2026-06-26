@@ -42,7 +42,7 @@ export default function ContratoLicencaPage() {
             <p>No modelo White-Label, a Plataforma age exclusivamente como provedora da infraestrutura sistêmica. A Licenciada e seus respectivos Lojistas são os únicos e exclusivos responsáveis por:</p>
             <ul className="list-disc pl-6 space-y-2 mt-4">
               <li>Operações de venda, logística, atendimento ao consumidor final e gestão de suporte (SAC).</li>
-              <li>Fraudes financeiras cometidas por agentes terceiros no ecossistema da Licenciada, chargebacks e disputas bancárias. A arquitetura antifraude é provida, porém as aprovações e bloqueios cabem à matriz de risco do adquirente (ex: Stripe).</li>
+              <li>Fraudes financeiras cometidas por agentes terceiros no ecossistema da Licenciada, chargebacks e disputas bancárias. A arquitetura antifraude é provida, porém as aprovações e bloqueios cabem à matriz de risco do adquirente (ex: Efí).</li>
             </ul>
           </section>
 
