@@ -137,3 +137,28 @@ class AdminBannerViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save()
+
+class AdminBroadcastNotificationView(APIView):
+    """
+    POST /api/v1/admin-api/broadcast/
+    Dispara notificações Web Push e in-app para todos os usuários ativos.
+    """
+    permission_classes = [IsPlatformAdmin]
+
+    def post(self, request):
+        title = request.data.get("title")
+        message = request.data.get("message")
+        url = request.data.get("url", "/")
+
+        if not title or not message:
+            return Response(
+                {"detail": "Os campos 'title' e 'message' são obrigatórios."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        from .tasks import broadcast_notification_task
+        broadcast_notification_task.delay(title, message, url)
+
+        return Response({
+            "detail": "Broadcast de notificações enfileirado com sucesso. Elas serão entregues em background."
+        }, status=status.HTTP_202_ACCEPTED)

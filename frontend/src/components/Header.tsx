@@ -160,6 +160,8 @@ function HeaderInner() {
               <span className="absolute top-14 right-0 scale-0 group-hover:scale-100 transition-all bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap z-50">Favoritos</span>
             </Link>
 
+            <NotificationDropdown />
+
             {isAuthenticated ? (
               <>
                 {user?.is_seller ? (
@@ -173,8 +175,6 @@ function HeaderInner() {
                     Vender
                   </Link>
                 )}
-
-                <NotificationDropdown />
 
                 <Link 
                   href="/dashboard/account" 

@@ -133,7 +133,7 @@ export const cartApi = {
 export const sellerApi = {
   me: () => api.get("/sellers/me/"),
   update: (data: any) => api.patch("/sellers/me/", data),
-  apply: (data: { store_name: string; description: string; pix_key: string }) =>
+  apply: (data: { store_name: string; description: string; pix_key?: string; efi_payee_code?: string; origin_cep?: string; cpf_cnpj?: string; person_type?: string; main_category?: string; }) =>
     api.post("/sellers/apply/", data),
 
 };
@@ -287,7 +287,9 @@ export const adminApi = {
     list: () => api.get("/admin/banners/"),
     create: (formData: FormData) => api.post("/admin/banners/", formData),
     delete: (id: string) => api.delete(`/admin/banners/${id}/`),
-  }
+  },
+  broadcast: (data: { title: string; message: string; url?: string }) =>
+    api.post("/admin/broadcast/", data),
 };
 
 // ── CRM API ───────────────────────────────────────────────────────────────────

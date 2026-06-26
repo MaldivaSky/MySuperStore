@@ -267,3 +267,19 @@ def notify_invoice_available(sub_order):
     """
     send_transactional_email(user.email, title, title, html)
     send_web_push(user, "Nota Fiscal Disponível 📄", message, url="/orders")
+
+
+def notify_password_changed(user):
+    """Dispara E-mail + Push para o usuário informando que a senha foi alterada."""
+    title = "Sua senha foi alterada"
+    message = "A senha da sua conta MySuperStore acabou de ser alterada."
+    
+    html = f"""
+        <p>Olá, {user.first_name or 'Usuário'}!</p>
+        <p>Este é um aviso de segurança para informar que a senha da sua conta <strong>MySuperStore</strong> foi alterada com sucesso.</p>
+        <p>Se foi você quem fez essa alteração, nenhuma ação é necessária.</p>
+        <p style="color:#f87171;">Se você <strong>não</strong> fez essa alteração, por favor entre em contato com nosso suporte imediatamente para recuperar sua conta.</p>
+        <a href="{settings.FRONTEND_URL.rstrip('/')}/login" class="cta-button">Acessar minha conta</a>
+    """
+    send_transactional_email(user.email, title, title, html)
+    send_web_push(user, "Senha Alterada 🔒", message, url="/")

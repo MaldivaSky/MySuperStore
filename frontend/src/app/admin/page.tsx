@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
-import { Users, TrendingDown, DollarSign, ShieldAlert, Activity, Tag, Check, X, Trash2, ArrowLeft, Briefcase, Image as ImageIcon, Upload } from "lucide-react";
+import { Users, TrendingDown, DollarSign, ShieldAlert, Activity, Tag, Check, X, Trash2, ArrowLeft, Briefcase, Image as ImageIcon, Upload, BellRing, Send } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, BarChart, Bar } from 'recharts';
 import { adminApi } from "@/lib/api";
 
@@ -67,6 +67,12 @@ export default function SuperAdminDashboard() {
   const [bannerLink, setBannerLink] = useState("");
   const [bannerOrder, setBannerOrder] = useState("0");
   const bannerFileRef = useRef<HTMLInputElement>(null);
+
+  // Broadcast State
+  const [broadcastTitle, setBroadcastTitle] = useState("");
+  const [broadcastMessage, setBroadcastMessage] = useState("");
+  const [broadcastUrl, setBroadcastUrl] = useState("/");
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
 
   useEffect(() => {
     if (user?.role === "admin") {
@@ -226,6 +232,25 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  const handleBroadcast = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!confirm("Tem certeza que deseja disparar essa notificação para TODOS os usuários ativos?")) return;
+    
+    setIsBroadcasting(true);
+    try {
+      await adminApi.broadcast({ title: broadcastTitle, message: broadcastMessage, url: broadcastUrl });
+      alert("Disparo iniciado com sucesso! As notificações estão sendo entregues aos usuários.");
+      setBroadcastTitle("");
+      setBroadcastMessage("");
+      setBroadcastUrl("/");
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao disparar notificação. Verifique os logs.");
+    } finally {
+      setIsBroadcasting(false);
+    }
+  };
+
   const filteredSellers = sellers.filter(s => {
     if (sellerFilter === "all") return true;
     return s.status === sellerFilter;
@@ -251,6 +276,7 @@ export default function SuperAdminDashboard() {
             { id: "sellers", label: "Gestão de Lojistas", icon: Users },
             { id: "coupons", label: "Central de Cupons", icon: Tag },
             { id: "banners", label: "Banners da Home", icon: ImageIcon },
+            { id: "broadcast", label: "Disparar Push", icon: BellRing },
             { id: "crm", label: "CRM & Vendas B2B", icon: Briefcase, action: () => router.push("/admin/crm") },
           ].map((tab) => (
             <button 
@@ -550,6 +576,69 @@ export default function SuperAdminDashboard() {
                   {banners.length === 0 && <p className="text-neutral-500 col-span-full text-center py-8">Nenhum banner ativo no momento.</p>}
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "broadcast" && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="max-w-2xl mx-auto bg-[#0a0a14]/80 backdrop-blur-xl border border-white/[0.05] p-8 md:p-12 rounded-3xl shadow-[0_0_40px_rgba(59,130,246,0.1)]">
+              <div className="text-center mb-10">
+                <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.2)]">
+                  <BellRing className="w-8 h-8 text-blue-400" />
+                </div>
+                <h3 className="text-3xl font-display font-black text-white">Disparo de Push</h3>
+                <p className="text-neutral-400 mt-2">Envie notificações em tempo real para o celular de todos os usuários.</p>
+              </div>
+
+              <form onSubmit={handleBroadcast} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-neutral-300 mb-2">Título da Notificação</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={broadcastTitle} 
+                    onChange={e=>setBroadcastTitle(e.target.value)} 
+                    placeholder="Ex: Queima de Estoque 50% OFF!"
+                    className="w-full bg-[#141420] border border-white/10 rounded-xl px-4 py-3.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-white text-base transition-all placeholder:text-neutral-600" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-neutral-300 mb-2">Mensagem (Corpo do Push)</label>
+                  <textarea 
+                    required 
+                    value={broadcastMessage} 
+                    onChange={e=>setBroadcastMessage(e.target.value)} 
+                    placeholder="Ex: Corra e aproveite, os cupons são limitados até a meia-noite de hoje."
+                    className="w-full bg-[#141420] border border-white/10 rounded-xl px-4 py-3.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-white text-base min-h-[120px] resize-none transition-all placeholder:text-neutral-600" 
+                  ></textarea>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-neutral-300 mb-2">Link / URL de Destino</label>
+                  <input 
+                    type="text" 
+                    value={broadcastUrl} 
+                    onChange={e=>setBroadcastUrl(e.target.value)} 
+                    placeholder="Ex: /super-ofertas ou /product/iphone-15"
+                    className="w-full bg-[#141420] border border-white/10 rounded-xl px-4 py-3.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-white text-base transition-all placeholder:text-neutral-600" 
+                  />
+                  <p className="text-xs text-neutral-500 mt-2">Se vazio, o usuário será direcionado para a página inicial.</p>
+                </div>
+                
+                <button 
+                  type="submit" 
+                  disabled={isBroadcasting}
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-black py-4 rounded-xl transition-all shadow-[0_4px_20px_rgba(59,130,246,0.4)] hover:shadow-[0_4px_30px_rgba(59,130,246,0.6)] hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2 mt-4 text-lg"
+                >
+                  {isBroadcasting ? (
+                    <span className="animate-pulse">Enviando em background...</span>
+                  ) : (
+                    <>
+                      <Send className="w-5 h-5" /> Disparar para Todos os Usuários
+                    </>
+                  )}
+                </button>
+              </form>
             </div>
           </div>
         )}

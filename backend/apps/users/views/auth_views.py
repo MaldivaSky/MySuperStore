@@ -132,6 +132,10 @@ class ChangePasswordView(APIView):
         serializer.is_valid(raise_exception=True)
         request.user.set_password(serializer.validated_data["new_password"])
         request.user.save(update_fields=["password"])
+
+        from apps.users.notifications import notify_password_changed
+        notify_password_changed(request.user)
+
         return Response({"detail": "Senha alterada com sucesso."}, status=status.HTTP_200_OK)
 
 
