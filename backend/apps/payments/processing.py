@@ -74,9 +74,10 @@ def process_successful_payment(order: Order, raw_response: dict | None = None, c
                 if match:
                     transfer_id, payout_status = match.id, PayoutStatus.COMPLETED
         else:
-            # Destination charge (split automático) ou PIX (liquidação na plataforma)
+            # PIX (liquidação na plataforma). O dinheiro cai na conta Master, então o repasse é PENDENTE.
             transfer_id = raw_response.get("id", "") if raw_response else ""
-            payout_status = PayoutStatus.COMPLETED
+            is_pix = raw_response.get("metadata", {}).get("type") == "pix"
+            payout_status = PayoutStatus.PENDING if is_pix else PayoutStatus.COMPLETED
 
         Payout.objects.create(
             sub_order=sub_order,
