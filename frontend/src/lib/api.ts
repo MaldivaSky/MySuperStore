@@ -23,26 +23,54 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Refresh "single-flight": se várias requisições tomam 401 ao mesmo tempo
+// (comum no mobile ao abrir o app), todas aguardam UM único refresh em vez de
+// dispararem refreshes concorrentes que se atropelam.
+let refreshPromise: Promise<string | null> | null = null;
+
+function performTokenRefresh(): Promise<string | null> {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = (async () => {
+    const refresh = localStorage.getItem("refresh_token");
+    if (!refresh) return null;
+    try {
+      const { data } = await axios.post(`${API_URL}/auth/token/refresh/`, { refresh });
+      localStorage.setItem("access_token", data.access);
+      // ROTATE_REFRESH_TOKENS=True devolve um novo refresh — PRECISA ser salvo,
+      // senão o próximo refresh usaria um token velho e cairia em logout.
+      if (data.refresh) localStorage.setItem("refresh_token", data.refresh);
+      // Mantém o store em sincronia com o localStorage.
+      const mod = await import("@/store/authStore");
+      const store = mod.useAuthStore.getState();
+      store.updateTokens?.(data.access, data.refresh ?? refresh);
+      return data.access as string;
+    } catch {
+      return null;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+  return refreshPromise;
+}
+
 // Renova o access_token automaticamente se receber 401
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const original = err.config;
-    if (err.response?.status === 401 && !original._retry) {
+    // Não tenta refresh para o próprio endpoint de refresh/login (evita loop).
+    const url: string = original?.url || "";
+    const isAuthCall = url.includes("/auth/token/refresh") || url.includes("/auth/login");
+    if (err.response?.status === 401 && !original._retry && !isAuthCall) {
       original._retry = true;
-      const refresh = localStorage.getItem("refresh_token");
-      if (refresh) {
-        try {
-          const { data } = await axios.post(`${API_URL}/auth/token/refresh/`, { refresh });
-          localStorage.setItem("access_token", data.access);
-          original.headers['Authorization'] = `Bearer ${data.access}`;
-          return api(original);
-        } catch {
-          import("@/store/authStore").then((mod) => {
-            mod.useAuthStore.getState().logout();
-          });
-        }
+      const newAccess = await performTokenRefresh();
+      if (newAccess) {
+        original.headers['Authorization'] = `Bearer ${newAccess}`;
+        return api(original);
       }
+      // Refresh realmente falhou (token expirado/ inválido) → encerra a sessão.
+      const mod = await import("@/store/authStore");
+      mod.useAuthStore.getState().logout();
     }
     return Promise.reject(err);
   }

@@ -29,6 +29,7 @@ interface AuthState {
   login: (tokens: { access: string; refresh: string }, user: User) => void;
   logout: () => void;
   updateUser: (user: Partial<User>) => void;
+  updateTokens: (access: string, refresh: string) => void;
   setHydrated: (v: boolean) => void;
 }
 
@@ -47,8 +48,9 @@ export const useAuthStore = create<AuthState>()(
           if (tokens.refresh) {
             localStorage.setItem("refresh_token", tokens.refresh);
           }
-          // Cookie leve para o middleware Next.js (Edge) detectar sessão ativa sem expor o token
-          document.cookie = "mss_auth=1; path=/; max-age=604800; SameSite=Lax";
+          // Cookie leve para o middleware Next.js (Edge) detectar sessão ativa sem expor o token.
+          // 90 dias, alinhado ao REFRESH_TOKEN_LIFETIME do backend.
+          document.cookie = "mss_auth=1; path=/; max-age=7776000; SameSite=Lax";
         }
         set({
           accessToken: tokens.access,
@@ -76,6 +78,16 @@ export const useAuthStore = create<AuthState>()(
         set((state) => ({
           user: state.user ? { ...state.user, ...updatedUser } : null,
         }));
+      },
+
+      // Atualiza tokens após um refresh silencioso (mantém store e cookie em sincronia).
+      updateTokens: (access, refresh) => {
+        if (typeof window !== "undefined") {
+          localStorage.setItem("access_token", access);
+          if (refresh) localStorage.setItem("refresh_token", refresh);
+          document.cookie = "mss_auth=1; path=/; max-age=7776000; SameSite=Lax";
+        }
+        set({ accessToken: access, refreshToken: refresh, isAuthenticated: true });
       },
 
       setHydrated: (v) => set({ _hydrated: v }),

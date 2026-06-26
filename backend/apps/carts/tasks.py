@@ -1,4 +1,5 @@
 from celery import shared_task
+from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
 from django.core.mail import EmailMultiAlternatives
@@ -30,14 +31,17 @@ def send_abandoned_cart_emails_task():
             
         subject = "Seu carrinho está te esperando! 🛒 | MySuperStore"
         
+        frontend_url = settings.FRONTEND_URL.rstrip('/')
+        checkout_url = f"{frontend_url}/checkout"
         context = {
             "recipient_name": recipient_name,
             "items": [{"quantity": i.quantity, "product_name": i.variant.product.name, "price": i.variant.effective_price} for i in cart.items.all()],
-            "checkout_url": "http://localhost:3000/checkout"
+            "checkout_url": checkout_url,
+            "frontend_url": frontend_url,
         }
-        
+
         html_content = render_to_string("emails/abandoned_cart.html", context)
-        text_content = f"Olá {recipient_name}, você deixou itens no seu carrinho! Use o cupom VOLTA10 e ganhe 10% de desconto. Acesse http://localhost:3000/checkout para finalizar."
+        text_content = f"Olá {recipient_name}, você deixou itens no seu carrinho! Use o cupom VOLTA10 e ganhe 10% de desconto. Acesse {checkout_url} para finalizar."
         
         msg = EmailMultiAlternatives(
             subject=subject,

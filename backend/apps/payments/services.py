@@ -53,6 +53,15 @@ def _cents(value) -> int:
     return int((Decimal(str(value)) * 100).to_integral_value())
 
 
+def _qr_png_base64(payload: str) -> str:
+    """Gera a imagem PNG (base64) do QR Code a partir do Copia-e-Cola, localmente.
+    Evita o endpoint pix_generate_qrcode do Efí, que exige escopo cob.read."""
+    img = qrcode.make(payload)
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    return base64.b64encode(buffer.getvalue()).decode("utf-8")
+
+
 class EfiCardService:
     """
     Integração de Cartão de Crédito com Efí Bank (API Cobranças).
@@ -204,14 +213,50 @@ class EfiPixService:
             raise RuntimeError(f"Resposta inesperada do Efí ao criar cobrança PIX: {charge}")
 
         txid = charge["txid"]
-        loc_id = charge.get("loc", {}).get("id")
-        qr = efi.pix_generate_qrcode(params={"id": loc_id})
-        
-        copia_e_cola = qr.get("qrcode", "") if isinstance(qr, dict) else ""
-        imagem = qr.get("imagemQrcode", "") if isinstance(qr, dict) else ""
-        qr_base64 = imagem.split(",", 1)[1] if "," in imagem else imagem
-        
+
+        # O Copia-e-Cola já vem na resposta da cobrança — não exige escopo extra.
+        copia_e_cola = charge.get("pixCopiaECola", "")
+
+        # Fallback: tenta o endpoint de QR do Efí (exige escopo cob.read) só se preciso.
+        if not copia_e_cola:
+            loc_id = charge.get("loc", {}).get("id")
+            try:
+                qr = efi.pix_generate_qrcode(params={"id": loc_id})
+                if isinstance(qr, dict):
+                    copia_e_cola = qr.get("qrcode", "") or ""
+            except Exception as exc:
+                logger.warning("pix_generate_qrcode indisponível (%s) — usando Copia-e-Cola da cobrança", exc)
+
+        if not copia_e_cola:
+            raise RuntimeError("Efí não retornou o Copia-e-Cola do PIX.")
+
+        # Gera a imagem do QR localmente a partir do Copia-e-Cola (sem chamada/escopo extra).
+        qr_base64 = _qr_png_base64(copia_e_cola)
+
         return txid, copia_e_cola, qr_base64
+
+    @classmethod
+    def config_webhook(cls, webhook_url: str) -> dict:
+        """
+        Registra a URL do webhook PIX na chave recebedora (PUT /v2/webhook/:chave).
+        - `?ignorar=` evita que o Efí anexe '/pix' ao final da URL.
+        - header `x-skip-mtls-checking` é obrigatório em PaaS (Railway/Heroku) que
+          terminam o TLS na borda e não conseguem fazer o mTLS exigido pelo Efí.
+        """
+        efi = cls._client()
+        if "?" not in webhook_url:
+            webhook_url = webhook_url + "?ignorar="
+        return efi.pix_config_webhook(
+            params={"chave": settings.EFI_PIX_KEY},
+            body={"webhookUrl": webhook_url},
+            headers={"x-skip-mtls-checking": "true"},
+        )
+
+    @classmethod
+    def detail_webhook(cls) -> dict:
+        """Consulta o webhook configurado para a chave (GET /v2/webhook/:chave)."""
+        efi = cls._client()
+        return efi.pix_detail_webhook(params={"chave": settings.EFI_PIX_KEY})
 
     @classmethod
     def get_charge(cls, txid: str) -> dict:

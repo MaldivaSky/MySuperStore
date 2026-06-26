@@ -2,6 +2,7 @@ import json
 import logging
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
+from django.utils import timezone
 from asgiref.sync import sync_to_async
 
 logger = logging.getLogger(__name__)
@@ -60,41 +61,47 @@ def send_web_push(user, title, message, url="/"):
 # --- E-MAIL TEMPLATES COMUNS ---
 
 def get_base_html_template(title, content):
-    """Retorna o HTML base premium para e-mails."""
-    return f"""
-    <!DOCTYPE html>
-    <html lang="pt-BR">
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap');
-            body {{ font-family: 'Outfit', sans-serif; background-color: #050510; color: #f5f5f5; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }}
-            .container {{ max-width: 600px; margin: 40px auto; background: #0A0A15; border-radius: 24px; overflow: hidden; border: 1px solid rgba(230, 181, 60, 0.15); }}
-            .header {{ background: linear-gradient(135deg, #050510 0%, #100A05 100%); padding: 40px; text-align: center; border-bottom: 1px solid rgba(230, 181, 60, 0.2); }}
-            .header h1 {{ margin: 0; color: #E6B53C; font-size: 28px; font-weight: 900; text-transform: uppercase; }}
-            .content {{ padding: 40px; }}
-            .content h2 {{ color: #ffffff; font-size: 20px; font-weight: 800; }}
-            .content p {{ color: #a3a3a3; font-size: 15px; line-height: 1.6; font-weight: 300; }}
-            .cta-button {{ display: inline-block; background: linear-gradient(90deg, #E6B53C 0%, #B38F25 100%); color: #000000 !important; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-weight: 800; font-size: 15px; text-transform: uppercase; margin-top: 20px; }}
-            .footer {{ background: #050510; padding: 20px; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); color: #525252; font-size: 12px; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1>MySuperStore</h1>
-            </div>
-            <div class="content">
-                <h2>{title}</h2>
-                {content}
-            </div>
-            <div class="footer">
-                <p>&copy; 2026 MySuperStore. Todos os direitos reservados.</p>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
+    """Shell HTML premium e à prova de clientes de e-mail (layout em tabela, estilos inline)."""
+    logo_url = f"{settings.FRONTEND_URL.rstrip('/')}/email-logo.png"
+    year = timezone.now().year
+    return f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <title>{title}</title>
+    <style>
+        .cta-button {{ display:inline-block; background:linear-gradient(90deg,#E6B53C 0%,#B38F25 100%); color:#0C0B11 !important; text-decoration:none; padding:15px 34px; border-radius:12px; font-weight:800; font-size:15px; }}
+        a {{ color:#E6B53C; }}
+        @media (max-width:620px) {{ .px {{ padding-left:24px !important; padding-right:24px !important; }} }}
+    </style>
+</head>
+<body style="margin:0; padding:0; background-color:#050510; -webkit-font-smoothing:antialiased;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#050510; padding:32px 12px;">
+        <tr><td align="center">
+            <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background:#0A0A15; border:1px solid rgba(230,181,60,0.18); border-radius:24px; overflow:hidden; font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
+                <!-- Header com a marca -->
+                <tr><td align="center" style="background:linear-gradient(135deg,#0C0B11 0%,#161009 100%); padding:36px 40px 30px; border-bottom:1px solid rgba(230,181,60,0.18);">
+                    <img src="{logo_url}" alt="MySuperStore" width="240" style="display:block; width:240px; max-width:70%; height:auto;">
+                </td></tr>
+                <!-- Conteúdo -->
+                <tr><td class="px" style="padding:40px;">
+                    <h2 style="margin:0 0 18px; color:#ffffff; font-size:22px; font-weight:800; letter-spacing:-0.5px;">{title}</h2>
+                    <div style="color:#b8b8c0; font-size:15px; line-height:1.65;">
+                        {content}
+                    </div>
+                </td></tr>
+                <!-- Footer -->
+                <tr><td align="center" style="background:#070710; padding:24px 40px; border-top:1px solid rgba(255,255,255,0.06);">
+                    <p style="margin:0 0 4px; color:#E6B53C; font-size:13px; font-weight:700;">MySuperStore</p>
+                    <p style="margin:0; color:#52525b; font-size:12px; line-height:1.5;">O Centro da Gravidade Comercial<br>&copy; {year} MySuperStore — Todos os direitos reservados.</p>
+                </td></tr>
+            </table>
+        </td></tr>
+    </table>
+</body>
+</html>"""
 
 def send_transactional_email(to_email, subject, title, html_content):
     """Função genérica de disparo de e-mail."""
@@ -131,23 +138,92 @@ def notify_order_confirmed_customer(order):
     send_web_push(user, "Pagamento Aprovado! 💳", message, url="/orders")
 
 
+def _format_brl(value):
+    """Formata um valor em Real (R$ 1.234,56)."""
+    from decimal import Decimal
+    v = Decimal(str(value or 0))
+    return "R$ " + f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def _efi_fee(method, amount):
+    """Taxa estimada do Efí Bank para a forma de pagamento (paga pela plataforma)."""
+    from decimal import Decimal
+    amount = Decimal(str(amount or 0))
+    if method in ("credit_card", "debit_card"):
+        pct = Decimal(str(getattr(settings, "EFI_CARD_FEE_PERCENT", "0")))
+        fixed = Decimal(str(getattr(settings, "EFI_CARD_FEE_FIXED", "0")))
+        label = "Cartão"
+    else:
+        pct = Decimal(str(getattr(settings, "EFI_PIX_FEE_PERCENT", "0")))
+        fixed = Decimal(str(getattr(settings, "EFI_PIX_FEE_FIXED", "0")))
+        label = "PIX"
+    return (amount * pct + fixed).quantize(Decimal("0.01")), label
+
+
 def notify_new_sale_seller(sub_order):
-    """Dispara Notificação + E-mail para o LOJISTA quando ele tem uma nova venda."""
-    seller_user = sub_order.seller.user
-    order_num = sub_order.order.order_number[-6:]
-    title = f"Nova Venda! Pedido #{order_num}"
-    message = f"Você acabou de vender R$ {sub_order.subtotal}. Separe os produtos!"
-    
-    # 1. E-mail
+    """
+    Dispara Notificação + E-mail (EXTRATO de pagamento) para o LOJISTA numa nova venda.
+    Extrato claro: subtotal − comissão da plataforma = valor líquido; taxa Efí Bank
+    mostrada de forma transparente (é paga pela plataforma, não descontada do lojista).
+    """
+    from decimal import Decimal
+    seller = sub_order.seller
+    seller_user = seller.user
+    order = sub_order.order
+    order_num = order.order_number[-6:]
+    title = f"Nova venda confirmada · Pedido #{order_num}"
+
+    rate = Decimal(str(seller.commission_rate or 0))
+    rate_pct = (rate * 100).quantize(Decimal("0.01")).normalize()
+    subtotal = Decimal(str(sub_order.subtotal or 0))
+    commission = Decimal(str(sub_order.commission or 0))
+    liquido = Decimal(str(sub_order.seller_amount or 0))
+
+    payment = getattr(order, "payment", None)
+    method = getattr(payment, "method", "pix")
+    efi_fee, method_label = _efi_fee(method, subtotal)
+
+    message = f"Você vendeu {_format_brl(subtotal)} — líquido {_format_brl(liquido)}. Separe os produtos!"
+
+    row = (
+        '<tr>'
+        '<td style="padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.07);color:#c7c7cf;font-size:14px;">{label}</td>'
+        '<td style="padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.07);text-align:right;color:{color};font-weight:700;font-size:14px;">{value}</td>'
+        '</tr>'
+    )
+
     html = f"""
-        <p>Parabéns, {sub_order.seller.store_name}!</p>
-        <p>Você acaba de receber uma nova venda (Pedido #{sub_order.order.order_number}).</p>
-        <p>Total do Lojista: <strong>R$ {sub_order.seller_amount}</strong></p>
-        <p>Acesse o painel do lojista para aceitar e enviar os itens:</p>
-        <a href="{settings.FRONTEND_URL.rstrip('/')}/seller/dashboard/orders" class="cta-button">Gerenciar Venda</a>
+        <p style="margin:0 0 6px; color:#ffffff; font-size:16px;">Parabéns, <strong>{seller.store_name}</strong>! 🎉</p>
+        <p style="margin:0 0 22px;">Você acaba de receber uma nova venda. Aqui está o <strong style="color:#fff;">extrato de pagamento</strong> do Pedido <strong style="color:#fff;">#{order.order_number}</strong>, recebido via <strong style="color:#fff;">{method_label}</strong>.</p>
+
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 8px;">
+            {row.format(label="Subtotal da venda", color="#ffffff", value=_format_brl(subtotal))}
+            {row.format(label=f"Comissão da plataforma ({rate_pct}%)", color="#f87171", value="− " + _format_brl(commission))}
+        </table>
+
+        <!-- Destaque do valor líquido -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:14px 0 22px; background:linear-gradient(135deg,rgba(230,181,60,0.14),rgba(230,181,60,0.04)); border:1px solid rgba(230,181,60,0.35); border-radius:14px;">
+            <tr>
+                <td style="padding:18px 22px; color:#E6B53C; font-size:14px; font-weight:700;">Você recebe (líquido)</td>
+                <td style="padding:18px 22px; text-align:right; color:#E6B53C; font-size:24px; font-weight:800;">{_format_brl(liquido)}</td>
+            </tr>
+        </table>
+
+        <p style="margin:0 0 6px; color:#8a8a93; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Transparência de taxas</p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px;">
+            <tr>
+                <td style="padding:6px 0; color:#9a9aa3; font-size:13px;">Taxa Efí Bank ({method_label})</td>
+                <td style="padding:6px 0; text-align:right; color:#c7c7cf; font-size:13px;">{_format_brl(efi_fee)}</td>
+            </tr>
+        </table>
+        <p style="margin:0 0 26px; padding:12px 16px; background:rgba(255,255,255,0.03); border-radius:10px; color:#9a9aa3; font-size:13px; line-height:1.55;">
+            🔒 A taxa do <strong style="color:#c7c7cf;">Efí Bank</strong> é <strong style="color:#c7c7cf;">paga pela plataforma</strong> — não descontamos nada além da comissão. O valor líquido acima é exatamente o que cai na sua conta via split automático.
+        </p>
+
+        <a href="{settings.FRONTEND_URL.rstrip('/')}/seller/dashboard/orders" class="cta-button">Gerenciar minha venda →</a>
     """
     send_transactional_email(seller_user.email, title, "🎉 " + title, html)
-    
+
     # 2. Push App
     send_web_push(seller_user, "Nova Venda! 🎉", message, url="/seller/dashboard/orders")
 

@@ -5,6 +5,7 @@ import {
   ImagePlus, Star, Trash2, Loader2, Film, X, AlertTriangle, Info, Video,
 } from "lucide-react";
 import { sellerDashboardApi } from "@/lib/api";
+import { compressImage } from "@/lib/imageCompression";
 
 export interface UploaderImage {
   id: string;
@@ -23,7 +24,9 @@ interface Props {
 }
 
 const MAX_PHOTOS = 6;
-const MAX_PHOTO_MB = 5;
+// Limite só como rede de segurança: a imagem é comprimida no navegador antes de
+// subir (compressImage), então fotos de celular passam tranquilamente.
+const MAX_PHOTO_MB = 10;
 const MAX_VIDEO_MB = 50;
 const ACCEPTED_VIDEO = ["video/mp4", "video/webm", "video/quicktime"];
 
@@ -95,13 +98,15 @@ export function ProductMediaUploader({
 
     setUploadingPhotos(true);
     let current = [...images];
-    for (const file of toUpload) {
-      if (!file.type.startsWith("image/")) {
+    for (const original of toUpload) {
+      if (!original.type.startsWith("image/")) {
         setError("Apenas imagens são aceitas (JPG, PNG ou WebP).");
         continue;
       }
+      // Comprime no navegador antes de qualquer coisa — resolve o limite na origem.
+      const file = await compressImage(original);
       if (file.size > MAX_PHOTO_MB * 1024 * 1024) {
-        setError(`"${file.name}" passa de ${MAX_PHOTO_MB}MB. Reduza o tamanho e tente de novo.`);
+        setError(`"${original.name}" é muito grande mesmo após otimizar. Tente uma foto menor.`);
         continue;
       }
       try {

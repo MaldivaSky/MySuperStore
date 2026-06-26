@@ -125,16 +125,44 @@ class SellerDashboardSerializer(serializers.ModelSerializer):
     available_products = serializers.SerializerMethodField()
     total_orders = serializers.SerializerMethodField()
     pending_payout = serializers.SerializerMethodField()
+    # Campos necessários para o editor da loja (StoreSettingsTab) pré-preencher.
+    logo_url = serializers.SerializerMethodField()
+    banner_url = serializers.SerializerMethodField()
+    banner2_url = serializers.SerializerMethodField()
+    banner3_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Seller
         fields = [
-            "id", "store_name", "slug", "status", "commission_rate",
+            "id", "store_name", "slug", "description", "status", "commission_rate",
             "efi_payee_code", "pix_key",
             "strike_count", "max_installments",
+            "logo_url", "banner_url", "banner2_url", "banner3_url",
             "total_products", "available_products",
             "total_orders", "pending_payout",
         ]
+
+    def _img_url(self, obj, field):
+        external = getattr(obj, f"{field}_external", None)
+        if external:
+            return external
+        f = getattr(obj, field, None)
+        request = self.context.get("request")
+        if f and request:
+            return request.build_absolute_uri(f.url)
+        return None
+
+    def get_logo_url(self, obj):
+        return self._img_url(obj, "logo")
+
+    def get_banner_url(self, obj):
+        return self._img_url(obj, "banner")
+
+    def get_banner2_url(self, obj):
+        return self._img_url(obj, "banner2")
+
+    def get_banner3_url(self, obj):
+        return self._img_url(obj, "banner3")
 
     def get_total_products(self, obj):
         return obj.products.count()

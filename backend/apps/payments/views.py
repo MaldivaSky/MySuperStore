@@ -99,9 +99,12 @@ def process_payment_view(request):
             payment.efi_charge_id = response.get("charge_id")
             payment.raw_response = response.get("raw_response")
             
-            # API One-Step já retorna se foi aprovado
-            charge_status = response.get("status")
-            if charge_status in ("approved", "settled"): # TODO: check exact Efí status for paid
+            # API One-Step retorna o status da cobrança. Status do Efí Cobranças que
+            # significam pagamento efetivado no cartão: "approved" (autorizado),
+            # "paid"/"settled" (liquidado). Normalizamos para minúsculas.
+            charge_status = (response.get("status") or "").lower()
+            PAID_STATUSES = {"approved", "paid", "settled"}
+            if charge_status in PAID_STATUSES:
                 processed = process_successful_payment(
                     order, raw_response=response.get("raw_response"), charge_id=response.get("charge_id")
                 )
@@ -109,7 +112,7 @@ def process_payment_view(request):
                     dispatch_post_payment_tasks(order)
                 payment.refresh_from_db()
             else:
-                # Pode estar "waiting" ou algo assim
+                # "new"/"waiting"/"unpaid"/"identified": aguarda confirmação (notificação Efí).
                 payment.save()
 
             return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED)

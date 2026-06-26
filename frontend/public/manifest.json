@@ -1,23 +1,33 @@
 {
+  "id": "/",
   "name": "MySuperStore",
-  "short_name": "MSS",
+  "short_name": "MySuperStore",
   "description": "O marketplace que vai escalar o seu negócio.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
+  "lang": "pt-BR",
   "background_color": "#050510",
-  "theme_color": "#E6B53C",
+  "theme_color": "#0C0B11",
   "icons": [
     {
       "src": "/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

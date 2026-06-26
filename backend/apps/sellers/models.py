@@ -52,8 +52,8 @@ class Seller(models.Model):
     banner3 = models.ImageField(upload_to="sellers/banners/", blank=True, null=True)
     banner3_external = models.URLField(max_length=500, blank=True, null=True)
     
-    # Comissão da plataforma: Padrão 15% (0.1500)
-    commission_rate = models.DecimalField(max_digits=5, decimal_places=4, default="0.1500")
+    # Comissão da plataforma (product owner): padrão 12% (0.1200).
+    commission_rate = models.DecimalField(max_digits=5, decimal_places=4, default="0.1200")
     
     # Regras de Venda
     max_installments = models.PositiveIntegerField(default=12, help_text="Número máximo de parcelas permitidas para os produtos desta loja.")

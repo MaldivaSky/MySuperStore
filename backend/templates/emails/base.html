@@ -99,7 +99,7 @@
                 <div class="container">
                     <div class="header">
                         <!-- Utilizando texto estilizado como fallback caso a imagem falhe, mas com a imagem oficial em src -->
-                        <img src="http://localhost:3000/logo.png" alt="MySuperStore Logo" style="display: block; margin: 0 auto; max-width: 150px; margin-bottom: 15px;">
+                        <img src="{{ frontend_url|default:'https://mysuperstore.vercel.app' }}/logo.png" alt="MySuperStore Logo" style="display: block; margin: 0 auto; max-width: 150px; margin-bottom: 15px;">
                         <h1 class="brand-text">My<span>Super</span>Store</h1>
                     </div>
                     

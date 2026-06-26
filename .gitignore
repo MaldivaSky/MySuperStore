@@ -74,3 +74,6 @@ frontend/tsconfig.tsbuildinfo
 
 # Arquivo-fonte de referencia da marca (nao versionar)
 frontend/MySuperStore Marca.html
+
+# Cert Efí em base64 (segredo — gerado para colar no Railway)
+EFI_PIX_CERT_PROD_BASE64.txt

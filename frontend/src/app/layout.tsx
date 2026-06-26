@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Sora, Space_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
@@ -32,6 +32,20 @@ export const metadata: Metadata = {
   },
   description: "Explore um universo multi-vendedor com split financeiro automatizado e uma experiência de compra que transcende qualquer expectativa terrestre.",
   manifest: "/manifest.json",
+  // Ícones — o apple-touch-icon é obrigatório para o iOS instalar o PWA na tela de início.
+  icons: {
+    icon: [
+      { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  // Faz o Safari/iOS tratar o site como um app standalone (pré-requisito do Web Push no iOS).
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "MySuperStore",
+  },
   openGraph: {
     type: "website",
     locale: "pt_BR",
@@ -53,12 +67,21 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: "#0C0B11",
+  width: "device-width",
+  initialScale: 1,
+  // Permite que o app use a área toda em telas com notch quando instalado (standalone).
+  viewportFit: "cover",
+};
+
 import { ToastProvider } from "@/components/ui/Toast";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { BottomNav } from "@/components/BottomNav";
 import { AuthProvider } from "@/components/AuthProvider";
 import { SplashScreen } from "@/components/ui/SplashScreen";
 import { PWARegistry } from "@/components/PWARegistry";
+import { NotificationOptIn } from "@/components/NotificationOptIn";
 
 export default function RootLayout({
   children,
@@ -84,6 +107,7 @@ export default function RootLayout({
                 <BottomNav />
                 <SplashScreen />
                 <PWARegistry />
+                <NotificationOptIn />
               </AuthProvider>
             </ToastProvider>
           </GoogleOAuthProvider>

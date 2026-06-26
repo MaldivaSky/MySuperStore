@@ -177,9 +177,15 @@ REST_FRAMEWORK = {
 # ── SimpleJWT ───────────────────────────────────────────────────────────────
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    # Sessão persistente estilo Instagram/Mercado Livre: o usuário só sai se
+    # fizer logout. 90 dias de janela; como ROTATE renova o refresh a cada uso,
+    # para um usuário ativo a sessão nunca expira (janela deslizante).
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=90),
     "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": True,
+    # IMPORTANTE: blacklist DESLIGADO de propósito. Com mobile disparando várias
+    # requisições em paralelo, se o token antigo fosse invalidado a cada rotação,
+    # as chamadas concorrentes usariam um refresh já morto → logout indevido.
+    "BLACKLIST_AFTER_ROTATION": False,
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
@@ -232,6 +238,12 @@ GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID", default="1019190620170-a86680qpdbrjgu
 # ── Frontend URL (para links nos e-mails) ─────────────────────────────────────
 FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000")
 
+# ── Web Push (VAPID) ──────────────────────────────────────────────────────────
+# Par de chaves geradas com `npx web-push generate-vapid-keys`.
+# A chave pública correspondente fica no frontend (NEXT_PUBLIC_VAPID_PUBLIC_KEY).
+VAPID_PRIVATE_KEY = env("VAPID_PRIVATE_KEY", default="")
+VAPID_ADMIN_EMAIL = env("VAPID_ADMIN_EMAIL", default="mailto:suporte@mysuperstore.com")
+
 # ── Melhor Envio ─────────────────────────────────────────────────────────────
 MELHOR_ENVIO_TOKEN = env("MELHOR_ENVIO_TOKEN", default="")
 MELHOR_ENVIO_ENVIRONMENT = env("MELHOR_ENVIO_ENVIRONMENT", default="sandbox")  # sandbox ou production
@@ -248,6 +260,20 @@ _efi_sfx = "HOMOL" if EFI_SANDBOX else "PROD"
 EFI_PIX_CLIENT_ID = env(f"EFI_PIX_CLIENT_ID_{_efi_sfx}", default="")
 EFI_PIX_CLIENT_SECRET = env(f"EFI_PIX_CLIENT_SECRET_{_efi_sfx}", default="")
 EFI_PIX_CERT_PATH = env(f"EFI_PIX_CERT_{_efi_sfx}", default="")
+
+# Cert via base64 (para Railway, onde não dá para montar arquivo).
+# Se EFI_PIX_CERT_BASE64 estiver setado, decodifica o .p12 para um arquivo temporário
+# e usa esse caminho — assim o deploy do PIX é 100% por variável de ambiente.
+_efi_cert_b64 = env("EFI_PIX_CERT_BASE64", default="")
+if _efi_cert_b64:
+    import base64 as _b64
+    import os as _os
+    import tempfile as _tf
+    _cert_file = _os.path.join(_tf.gettempdir(), "efi_pix_cert.p12")
+    with open(_cert_file, "wb") as _fh:
+        _fh.write(_b64.b64decode(_efi_cert_b64))
+    EFI_PIX_CERT_PATH = _cert_file
+
 EFI_PIX_KEY = env("EFI_PIX_KEY", default="")  # chave PIX recebedora da plataforma
 EFI_PIX_EXPIRACAO = env.int("EFI_PIX_EXPIRACAO", default=3600)
 
@@ -261,3 +287,16 @@ EFI_ACCOUNT_IDENTIFIER = env("EFI_ACCOUNT_IDENTIFIER", default="")
 EFI_CLIENT_ID = EFI_PIX_CLIENT_ID
 EFI_CLIENT_SECRET = EFI_PIX_CLIENT_SECRET
 EFI_CERT_PATH = EFI_PIX_CERT_PATH
+
+# ── Split / Comissão / Taxas ──────────────────────────────────────────────────
+# Comissão da plataforma (product owner). O lojista recebe (1 - taxa) do subtotal.
+# É também o default de novos lojistas (Seller.commission_rate).
+PLATFORM_COMMISSION_RATE = env("PLATFORM_COMMISSION_RATE", default="0.12")  # 12%
+
+# Taxas cobradas pelo Efí Bank — quem absorve é a PLATAFORMA (saem da comissão de 12%);
+# o lojista recebe o seller_amount cheio. Usadas no extrato para transparência.
+# ⚠️ CONFIRME os valores no SEU contrato Efí — os defaults abaixo são placeholders.
+EFI_PIX_FEE_PERCENT  = env("EFI_PIX_FEE_PERCENT",  default="0.0099")  # ex.: 0,99% por PIX
+EFI_PIX_FEE_FIXED    = env("EFI_PIX_FEE_FIXED",    default="0.00")    # ex.: R$ fixo por PIX
+EFI_CARD_FEE_PERCENT = env("EFI_CARD_FEE_PERCENT", default="0.0399")  # ex.: 3,99% por cartão
+EFI_CARD_FEE_FIXED   = env("EFI_CARD_FEE_FIXED",   default="0.39")    # ex.: R$ fixo por cartão

@@ -1,29 +1,51 @@
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Store, Eye, Save, Upload, Loader2, ImagePlus } from "lucide-react";
-import { sellerDashboardApi } from "@/lib/api";
+import { sellerApi, sellerDashboardApi } from "@/lib/api";
+import { compressImage } from "@/lib/imageCompression";
 import { useToast } from "@/components/ui/Toast";
 
 export function StoreSettingsTab({ user, onUpdate }: { user: any; onUpdate: (data: any) => void }) {
   const { toast } = useToast();
-  const profile = user?.seller_profile || {};
-  
-  const [storeName, setStoreName] = useState(profile.store_name || "");
-  const [description, setDescription] = useState(profile.description || "");
+
+  const [slug, setSlug] = useState<string>("");
+  const [storeName, setStoreName] = useState("");
+  const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [files, setFiles] = useState<{ [key: string]: File | null }>({
     logo: null, banner: null, banner2: null, banner3: null
   });
 
   const [previews, setPreviews] = useState<{ [key: string]: string }>({
-    logo: profile.logo || "",
-    banner: profile.banner || "",
-    banner2: profile.banner2 || "",
-    banner3: profile.banner3 || ""
+    logo: "", banner: "", banner2: "", banner3: ""
   });
 
-  const handleFileChange = (field: string, file: File | undefined) => {
-    if (!file) return;
+  // Carrega os dados atuais da loja para o form abrir já preenchido.
+  useEffect(() => {
+    let active = true;
+    sellerApi.me()
+      .then(({ data }) => {
+        if (!active) return;
+        setStoreName(data.store_name || "");
+        setDescription(data.description || "");
+        setSlug(data.slug || "");
+        setPreviews({
+          logo: data.logo_url || "",
+          banner: data.banner_url || "",
+          banner2: data.banner2_url || "",
+          banner3: data.banner3_url || "",
+        });
+      })
+      .catch(() => toast("Não foi possível carregar os dados da loja.", "error"))
+      .finally(() => active && setLoading(false));
+    return () => { active = false; };
+  }, [toast]);
+
+  const handleFileChange = async (field: string, original: File | undefined) => {
+    if (!original) return;
+    // Comprime no navegador (banners são largos: mantém 1920px de largura).
+    const file = await compressImage(original, { maxDimension: 1920 });
     setFiles(prev => ({ ...prev, [field]: file }));
     setPreviews(prev => ({ ...prev, [field]: URL.createObjectURL(file) }));
   };
@@ -72,6 +94,14 @@ export function StoreSettingsTab({ user, onUpdate }: { user: any; onUpdate: (dat
     </div>
   );
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-neutral-400">
+        <Loader2 className="w-6 h-6 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSave} className="space-y-8 relative z-10">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -108,8 +138,8 @@ export function StoreSettingsTab({ user, onUpdate }: { user: any; onUpdate: (dat
               {renderImageUpload("banner3", "Banner 3 (Opcional)", "aspect-[3/1] w-full")}
             </div>
           </div>
-          <a 
-            href={`/s/${profile.slug}`} 
+          <a
+            href={`/s/${slug}`}
             target="_blank"
             rel="noreferrer"
             className="w-full mt-6 flex items-center justify-center gap-2 bg-gradient-to-r from-[#E6B53C] to-[#B38F25] text-black font-black py-3 rounded-xl hover:opacity-90 transition-opacity relative z-10"

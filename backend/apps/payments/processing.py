@@ -34,10 +34,10 @@ def process_successful_payment(order: Order, raw_response: dict | None = None, c
         payment.status = PaymentStatus.APPROVED
         payment.paid_at = timezone.now()
         if charge_id:
-            payment.stripe_charge_id = charge_id
+            payment.efi_charge_id = charge_id
         if raw_response:
             payment.raw_response = raw_response
-        payment.save(update_fields=["status", "paid_at", "stripe_charge_id", "raw_response", "updated_at"])
+        payment.save(update_fields=["status", "paid_at", "efi_charge_id", "raw_response", "updated_at"])
 
     # 2. Order + SubOrders → confirmados; registra comissão da plataforma
     order.status = OrderStatus.CONFIRMED

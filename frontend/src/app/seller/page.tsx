@@ -1637,9 +1637,10 @@ function SellerDashboard() {
 
         {/* Tab: Configurações */}
         {activeTab === "configuracoes" && (
-          <StoreSettingsTab user={user} onUpdate={(updated) => useAuthStore.getState().setUser({...user, seller_profile: {...user?.seller_profile, ...updated}} as any)} />
-        )}
-        {/* Recebimentos */}
+          <div className="space-y-6">
+            <StoreSettingsTab user={user} onUpdate={(updated) => useAuthStore.getState().updateUser({ seller_profile: { ...((user as any)?.seller_profile || {}), ...updated } } as any)} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Recebimentos */}
               <div className="bg-[#0a0a14]/80 backdrop-blur-xl border border-white/[0.05] rounded-3xl p-8 col-span-1 md:col-span-2">
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><DollarSign className="w-5 h-5 text-emerald-500" /> Recebimentos e Conta</h3>
                 <div className="space-y-4">
