@@ -563,6 +563,9 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
 
 
 from django.db.models.functions import TruncDate
+from django.db.models import Sum, Count, Avg
+from django.utils import timezone
+from datetime import timedelta
 from apps.orders.models import SubOrder, OrderItem, OrderStatus
 
 class SellerAnalyticsView(APIView):
