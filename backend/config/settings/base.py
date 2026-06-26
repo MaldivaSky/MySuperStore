@@ -247,6 +247,11 @@ VAPID_ADMIN_EMAIL = env("VAPID_ADMIN_EMAIL", default="mailto:suporte@mysuperstor
 # ── Melhor Envio ─────────────────────────────────────────────────────────────
 MELHOR_ENVIO_TOKEN = env("MELHOR_ENVIO_TOKEN", default="")
 MELHOR_ENVIO_ENVIRONMENT = env("MELHOR_ENVIO_ENVIRONMENT", default="sandbox")  # sandbox ou production
+# OAuth (Modelo 1 — conta única da plataforma). Usados só pelo comando
+# melhor_envio_token para obter/renovar o MELHOR_ENVIO_TOKEN.
+MELHOR_ENVIO_CLIENT_ID = env("MELHOR_ENVIO_CLIENT_ID", default="")
+MELHOR_ENVIO_CLIENT_SECRET = env("MELHOR_ENVIO_CLIENT_SECRET", default="")
+MELHOR_ENVIO_REDIRECT_URI = env("MELHOR_ENVIO_REDIRECT_URI", default="")
 
 # ── Efí Bank ──────────────────────────────────────────────────────────────────
 # Dois apps Efí (cada um com credenciais próprias):

@@ -41,6 +41,7 @@ class SubOrderSerializer(serializers.ModelSerializer):
             "seller",
             "seller_name",
             "subtotal",
+            "shipping",
             "commission",
             "seller_amount",
             "status",
@@ -175,9 +176,12 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             order_number = f"{current_date}-{rand_suffix}"
 
             # 3. Calcula totais do pedido principal
+            from decimal import Decimal, ROUND_HALF_UP
             subtotal = sum(item.subtotal for item in cart_items)
-            shipping = 0  # Frete fixado em zero por enquanto
-            total = subtotal + shipping
+            # Frete: o CLIENTE paga. Vem das cotações que ele selecionou no carrinho
+            # (cart.selected_shipping = {seller_id: {price, ...}}, via Melhor Envio).
+            selected_shipping = cart.selected_shipping or {}
+            shipping = cart.shipping_total  # Decimal, soma do frete de todas as lojas
 
             coupon_code = validated_data.pop("coupon_code", None)
             discount = 0
@@ -194,9 +198,11 @@ class OrderCreateSerializer(serializers.ModelSerializer):
                         discount = subtotal * (coupon.discount_percentage / 100)
                 elif coupon.discount_amount:
                     discount = coupon.discount_amount
-                
-                total = max(0, total - discount)
+
                 validated_data["notes"] = f"Cupom aplicado: {coupon_code} (-R$ {discount:.2f})\n" + validated_data.get("notes", "")
+
+            # Total final = (produtos - desconto) + frete. O desconto NÃO incide no frete.
+            total = max(Decimal("0"), Decimal(str(subtotal)) - Decimal(str(discount or 0))) + Decimal(str(shipping))
 
             # 4. Cria a Order principal
             order = Order.objects.create(
@@ -222,7 +228,6 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             # - Cupom de loja: o desconto recai só sobre os itens daquela loja.
             # - Cupom da plataforma: rateado proporcionalmente ao subtotal de cada loja
             #   (a sobra de arredondamento vai para o último vendedor, fechando exato).
-            from decimal import Decimal, ROUND_HALF_UP
             seller_groups = list(items_by_seller.items())
             discount_dec = Decimal(str(discount or 0))
             discount_by_seller = {}
@@ -249,14 +254,18 @@ class OrderCreateSerializer(serializers.ModelSerializer):
                 alloc = discount_by_seller.get(seller, Decimal("0"))
                 # Subtotal efetivo = o que o cliente realmente pagou por esta loja.
                 sub_subtotal = max(Decimal("0"), Decimal(str(gross_subtotal)) - alloc)
-                # Calcula comissão da plataforma baseado na taxa do vendedor
+                # Frete deste lojista (cliente paga; o valor vai para o lojista
+                # pagar a etiqueta no Melhor Envio). Comissão NÃO incide sobre frete.
+                sub_shipping = Decimal(str((selected_shipping.get(str(seller.id)) or {}).get("price", 0) or 0))
                 commission = round(sub_subtotal * seller.commission_rate, 2)
-                seller_amount = sub_subtotal - commission
+                # Lojista recebe: (produto - comissão) + frete cheio.
+                seller_amount = (sub_subtotal - commission) + sub_shipping
 
                 sub_order = SubOrder.objects.create(
                     order=order,
                     seller=seller,
                     subtotal=sub_subtotal,
+                    shipping=sub_shipping,
                     commission=commission,
                     seller_amount=seller_amount,
                 )

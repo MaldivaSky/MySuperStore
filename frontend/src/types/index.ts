@@ -97,6 +97,7 @@ export interface Cart {
   id: string;
   items: CartItem[];
   subtotal: string;
+  shipping_total: string;
   total: string;
   item_count: number;
   coupon_code: string | null;

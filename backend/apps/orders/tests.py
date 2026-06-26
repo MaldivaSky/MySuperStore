@@ -82,11 +82,15 @@ class FinancialFlowTest(TestCase):
         return serializer.save()
 
     def assert_conserves_value(self, order):
-        sum_seller = sum(s.seller_amount for s in order.sub_orders.all())
-        sum_comm = sum(s.commission for s in order.sub_orders.all())
-        sum_sub = sum(s.subtotal for s in order.sub_orders.all())
+        subs = list(order.sub_orders.all())
+        sum_seller = sum(s.seller_amount for s in subs)
+        sum_comm = sum(s.commission for s in subs)
+        sum_sub = sum(s.subtotal for s in subs)
+        sum_ship = sum(s.shipping for s in subs)
+        # Repasses + comissões == total pago pelo cliente.
         self.assertEqual(sum_seller + sum_comm, order.total)
-        self.assertEqual(sum_sub, order.total)
+        # Produtos (já com desconto) + frete == total.
+        self.assertEqual(sum_sub + sum_ship, order.total)
 
     def test_conservacao_sem_cupom(self):
         order = self._create_order()
@@ -103,6 +107,26 @@ class FinancialFlowTest(TestCase):
         # 10% de 400 = 40 de desconto -> total 360, rateado entre as duas lojas.
         self.assertEqual(order.total, Decimal("360.00"))
         self.assert_conserves_value(order)
+
+    def test_frete_cliente_paga_vai_pro_lojista(self):
+        # Cliente escolheu frete: R$20 na loja Auth, R$30 na loja NoAuth.
+        self.cart.selected_shipping = {
+            str(self.seller_auth.id): {"price": "20.00", "name": "PAC"},
+            str(self.seller_noauth.id): {"price": "30.00", "name": "SEDEX"},
+        }
+        self.cart.save(update_fields=["selected_shipping"])
+        order = self._create_order()
+        # Produtos 400 + frete 50 = 450.
+        self.assertEqual(order.shipping, Decimal("50.00"))
+        self.assertEqual(order.total, Decimal("450.00"))
+        self.assert_conserves_value(order)
+
+        sub_auth = order.sub_orders.get(seller=self.seller_auth)
+        self.assertEqual(sub_auth.shipping, Decimal("20.00"))
+        # Comissão incide só sobre o produto (100), nunca sobre o frete.
+        self.assertEqual(sub_auth.commission, Decimal("12.00"))
+        # Lojista recebe (100 - 12) + 20 de frete = 108.
+        self.assertEqual(sub_auth.seller_amount, Decimal("108.00"))
 
     def test_conservacao_com_cupom_de_loja(self):
         Coupon.objects.create(

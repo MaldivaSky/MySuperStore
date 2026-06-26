@@ -75,9 +75,11 @@ class SubOrder(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="sub_orders")
     seller = models.ForeignKey("sellers.Seller", on_delete=models.SET_NULL, null=True, related_name="sub_orders")
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
-    # Comissão da plataforma = subtotal × seller.commission_rate
+    # Frete deste lojista (pago pelo cliente; repassado ao lojista p/ a etiqueta)
+    shipping = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    # Comissão da plataforma = subtotal × seller.commission_rate (não incide no frete)
     commission = models.DecimalField(max_digits=10, decimal_places=2)
-    # Valor que o vendedor recebe = subtotal - commission
+    # Valor que o vendedor recebe = (subtotal - commission) + shipping
     seller_amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=OrderStatus.choices, default=OrderStatus.PENDING)
     tracking_code = models.CharField(max_length=50, blank=True)

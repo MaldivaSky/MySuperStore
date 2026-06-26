@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2, CheckCircle2, ShieldCheck, MapPin, CreditCard, ShoppingBag,
   QrCode, Copy, Check, Banknote, Lock, FileText, Search, Home, Briefcase,
-  Building2, X, ChevronRight, PlusCircle, AlertCircle
+  Building2, X, ChevronRight, PlusCircle, AlertCircle, Truck
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -171,6 +171,17 @@ function CheckoutInner() {
     e.preventDefault();
     if (!cart) return;
     setError("");
+
+    // Exige escolher uma opção de frete para cada loja que retornou cotação.
+    const sellersComCotacao = Object.entries(shippingQuotes)
+      .filter(([, d]: [string, any]) => !d.error && (d.options || []).length)
+      .map(([sellerId]) => sellerId);
+    const faltaFrete = sellersComCotacao.some((sid) => !selectedShipping[sid]);
+    if (faltaFrete) {
+      setError("Escolha uma opção de frete para cada loja antes de continuar.");
+      return;
+    }
+
     setProcessing(true);
 
     try {
@@ -412,6 +423,52 @@ function CheckoutInner() {
               </div>
             </section>
 
+            {/* Frete e Entrega */}
+            <section className="p-8 rounded-3xl border border-border/40 bg-card/40 shadow-sm relative z-10">
+              <div className="absolute top-0 left-0 w-1 h-full bg-primary rounded-l-3xl" />
+              <h3 className="font-display font-bold text-xl flex items-center gap-3 mb-6">
+                <Truck className="h-6 w-6 text-primary" /> Frete e Entrega
+              </h3>
+              {quotingShipping ? (
+                <div className="flex items-center gap-3 text-muted-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin" /> Calculando frete...
+                </div>
+              ) : Object.keys(shippingQuotes).length === 0 ? (
+                <p className="text-sm text-muted-foreground">Informe seu CEP no endereço para calcular o frete.</p>
+              ) : (
+                <div className="space-y-6">
+                  {Object.entries(shippingQuotes).map(([sellerId, data]: [string, any]) => (
+                    <div key={sellerId}>
+                      <p className="text-sm font-bold mb-2">{data.store_name}</p>
+                      {data.error || !(data.options || []).length ? (
+                        <p className="text-xs text-red-400">Não foi possível calcular o frete desta loja para o CEP informado.</p>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {data.options.map((opt: any) => {
+                            const selected = selectedShipping[sellerId]?.id === opt.id;
+                            return (
+                              <button type="button" key={opt.id} onClick={() => handleSelectShipping(sellerId, opt)}
+                                className={`flex items-center justify-between p-4 rounded-xl border-2 text-left transition-all ${
+                                  selected ? "border-primary bg-primary/10" : "border-border/60 hover:border-border hover:bg-white/5"
+                                }`}>
+                                <div>
+                                  <p className="font-semibold text-sm">{opt.name}</p>
+                                  <p className="text-xs text-muted-foreground">{opt.company?.name} · {opt.delivery_time} dia(s) útil(eis)</p>
+                                </div>
+                                <span className="font-display font-bold text-primary whitespace-nowrap">
+                                  R$ {Number(opt.price).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
             {/* Payment Method */}
             <section className="p-8 rounded-3xl border border-border/40 bg-card/40 shadow-sm relative z-10">
               <div className="absolute top-0 left-0 w-1 h-full bg-primary rounded-l-3xl" />
@@ -573,7 +630,11 @@ function CheckoutInner() {
                   <span>Subtotal</span>
                   <span>R$ {brl(cart?.subtotal || 0)}</span>
                 </div>
-                
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Frete</span>
+                  <span>{Number(cart?.shipping_total || 0) > 0 ? `R$ ${brl(cart?.shipping_total || 0)}` : "A calcular"}</span>
+                </div>
+
                 <div className="pt-6 border-t border-border/40 flex justify-between items-end mt-4">
                   <span className="font-bold text-lg">Total</span>
                   <div className="text-right">
