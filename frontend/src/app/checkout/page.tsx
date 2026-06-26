@@ -376,7 +376,9 @@ function CheckoutInner() {
   const methods: { id: Method; label: string; icon: any; hint: string }[] = [
     { id: "credit_card", label: "Crédito", icon: CreditCard, hint: `Até ${maxInstallments}x` },
     { id: "pix", label: "PIX", icon: QrCode, hint: "Aprovação imediata" },
-    { id: "debit_card", label: "Débito", icon: Banknote, hint: "À vista" },
+    // Débito removido: o Efí não processa cartão de débito online via API.
+    // O PIX cobre o pagamento à vista. Para reativar, readicione a linha abaixo.
+    // { id: "debit_card", label: "Débito", icon: Banknote, hint: "À vista" },
   ];
 
   return (
