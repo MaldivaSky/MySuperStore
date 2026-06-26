@@ -31,8 +31,7 @@ def send_seller_sale_notification_email_task(order_id):
     return f"Notificações de nova venda enviadas para os vendedores do pedido #{order.order_number}"
 
 
-@shared_task
-def check_pending_pix_orders_task():
+def expire_pending_pix_orders():
     """
     Monitora pedidos PIX pendentes.
     - Se > 10 min: envia lembrete de carrinho/PIX abandonado.
@@ -103,3 +102,7 @@ def check_pending_pix_orders_task():
                             variant.save(update_fields=["stock"])
 
     return f"Checagem concluída. Avisos enviados e expirados."
+
+@shared_task
+def check_pending_pix_orders_task():
+    return expire_pending_pix_orders()

@@ -93,9 +93,11 @@ def dispatch_post_payment_tasks(order: Order) -> None:
     import logging
     logger = logging.getLogger(__name__)
     try:
-        send_order_confirmation_email_task.delay(str(order.id))
-        send_seller_sale_notification_email_task.delay(str(order.id))
-        dispatch_webhook_task.delay({
+        # Executa sincronamente (chamando como função normal em vez de .delay)
+        # para garantir a entrega caso o Celery não esteja rodando em produção.
+        send_order_confirmation_email_task(str(order.id))
+        send_seller_sale_notification_email_task(str(order.id))
+        dispatch_webhook_task({
             "event": "order.confirmed",
             "order_number": order.order_number,
             "amount": float(order.total),

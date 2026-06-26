@@ -83,6 +83,11 @@ def process_payment_view(request):
             payment.pix_qr_code_base64 = qr_base64
             payment.raw_response = {"provider": "local"}
             payment.save()
+        try:
+            from apps.users.notifications import notify_order_pending_customer
+            notify_order_pending_customer(order)
+        except Exception as e:
+            logger.error("Falha ao enviar notificacao de PIX pendente: %s", e)
 
         return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
 

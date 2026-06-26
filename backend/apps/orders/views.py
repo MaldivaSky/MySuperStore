@@ -213,3 +213,21 @@ class ReturnRequestViewSet(viewsets.ModelViewSet):
             # 3. Marca o sub-pedido como reembolsado
             sub_order.status = "refunded"
             sub_order.save(update_fields=["status", "updated_at"])
+
+class ExpirePendingPixCronView(viewsets.GenericViewSet):
+    """
+    Endpoint para ser chamado via Cron Job (ex: Vercel Cron, cron-job.org)
+    para expirar pagamentos PIX pendentes e devolver o estoque,
+    substituindo o Celery worker em ambientes serverless.
+    GET /api/v1/orders/cron/expire-pix/
+    """
+    permission_classes = [permissions.AllowAny]
+
+    @action(detail=False, methods=["get"])
+    def run(self, request):
+        from .tasks import expire_pending_pix_orders
+        try:
+            result = expire_pending_pix_orders()
+            return Response({"status": "success", "result": result})
+        except Exception as e:
+            return Response({"status": "error", "detail": str(e)}, status=500)

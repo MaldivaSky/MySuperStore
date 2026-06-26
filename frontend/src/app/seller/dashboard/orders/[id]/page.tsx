@@ -8,7 +8,7 @@ import { BrandLoader } from "@/components/ui/BrandLoader";
 import { SubOrder } from "@/types";
 import { Package, Truck, CheckCircle2, ChevronLeft, MapPin, Calendar, Link as LinkIcon, DollarSign, ExternalLink } from "lucide-react";
 import Link from "next/link";
-import toast from "react-hot-toast";
+import { useToast } from "@/components/ui/Toast";
 
 const CARRIERS = [
   "Correios", "Jadlog", "Lalamove", "Loggi", "Braspress", "Melhor Envio", "Entrega Própria", "Outra"
@@ -17,6 +17,7 @@ const CARRIERS = [
 export default function SellerOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { id } = use(params);
+  const { toast } = useToast();
   
   const [order, setOrder] = useState<SubOrder | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,7 +42,7 @@ export default function SellerOrderDetailPage({ params }: { params: Promise<{ id
       if (data.invoice_link) setInvoiceLink(data.invoice_link);
     } catch (err) {
       console.error(err);
-      toast.error("Erro ao carregar pedido.");
+      toast("Erro ao carregar pedido.", "error");
       router.push("/seller/dashboard/orders");
     } finally {
       setLoading(false);
@@ -51,7 +52,7 @@ export default function SellerOrderDetailPage({ params }: { params: Promise<{ id
   const handleUpdateStatus = async (newStatus: string) => {
     if (newStatus === "shipped") {
       if (!carrier || !trackingCode || !estimatedDate) {
-        toast.error("Preencha transportadora, rastreio e previsão de entrega.");
+        toast("Preencha transportadora, rastreio e previsão de entrega.", "error");
         return;
       }
     }
@@ -59,10 +60,10 @@ export default function SellerOrderDetailPage({ params }: { params: Promise<{ id
     setSubmitting(true);
     try {
       await sellerOrdersApi.updateStatus(id, newStatus, trackingCode, carrier, estimatedDate);
-      toast.success("Status atualizado!");
+      toast("Status atualizado!", "success");
       fetchOrder();
     } catch (err) {
-      toast.error("Erro ao atualizar status.");
+      toast("Erro ao atualizar status.", "error");
     } finally {
       setSubmitting(false);
     }
