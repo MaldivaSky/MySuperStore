@@ -138,7 +138,6 @@ function HeaderInner() {
         </form>
 
         <div className="flex items-center gap-1 sm:gap-2">
-          <InstallAppButton />
           <ThemeToggle />
 
           {/* Cart — always visible on all screen sizes */}
@@ -154,13 +153,13 @@ function HeaderInner() {
             <span className="absolute top-14 right-0 scale-0 group-hover:scale-100 transition-all bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap z-50">Carrinho</span>
           </Link>
 
+          <NotificationDropdown />
+
           <div className="hidden sm:flex items-center gap-2">
             <Link href="/wishlist" className="p-2 rounded-full hover:bg-white/10 text-neutral-300 hover:text-white transition-colors relative group">
               <Heart className="h-5 w-5" />
               <span className="absolute top-14 right-0 scale-0 group-hover:scale-100 transition-all bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap z-50">Favoritos</span>
             </Link>
-
-            <NotificationDropdown />
 
             {isAuthenticated ? (
               <>
