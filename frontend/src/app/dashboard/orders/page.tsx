@@ -232,10 +232,20 @@ export default function OrdersPage() {
                         <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide bg-background px-3 py-1 rounded-full border border-border/60">
                           {getStatusIcon(sub.status)} {getStatusLabel(sub.status)}
                         </span>
+                        {(sub.carrier_name || sub.estimated_delivery_date) && (
+                          <div className="text-[10px] text-muted-foreground mt-1 flex flex-col items-end gap-0.5">
+                            {sub.carrier_name && <span>Via {sub.carrier_name}</span>}
+                            {sub.estimated_delivery_date && <span>Previsão: {new Date(sub.estimated_delivery_date + "T00:00:00").toLocaleDateString("pt-BR")}</span>}
+                          </div>
+                        )}
                         {sub.tracking_code && (
-                          <span className="text-[10px] text-muted-foreground font-mono tracking-wider px-2">
-                            Rastreio: {sub.tracking_code}
-                          </span>
+                          <div className="text-[10px] text-muted-foreground font-mono tracking-wider mt-1 px-2 border border-border/50 bg-background/50 py-1 rounded">
+                            Rastreio: {sub.tracking_code.startsWith('http') ? (
+                              <a href={sub.tracking_code} target="_blank" rel="noreferrer" className="text-primary hover:underline">{sub.tracking_code}</a>
+                            ) : (
+                              <span>{sub.tracking_code}</span>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>

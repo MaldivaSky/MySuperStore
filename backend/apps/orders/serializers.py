@@ -1,6 +1,7 @@
 import redis
 from django.conf import settings
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import serializers
 from apps.carts.models import Cart
 from apps.catalog.models import ProductVariant
@@ -44,6 +45,10 @@ class SubOrderSerializer(serializers.ModelSerializer):
             "seller_amount",
             "status",
             "tracking_code",
+            "carrier_name",
+            "estimated_delivery_date",
+            "dispatched_at",
+            "invoice_link",
             "items",
             "created_at",
             "updated_at",
@@ -258,7 +263,8 @@ class OrderCreateSerializer(serializers.ModelSerializer):
                         except Exception:
                             pass
 
-            # 6. Limpa o carrinho
-            cart.items.all().delete()
+            # 6. Atualiza data do carrinho para fins de analytics (carrinho já não é limpo imediatamente)
+            cart.updated_at = timezone.now()
+            cart.save(update_fields=["updated_at"])
 
         return order

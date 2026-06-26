@@ -138,6 +138,22 @@ def notify_order_confirmed_customer(order):
     send_web_push(user, "Pagamento Aprovado! 💳", message, url="/orders")
 
 
+def notify_order_pending_customer(order):
+    """Dispara alerta de carrinho abandonado (PIX pendente)."""
+    user = order.user
+    title = f"Você tem um PIX aguardando pagamento!"
+    message = "O seu pedido ainda não foi finalizado. Garanta seus produtos antes que o PIX expire."
+    
+    html = f"""
+        <p>Olá, {user.first_name}!</p>
+        <p>Notamos que você gerou um PIX para o pedido <strong>#{order.order_number}</strong> mas ainda não identificamos o pagamento.</p>
+        <p>Os lojistas já estão com seus produtos reservados, mas o tempo está acabando. Após a expiração do QR Code, os itens voltarão para o estoque e podem esgotar!</p>
+        <br>
+        <a href="{settings.FRONTEND_URL.rstrip('/')}/orders" class="cta-button">Pagar Agora</a>
+    """
+    send_transactional_email(user.email, title, title, html)
+    send_web_push(user, "PIX Pendente ⏳", message, url="/orders")
+
 def _format_brl(value):
     """Formata um valor em Real (R$ 1.234,56)."""
     from decimal import Decimal
@@ -243,11 +259,34 @@ def notify_order_status_update(sub_order):
     title = f"Atualização: Pedido #{order_num}"
     message = f"Seus itens da loja {sub_order.seller.store_name} mudaram para: {status_str}!"
     
+    extra_info = ""
+    if sub_order.status == "shipped":
+        carrier = getattr(sub_order, "carrier_name", "Transportadora") or "Transportadora"
+        tracking = getattr(sub_order, "tracking_code", "")
+        estimated = getattr(sub_order, "estimated_delivery_date", None)
+        
+        extra_info = f"""
+        <p>Boa notícia! O lojista <strong>{sub_order.seller.store_name}</strong> acabou de despachar o seu pacote via <strong>{carrier}</strong>.</p>
+        """
+        if tracking:
+            if tracking.startswith("http"):
+                extra_info += f'<p>Acompanhe em tempo real: <a href="{tracking}" target="_blank" style="color:#E6B53C;font-weight:bold;">{tracking}</a></p>'
+            else:
+                extra_info += f'<p>Seu código de rastreio é: <strong style="color:#E6B53C;">{tracking}</strong></p>'
+        if estimated:
+            from django.utils.formats import date_format
+            extra_info += f'<p>Previsão de entrega: <strong>{date_format(estimated, "d \de F")}</strong></p>'
+    elif sub_order.status == "processing":
+        extra_info = f"<p>A loja <strong>{sub_order.seller.store_name}</strong> começou a separar o seu pacote. Logo ele será despachado!</p>"
+    else:
+        extra_info = f"<p>A loja <strong>{sub_order.seller.store_name}</strong> atualizou o status da entrega para: <strong style="color:#E6B53C;">{status_str}</strong>.</p>"
+        
     html = f"""
         <p>Olá, {user.first_name}!</p>
-        <p>Boas notícias sobre o seu pedido <strong>#{sub_order.order.order_number}</strong>.</p>
-        <p>A loja <strong>{sub_order.seller.store_name}</strong> atualizou o status da entrega para: <strong style="color:#E6B53C;">{status_str}</strong>.</p>
-        <a href="{settings.FRONTEND_URL.rstrip('/')}/orders" class="cta-button">Acompanhar Entrega</a>
+        <p>Temos uma atualização sobre o seu pedido <strong>#{sub_order.order.order_number}</strong>.</p>
+        {extra_info}
+        <br>
+        <a href="{settings.FRONTEND_URL.rstrip('/')}/orders" class="cta-button">Acompanhar Entrega no App</a>
     """
     send_transactional_email(user.email, title, title, html)
     send_web_push(user, f"Pedido {status_str} 📦", message, url="/orders")

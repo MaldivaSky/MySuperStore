@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "cdn.dummyjson.com" },
       // Logo Nike
       { protocol: "https", hostname: "upload.wikimedia.org" },
+      // Cloudinary para produção
+      { protocol: "https", hostname: "res.cloudinary.com" },
       // Adicione o domínio R2/S3 em produção:
       // { protocol: "https", hostname: "*.r2.cloudflarestorage.com" },
     ],

@@ -172,8 +172,15 @@ export const returnsApi = {
 };
 
 export const sellerOrdersApi = {
-  updateStatus: (subOrderId: string, status: string, trackingCode?: string) =>
-    api.patch(`/orders/seller/orders/${subOrderId}/update_status/`, { status, tracking_code: trackingCode }),
+  getAll: () => api.get("/orders/seller/orders/"),
+  getById: (id: string) => api.get(`/orders/seller/orders/${id}/`),
+  updateStatus: (subOrderId: string, status: string, trackingCode?: string, carrierName?: string, estimatedDeliveryDate?: string) =>
+    api.patch(`/orders/seller/orders/${subOrderId}/update_status/`, { 
+      status, 
+      tracking_code: trackingCode,
+      carrier_name: carrierName,
+      estimated_delivery_date: estimatedDeliveryDate
+    }),
   uploadInvoice: (subOrderId: string, invoice_link: string) =>
     api.post(`/orders/seller/orders/${subOrderId}/upload_invoice/`, { invoice_link }),
 };

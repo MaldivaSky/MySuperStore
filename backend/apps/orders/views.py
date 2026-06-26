@@ -53,6 +53,7 @@ class SellerSubOrderViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["patch"])
     def update_status(self, request, pk=None):
+        from django.utils import timezone
         sub_order = self.get_object()
         new_status = request.data.get("status")
 
@@ -68,6 +69,17 @@ class SellerSubOrderViewSet(viewsets.ModelViewSet):
         tracking_code = request.data.get("tracking_code")
         if tracking_code is not None:
             sub_order.tracking_code = tracking_code
+            
+        carrier_name = request.data.get("carrier_name")
+        if carrier_name is not None:
+            sub_order.carrier_name = carrier_name
+            
+        estimated_delivery_date = request.data.get("estimated_delivery_date")
+        if estimated_delivery_date:
+            sub_order.estimated_delivery_date = estimated_delivery_date
+
+        if new_status == OrderStatus.SHIPPED and not sub_order.dispatched_at:
+            sub_order.dispatched_at = timezone.now()
             
         sub_order.save()
         

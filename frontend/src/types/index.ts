@@ -131,6 +131,12 @@ export interface SubOrder {
   seller_amount: string;
   status: OrderStatus;
   tracking_code: string;
+  carrier_name?: string;
+  estimated_delivery_date?: string;
+  dispatched_at?: string;
+  invoice_link?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Order {

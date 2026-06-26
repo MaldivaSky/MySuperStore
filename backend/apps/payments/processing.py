@@ -74,6 +74,14 @@ def process_successful_payment(order: Order, raw_response: dict | None = None, c
             processed_at=timezone.now() if payout_status == PayoutStatus.COMPLETED else None,
         )
 
+    # 4. Limpa os itens do carrinho que foram efetivamente pagos neste pedido
+    if order.user_id:
+        from apps.carts.models import Cart
+        cart = Cart.objects.filter(user=order.user).first()
+        if cart:
+            variant_ids = [item.variant_id for sub in order.sub_orders.all() for item in sub.items.all()]
+            cart.items.filter(variant_id__in=variant_ids).delete()
+
     return True
 
 
