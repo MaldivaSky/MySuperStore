@@ -133,6 +133,10 @@ export const cartApi = {
 export const sellerApi = {
   me: () => api.get("/sellers/me/"),
   update: (data: any) => api.patch("/sellers/me/", data),
+  updateMultipart: (formData: FormData) => 
+    api.patch("/sellers/me/", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
   apply: (data: { store_name: string; description: string; pix_key?: string; efi_payee_code?: string; origin_cep?: string; cpf_cnpj?: string; person_type?: string; main_category?: string; }) =>
     api.post("/sellers/apply/", data),
 

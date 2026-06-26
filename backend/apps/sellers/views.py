@@ -263,6 +263,27 @@ class SellerProductViewSet(viewsets.ModelViewSet):
         # Substitui o vídeo anterior, se houver (mantém o limite de 1).
         if product.video:
             product.video.delete(save=False)
+            
+        # Tratamento especial para Cloudinary (que precisa de resource_type="video")
+        try:
+            from django.conf import settings
+            if 'cloudinary' in settings.INSTALLED_APPS and getattr(settings, 'STORAGES', {}).get('default', {}).get('BACKEND') == 'cloudinary_storage.storage.MediaCloudinaryStorage':
+                import cloudinary.uploader
+                result = cloudinary.uploader.upload(
+                    video, 
+                    resource_type="video", 
+                    folder="products/videos/"
+                )
+                product.video_external = result.get("secure_url")
+                product.video = None
+                product.save(update_fields=["video", "video_external", "updated_at"])
+                return Response(
+                    {"video_url": product.video_external},
+                    status=status.HTTP_201_CREATED,
+                )
+        except Exception as e:
+            pass # Fallback para storage padrão
+
         product.video = video
         product.save(update_fields=["video", "updated_at"])
         return Response(

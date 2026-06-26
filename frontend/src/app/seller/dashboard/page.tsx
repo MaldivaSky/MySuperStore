@@ -43,11 +43,18 @@ function DashboardContent() {
   const [description, setDescription] = useState("");
   const [pixKey, setPixKey] = useState("");
   const [efiPayeeCode, setEfiPayeeCode] = useState("");
-  const [logoExternal, setLogoExternal] = useState("");
-  const [bannerExternal, setBannerExternal] = useState("");
-  const [banner2External, setBanner2External] = useState("");
-  const [banner3External, setBanner3External] = useState("");
   const [originCep, setOriginCep] = useState("");
+  const [primaryColor, setPrimaryColor] = useState("#E6B53C");
+  const [videoUrl, setVideoUrl] = useState("");
+  const [physicalAddress, setPhysicalAddress] = useState("");
+  const [businessHours, setBusinessHours] = useState("");
+  
+  // Imagens
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [banner2File, setBanner2File] = useState<File | null>(null);
+  const [banner3File, setBanner3File] = useState<File | null>(null);
+
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
 
@@ -117,16 +124,22 @@ function DashboardContent() {
     e.preventDefault();
     setSettingsLoading(true);
     try {
-      await sellerApi.update({
-        store_name: storeName,
-        description,
-        pix_key: pixKey,
-        efi_payee_code: efiPayeeCode,
-        logo_external: logoExternal,
-        banner_external: bannerExternal,
-        banner2_external: banner2External,
-        banner3_external: banner3External,
-      });
+      const formData = new FormData();
+      formData.append("store_name", storeName);
+      formData.append("description", description);
+      formData.append("pix_key", pixKey);
+      formData.append("efi_payee_code", efiPayeeCode);
+      formData.append("primary_color", primaryColor);
+      formData.append("video_url", videoUrl);
+      formData.append("physical_address", physicalAddress);
+      formData.append("business_hours", businessHours);
+      
+      if (logoFile) formData.append("logo", logoFile);
+      if (bannerFile) formData.append("banner", bannerFile);
+      if (banner2File) formData.append("banner2", banner2File);
+      if (banner3File) formData.append("banner3", banner3File);
+
+      await sellerApi.updateMultipart(formData);
       await fetchStoreData();
       setIsSettingsOpen(false);
       setToastMessage("Loja atualizada com sucesso!");
@@ -246,9 +259,14 @@ function DashboardContent() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                 Identificador de Conta Efí (Payee Code)
               </label>
+              <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl mb-2">
+                <p className="text-xs text-blue-400">
+                  <strong className="font-bold">O que é isso?</strong> Para receber os pagamentos automaticamente, você precisa abrir uma conta grátis na <a href="https://sejaefi.com.br" target="_blank" rel="noreferrer" className="underline hover:text-blue-300">Efí Bank</a>. No painel da Efí, acesse <strong>API (Para Devs) {'->'} Split de Pagamento</strong> e copie o seu "Identificador de Conta" (Payee Code).
+                </p>
+              </div>
               <input
                 type="text"
                 required
@@ -355,11 +373,14 @@ function DashboardContent() {
                   setPixKey(store.pix_key || "");
                   setEfiPayeeCode(store.efi_payee_code || "");
                   
-                  // Recupera os links de imagens salvos (usando as propriedades expostas no serializer)
-                  setLogoExternal(store.logo_url || "");
-                  setBannerExternal(store.banner_url || "");
-                  setBanner2External(store.banner2_url || "");
-                  setBanner3External(store.banner3_url || "");
+                  setPrimaryColor(store.primary_color || "#E6B53C");
+                  setVideoUrl(store.video_url || "");
+                  setPhysicalAddress(store.physical_address || "");
+                  setBusinessHours(store.business_hours || "");
+                  setLogoFile(null);
+                  setBannerFile(null);
+                  setBanner2File(null);
+                  setBanner3File(null);
                   
                   setIsSettingsOpen(true);
                 }}
@@ -478,7 +499,7 @@ function DashboardContent() {
                 <h2 className="text-xl font-bold flex items-center gap-2"><Settings className="w-5 h-5 text-primary" /> Editar Loja</h2>
                 <button onClick={() => setIsSettingsOpen(false)} className="text-neutral-500 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
               </div>
-              <form onSubmit={handleUpdateSettings} className="space-y-4">
+              <form onSubmit={handleUpdateSettings} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Nome da Loja</label>
                   <input required value={storeName} onChange={(e) => setStoreName(e.target.value)} className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
@@ -487,30 +508,65 @@ function DashboardContent() {
                   <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Descrição</label>
                   <textarea rows={3} required value={description} onChange={(e) => setDescription(e.target.value)} className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors resize-none" />
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Chave PIX</label>
+                    <input required value={pixKey} onChange={(e) => setPixKey(e.target.value)} className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Payee Code (Efí)</label>
+                    <input value={efiPayeeCode} onChange={(e) => setEfiPayeeCode(e.target.value)} className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-white/10">
+                  <h3 className="text-sm font-bold text-white mb-3">Aparência da Loja</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Cor Principal (Hex)</label>
+                      <div className="flex items-center gap-3 mt-1.5">
+                        <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-0 p-0" />
+                        <input value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="flex-1 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Vídeo de Apresentação</label>
+                      <input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="Link do YouTube" className="w-full mt-1.5 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors text-sm" />
+                    </div>
+                  </div>
+                </div>
+
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Chave PIX</label>
-                  <input required value={pixKey} onChange={(e) => setPixKey(e.target.value)} className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
+                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Endereço da Loja Física (Opcional)</label>
+                  <input value={physicalAddress} onChange={(e) => setPhysicalAddress(e.target.value)} placeholder="Rua, Número, Bairro, Cidade" className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Identificador Efí (Payee Code)</label>
-                  <input value={efiPayeeCode} onChange={(e) => setEfiPayeeCode(e.target.value)} placeholder="Cole aqui seu Identificador Efí" className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
+                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Horário de Atendimento</label>
+                  <input value={businessHours} onChange={(e) => setBusinessHours(e.target.value)} placeholder="Seg a Sex, das 09h às 18h" className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
                 </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Link da Logo</label>
-                  <input value={logoExternal} onChange={(e) => setLogoExternal(e.target.value)} placeholder="https://..." className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
+
+                <div className="pt-4 border-t border-white/10">
+                  <h3 className="text-sm font-bold text-white mb-3">Imagens (Upload)</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400 block mb-1">Logo</label>
+                      <input type="file" accept="image/*" onChange={(e) => setLogoFile(e.target.files?.[0] || null)} className="text-sm text-neutral-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-white/10 file:text-white hover:file:bg-white/20 cursor-pointer" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400 block mb-1">Banner Principal</label>
+                      <input type="file" accept="image/*" onChange={(e) => setBannerFile(e.target.files?.[0] || null)} className="text-sm text-neutral-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-white/10 file:text-white hover:file:bg-white/20 cursor-pointer" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400 block mb-1">Banner Secundário</label>
+                      <input type="file" accept="image/*" onChange={(e) => setBanner2File(e.target.files?.[0] || null)} className="text-sm text-neutral-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-white/10 file:text-white hover:file:bg-white/20 cursor-pointer" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400 block mb-1">Banner Terciário</label>
+                      <input type="file" accept="image/*" onChange={(e) => setBanner3File(e.target.files?.[0] || null)} className="text-sm text-neutral-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-white/10 file:text-white hover:file:bg-white/20 cursor-pointer" />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Link do Banner 1</label>
-                  <input value={bannerExternal} onChange={(e) => setBannerExternal(e.target.value)} placeholder="https://..." className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Link do Banner 2</label>
-                  <input value={banner2External} onChange={(e) => setBanner2External(e.target.value)} placeholder="https://..." className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Link do Banner 3</label>
-                  <input value={banner3External} onChange={(e) => setBanner3External(e.target.value)} placeholder="https://..." className="w-full mt-1.5 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-primary transition-colors" />
-                </div>
+
                 <button type="submit" disabled={settingsLoading} className="w-full py-3 mt-4 rounded-xl bg-primary text-primary-foreground font-black hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50">
                   {settingsLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Salvar Configurações"}
                 </button>

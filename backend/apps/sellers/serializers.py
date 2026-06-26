@@ -22,6 +22,7 @@ class SellerPublicSerializer(serializers.ModelSerializer):
         fields = [
             "id", "store_name", "slug", "description",
             "logo_url", "banner_url", "banner2_url", "banner3_url", "product_count", "avg_rating", "created_at",
+            "primary_color", "video_url", "physical_address", "business_hours",
         ]
 
     def get_logo_url(self, obj):
@@ -137,6 +138,7 @@ class SellerDashboardSerializer(serializers.ModelSerializer):
             "id", "store_name", "slug", "description", "status", "commission_rate",
             "efi_payee_code", "pix_key",
             "strike_count", "max_installments",
+            "primary_color", "video_url", "physical_address", "business_hours",
             "logo_url", "banner_url", "banner2_url", "banner3_url",
             "total_products", "available_products",
             "total_orders", "pending_payout",
@@ -189,6 +191,7 @@ class SellerUpdateSerializer(serializers.ModelSerializer):
         model = Seller
         fields = [
             "store_name", "description", "pix_key", "max_installments", "efi_payee_code",
+            "primary_color", "video_url", "physical_address", "business_hours",
             "logo", "logo_external",
             "banner", "banner_external",
             "banner2", "banner2_external",

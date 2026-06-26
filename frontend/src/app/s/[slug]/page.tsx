@@ -27,6 +27,8 @@ export default function PremiumGlassdoorPage() {
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState("all");
+  
+  const [isPhysicalStoreModalOpen, setIsPhysicalStoreModalOpen] = useState(false);
 
   const handleProductClick = (product: any) => {
     setSelectedProduct(product);
@@ -101,13 +103,14 @@ export default function PremiumGlassdoorPage() {
   const banners = [seller.banner_url, seller.banner2_url, seller.banner3_url].filter(Boolean);
   const categories = Array.from(new Set(products.map(p => p.category_name))).filter(Boolean) as string[];
   const displayProducts = activeCategory === "all" ? products : products.filter(p => p.category_name === activeCategory);
+  const primaryColor = seller.primary_color || "#E6B53C";
 
   return (
-    <div className="min-h-screen bg-[#05050A] text-white font-sans overflow-x-hidden selection:bg-[#E6B53C] selection:text-black">
+    <div className="min-h-screen bg-[#05050A] text-white font-sans overflow-x-hidden selection:text-black" style={{ '--color-primary': primaryColor } as any}>
       {/* Background Glows */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[#E6B53C]/5 blur-[150px]"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#B38F25]/5 blur-[150px]"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full opacity-10 blur-[150px]" style={{ backgroundColor: primaryColor }}></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full opacity-10 blur-[150px]" style={{ backgroundColor: primaryColor }}></div>
       </div>
 
       {/* Floating Header */}
@@ -131,7 +134,8 @@ export default function PremiumGlassdoorPage() {
           <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide max-w-[50vw]">
             <button
               onClick={() => setActiveCategory("all")}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${activeCategory === "all" ? "bg-[#E6B53C] text-black" : "bg-white/5 text-neutral-400 hover:text-white"}`}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${activeCategory === "all" ? "text-black" : "bg-white/5 text-neutral-400 hover:text-white"}`}
+              style={activeCategory === "all" ? { backgroundColor: primaryColor } : {}}
             >
               Todos
             </button>
@@ -139,7 +143,8 @@ export default function PremiumGlassdoorPage() {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${activeCategory === cat ? "bg-[#E6B53C] text-black" : "bg-white/5 text-neutral-400 hover:text-white"}`}
+                className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${activeCategory === cat ? "text-black" : "bg-white/5 text-neutral-400 hover:text-white"}`}
+                style={activeCategory === cat ? { backgroundColor: primaryColor } : {}}
               >
                 {cat}
               </button>
@@ -204,17 +209,41 @@ export default function PremiumGlassdoorPage() {
                   <button 
                     key={i}
                     onClick={() => setActiveSlide(i)}
-                    className={`w-12 h-1.5 rounded-full transition-all duration-500 ${i === activeSlide ? "bg-[#E6B53C] shadow-[0_0_10px_rgba(230,181,60,0.8)]" : "bg-white/30 hover:bg-white/50"}`}
+                    className={`w-12 h-1.5 rounded-full transition-all duration-500 ${i === activeSlide ? "shadow-[0_0_10px_rgba(255,255,255,0.8)]" : "bg-white/30 hover:bg-white/50"}`}
+                    style={i === activeSlide ? { backgroundColor: primaryColor } : {}}
                   />
                 ))}
               </div>
             )}
           </div>
           
-          <div className="mt-8 max-w-3xl mx-auto text-center">
-             <p className="text-lg text-neutral-400 font-medium leading-relaxed">
-               {seller.description || "Bem-vindo à nossa vitrine oficial na MySuperStore."}
-             </p>
+          <div className="mt-8 max-w-4xl mx-auto flex flex-col md:flex-row items-start justify-between gap-8">
+            <div className="flex-1">
+              <p className="text-lg text-neutral-400 font-medium leading-relaxed">
+                {seller.description || "Bem-vindo à nossa vitrine oficial na MySuperStore."}
+              </p>
+              
+              {seller.physical_address && (
+                <button 
+                  onClick={() => setIsPhysicalStoreModalOpen(true)}
+                  className="mt-6 flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/10 hover:border-white/30 hover:bg-white/5 transition-all text-sm font-bold text-white"
+                >
+                  <MapPin className="w-5 h-5" style={{ color: primaryColor }} />
+                  Conheça a Loja Física
+                </button>
+              )}
+            </div>
+            
+            {seller.video_url && (
+              <div className="w-full md:w-80 h-44 rounded-2xl overflow-hidden border border-white/10 shrink-0">
+                <iframe 
+                  src={seller.video_url.replace("watch?v=", "embed/")} 
+                  className="w-full h-full object-cover"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                  allowFullScreen
+                />
+              </div>
+            )}
           </div>
         </section>
 
@@ -256,14 +285,16 @@ export default function PremiumGlassdoorPage() {
                         </div>
                       )}
                       {product.is_on_sale && (
-                        <div className="absolute top-4 left-4 bg-[#E6B53C] text-black text-xs font-black px-3 py-1.5 rounded-full shadow-lg">
+                        <div className="absolute top-4 left-4 text-black text-xs font-black px-3 py-1.5 rounded-full shadow-lg" style={{ backgroundColor: primaryColor }}>
                           -{Math.round(((product.base_price - product.promotional_price) / product.base_price) * 100)}%
                         </div>
                       )}
                     </div>
                     <div className="p-5">
                       <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">{product.category_name}</p>
-                      <h3 className="font-bold text-white mb-2 line-clamp-2 group-hover:text-[#E6B53C] transition-colors">{product.name}</h3>
+                      <h3 className="font-bold text-white mb-2 line-clamp-2 transition-colors hover:opacity-80" style={{ color: "white" }} 
+                          onMouseEnter={(e) => e.currentTarget.style.color = primaryColor}
+                          onMouseLeave={(e) => e.currentTarget.style.color = "white"}>{product.name}</h3>
                       <div className="flex items-end gap-2 mt-4">
                         {product.is_on_sale ? (
                           <>
@@ -306,6 +337,53 @@ export default function PremiumGlassdoorPage() {
           slug={selectedProduct.slug}
         />
       )}
+
+      {/* Modal Loja Física */}
+      <AnimatePresence>
+        {isPhysicalStoreModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsPhysicalStoreModalOpen(false)} />
+            <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="relative bg-[#0F0F1A] border border-white/10 rounded-3xl w-full max-w-md p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-2" style={{ backgroundColor: primaryColor }}></div>
+              <div className="flex items-start justify-between mb-8">
+                <div>
+                  <h3 className="text-2xl font-black text-white mb-2">Nossa Loja Física</h3>
+                  <p className="text-neutral-400 text-sm">Venha nos fazer uma visita ou retirar seu pedido pessoalmente.</p>
+                </div>
+                <button onClick={() => setIsPhysicalStoreModalOpen(false)} className="text-neutral-500 hover:text-white transition-colors bg-white/5 p-2 rounded-full"><Star className="w-5 h-5 hidden" /> <span className="text-xl leading-none">&times;</span></button>
+              </div>
+
+              <div className="space-y-6">
+                <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
+                  <div className="p-3 rounded-xl bg-white/10" style={{ color: primaryColor }}>
+                    <MapPin className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white text-sm uppercase tracking-wider mb-1">Endereço</h4>
+                    <p className="text-neutral-300 leading-relaxed">{seller.physical_address}</p>
+                  </div>
+                </div>
+
+                {seller.business_hours && (
+                  <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
+                    <div className="p-3 rounded-xl bg-white/10" style={{ color: primaryColor }}>
+                      <Store className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white text-sm uppercase tracking-wider mb-1">Horário de Atendimento</h4>
+                      <p className="text-neutral-300 leading-relaxed">{seller.business_hours}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <button onClick={() => setIsPhysicalStoreModalOpen(false)} className="w-full mt-8 py-4 rounded-xl text-black font-black hover:opacity-90 transition-opacity" style={{ backgroundColor: primaryColor }}>
+                Fechar
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
